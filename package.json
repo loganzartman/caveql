@@ -6,6 +6,7 @@
 	"author": "Logan Zartman",
 	"license": "MIT",
 	"type": "module",
+	"packageManager": "pnpm@10.12.1",
 	"source": "src/index.ts",
 	"types": "dist/index.d.ts",
 	"targets": {
@@ -17,7 +18,8 @@
 		},
 		"repl": {
 			"source": "repl/index.html",
-			"distDir": "dist/repl"
+			"distDir": "dist/repl",
+			"publicUrl": "."
 		}
 	},
 	"scripts": {
