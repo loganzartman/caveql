@@ -54,7 +54,7 @@ export function takeQuery(src: string): [string, QueryAST] {
 	let search: SearchCommandAST;
 	let pipeline: CommandAST[];
 	[src] = takeWs(src);
-	[src, search] = takeBareSearch(src);
+	[src, search] = takeOne(src, takeSearchCommand, takeBareSearch);
 	[src, pipeline] = takePipeline(src);
 
 	return [
