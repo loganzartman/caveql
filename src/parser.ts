@@ -1,6 +1,10 @@
-export type Term = StringTerm | NumericTerm;
-export type StringTerm = string;
-export type NumericTerm = number | bigint;
+export type StringAST = string;
+export type NumericAST = number | bigint;
+export type KvAST = {
+	type: "kv";
+	key: StringAST;
+	value: ExpressionAST;
+};
 
 export type QueryAST = {
 	type: "query";
@@ -10,30 +14,29 @@ export type QueryAST = {
 
 export type SearchAST = {
 	type: "search";
-	filters: FilterAST[];
+	filters: ExpressionAST[];
 };
 
-export type FilterAST = UnaryOpAST | BinaryOpAST | KvAST;
+export type ExpressionAST =
+	| UnaryOpAST
+	| BinaryOpAST
+	| KvAST
+	| StringAST
+	| NumericAST;
 
 export type UnaryOpType = "not";
 
 export type UnaryOpAST = {
 	type: UnaryOpType;
-	operand: FilterAST;
+	operand: ExpressionAST;
 };
 
 export type BinaryOpType = "and" | "or";
 
 export type BinaryOpAST = {
 	type: BinaryOpType;
-	left: FilterAST;
-	right: FilterAST;
-};
-
-export type KvAST = {
-	type: "kv";
-	key: StringTerm;
-	value: Term;
+	left: ExpressionAST;
+	right: ExpressionAST;
 };
 
 export type StatsAST = {
@@ -43,12 +46,12 @@ export type StatsAST = {
 export type CommandAST = SearchAST | StatsAST;
 
 export function takeSearch(src: string): [string, SearchAST] {
-	const filters: FilterAST[] = [];
+	const filters: ExpressionAST[] = [];
 	for (let i = 0; i < 100; ++i) {
 		try {
-			let filter: FilterAST;
+			let filter: ExpressionAST;
 			[src] = takeWs(src);
-			[src, filter] = takeFilter(src);
+			[src, filter] = takeExpr(src);
 			filters.push(filter);
 		} catch {
 			break;
@@ -63,28 +66,59 @@ export function takeSearch(src: string): [string, SearchAST] {
 	];
 }
 
-function takeFilter(src: string): [string, FilterAST] {
-	return takeOne(src, takeBinaryOp, takeUnaryOp, takeKv);
+function takeExpr(src: string): [string, ExpressionAST] {
+	return takeOne(src, takeBinaryOp, takeUnaryOp, takeTerm);
 }
 
-function takeOne<TMembers extends ((input: string) => [string, any])[]>(
-	input: string,
-	...members: TMembers
-): ReturnType<TMembers[number]> {
-	for (const member of members) {
-		try {
-			return member(input) as ReturnType<TMembers[number]>;
-		} catch {}
-	}
-	throw new Error("No matching members");
+function takeTerm(input: string): [string, ExpressionAST] {
+	return takeOne(input, takeGroup, takeKv, takeNumeric, takeString);
+}
+
+function takeBinaryOp(input: string): [string, BinaryOpAST] {
+	let op: BinaryOpType, left: ExpressionAST, right: ExpressionAST;
+	[input] = takeWs(input);
+	[input, left] = takeTerm(input);
+	[input] = takeWs(input);
+	[input, op] = takeOne(
+		input,
+		(s) => takeLiteral(s, "and"),
+		(s) => takeLiteral(s, "or"),
+	);
+	[input] = takeWs(input);
+	[input, right] = takeExpr(input);
+
+	return [
+		input,
+		{
+			type: op,
+			left,
+			right,
+		},
+	];
+}
+
+function takeUnaryOp(input: string): [string, UnaryOpAST] {
+	let op: UnaryOpType, operand: ExpressionAST;
+	[input] = takeWs(input);
+	[input, op] = takeLiteral(input, "not");
+	[input] = takeWs(input);
+	[input, operand] = takeExpr(input);
+
+	return [
+		input,
+		{
+			type: op,
+			operand,
+		},
+	];
 }
 
 function takeKv(input: string): [string, KvAST] {
-	let key: StringTerm, value: Term;
+	let key: StringAST, value: ExpressionAST;
 	[input] = takeWs(input);
-	[input, key] = takeStringTerm(input);
+	[input, key] = takeString(input);
 	[input] = takeWs(input);
-	[input] = takeStr(input, "=");
+	[input] = takeLiteral(input, "=");
 	[input] = takeWs(input);
 	[input, value] = takeTerm(input);
 
@@ -98,54 +132,18 @@ function takeKv(input: string): [string, KvAST] {
 	];
 }
 
-function takeUnaryOp(input: string): [string, UnaryOpAST] {
-	let op: UnaryOpType, operand: FilterAST;
+function takeGroup(input: string): [string, ExpressionAST] {
+	let expr: ExpressionAST;
 	[input] = takeWs(input);
-	[input, op] = takeStr(input, "not");
+	[input] = takeLiteral(input, "(");
 	[input] = takeWs(input);
-	[input, operand] = takeFilter(input);
-
-	return [
-		input,
-		{
-			type: op,
-			operand,
-		},
-	];
+	[input, expr] = takeExpr(input);
+	[input] = takeWs(input);
+	[input] = takeLiteral(input, ")");
+	return [input, expr];
 }
 
-function takeBinaryOp(input: string): [string, BinaryOpAST] {
-	let op: BinaryOpType, left: KvAST, right: FilterAST;
-	[input] = takeWs(input);
-	[input, left] = takeKv(input);
-	[input] = takeWs(input);
-	[input, op] = takeOne(
-		input,
-		(s) => takeStr(s, "and"),
-		(s) => takeStr(s, "or"),
-	);
-	[input] = takeWs(input);
-	[input, right] = takeFilter(input);
-
-	return [
-		input,
-		{
-			type: op,
-			left,
-			right,
-		},
-	];
-}
-
-function takeTerm(input: string): [string, Term] {
-	return takeOne(
-		input,
-		(s) => takeNumericTerm(s),
-		(s) => takeStringTerm(s),
-	);
-}
-
-function takeStringTerm(input: string): [string, StringTerm] {
+function takeString(input: string): [string, StringAST] {
 	return takeOne(
 		input,
 		(s) => takeRex(s, /"((?:[^\\"]|\\.)*)"/, 1),
@@ -154,7 +152,7 @@ function takeStringTerm(input: string): [string, StringTerm] {
 	);
 }
 
-function takeNumericTerm(input: string): [string, NumericTerm] {
+function takeNumeric(input: string): [string, NumericAST] {
 	return takeOne(
 		input,
 		(s) => {
@@ -172,6 +170,18 @@ function takeWs(src: string): [string, string] {
 	return takeRex(src, /\s*/);
 }
 
+function takeOne<TMembers extends ((input: string) => [string, any])[]>(
+	input: string,
+	...members: TMembers
+): ReturnType<TMembers[number]> {
+	for (const member of members) {
+		try {
+			return member(input) as ReturnType<TMembers[number]>;
+		} catch {}
+	}
+	throw new Error("No matching members");
+}
+
 function takeRex(input: string, rex: RegExp, group = 0): [string, string] {
 	const result = rex.exec(input);
 	if (result?.index === 0) {
@@ -183,7 +193,7 @@ function takeRex(input: string, rex: RegExp, group = 0): [string, string] {
 	throw new Error(`Does not match regex ${rex}`);
 }
 
-function takeStr<T extends string>(input: string, match: T): [string, T] {
+function takeLiteral<T extends string>(input: string, match: T): [string, T] {
 	if (input.startsWith(match)) {
 		return [input.substring(match.length), match];
 	}
