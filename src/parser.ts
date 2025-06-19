@@ -256,7 +256,7 @@ function takeRex(input: string, rex: RegExp, group = 0): [string, string] {
 		if (result.length <= group) {
 			throw new Error(`Regex did not contain group ${group} in ${rex}`);
 		}
-		return [input.substring(result[group].length), result[group]];
+		return [input.substring(result[0].length), result[group]];
 	}
 	throw new Error(`Does not match regex ${rex}`);
 }
