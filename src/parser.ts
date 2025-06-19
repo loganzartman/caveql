@@ -8,13 +8,8 @@ export type KvAST = {
 
 export type QueryAST = {
 	type: "query";
-	search?: SearchAST;
-	next?: CommandAST;
-};
-
-export type SearchAST = {
-	type: "search";
-	filters: ExpressionAST[];
+	search: SearchCommandAST;
+	pipeline: CommandAST[];
 };
 
 export type ExpressionAST =
@@ -39,15 +34,52 @@ export type BinaryOpAST = {
 	right: ExpressionAST;
 };
 
-export type StatsAST = {
+export type CommandAST = StatsCommandAST | SearchCommandAST | WhereCommandAST;
+
+export type SearchCommandAST = {
+	type: "search";
+	filters: ExpressionAST[];
+};
+
+export type StatsCommandAST = {
 	type: "stats";
 };
 
-export type CommandAST = SearchAST | StatsAST;
+export type WhereCommandAST = {
+	type: "where";
+	expr: ExpressionAST;
+};
 
-export function takeSearch(src: string): [string, SearchAST] {
+export function takeQuery(src: string): [string, QueryAST] {
+	let search: SearchCommandAST;
+	let pipeline: CommandAST[];
+	[src] = takeWs(src);
+	[src, search] = takeBareSearch(src);
+	[src, pipeline] = takePipeline(src);
+
+	return [
+		src,
+		{
+			type: "query",
+			search,
+			pipeline,
+		},
+	];
+}
+
+export function takeSearchCommand(src: string): [string, SearchCommandAST] {
+	let command: SearchCommandAST;
+	[src] = takeWs(src);
+	[src] = takeLiteral(src, "search");
+	[src] = takeWs(src);
+	[src, command] = takeBareSearch(src);
+
+	return [src, command];
+}
+
+export function takeBareSearch(src: string): [string, SearchCommandAST] {
 	const filters: ExpressionAST[] = [];
-	for (let i = 0; i < 100; ++i) {
+	while (true) {
 		try {
 			let filter: ExpressionAST;
 			[src] = takeWs(src);
@@ -64,6 +96,42 @@ export function takeSearch(src: string): [string, SearchAST] {
 			filters,
 		},
 	];
+}
+
+function takePipeline(src: string): [string, CommandAST[]] {
+	const commands: CommandAST[] = [];
+	while (true) {
+		try {
+			let command: CommandAST;
+			[src] = takeWs(src);
+			[src] = takeLiteral(src, "|");
+			[src] = takeWs(src);
+			[src, command] = takeCommand(src);
+			commands.push(command);
+		} catch {
+			break;
+		}
+	}
+	return [src, commands];
+}
+
+function takeCommand(src: string): [string, CommandAST] {
+	return takeOne(src, takeStatsCommand, takeSearchCommand, takeWhereCommand);
+}
+
+function takeStatsCommand(src: string): [string, StatsCommandAST] {
+	[src] = takeWs(src);
+	[src] = takeLiteral(src, "stats");
+	return [src, { type: "stats" }];
+}
+
+function takeWhereCommand(src: string): [string, WhereCommandAST] {
+	let expr: ExpressionAST;
+	[src] = takeWs(src);
+	[src] = takeLiteral(src, "where");
+	[src] = takeWs(src);
+	[src, expr] = takeExpr(src);
+	return [src, { type: "where", expr }];
 }
 
 function takeExpr(src: string): [string, ExpressionAST] {
