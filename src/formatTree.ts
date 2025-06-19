@@ -2,7 +2,7 @@ export type TreeLeaf = string | number | bigint;
 
 export type TreeNode = TreeLeaf | TreeNode[] | { [k: string]: TreeNode };
 
-const targetLength = 60;
+const targetLength = 40;
 
 export function formatTree(x: TreeNode, depth = 0): string {
 	if (typeof x === "string" || typeof x === "number" || typeof x === "bigint") {
