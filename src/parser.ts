@@ -1,3 +1,7 @@
+export type Term = StringTerm | NumericTerm;
+export type StringTerm = string;
+export type NumericTerm = number | bigint;
+
 export type QueryAST = {
 	type: "query";
 	search?: SearchAST;
@@ -28,8 +32,8 @@ export type BinaryOpAST = {
 
 export type KvAST = {
 	type: "kv";
-	key: string;
-	value: string;
+	key: StringTerm;
+	value: Term;
 };
 
 export type StatsAST = {
@@ -43,7 +47,7 @@ export function takeSearch(src: string): [string, SearchAST] {
 	for (let i = 0; i < 100; ++i) {
 		try {
 			let filter: FilterAST;
-			src = takeWs(src);
+			[src] = takeWs(src);
 			[src, filter] = takeFilter(src);
 			filters.push(filter);
 		} catch {
@@ -76,11 +80,13 @@ function takeOne<TMembers extends ((input: string) => [string, any])[]>(
 }
 
 function takeKv(input: string): [string, KvAST] {
-	let key: string, value: string;
-	input = takeWs(input);
-	[input, key] = takeRex(input, /\w+/);
+	let key: StringTerm, value: Term;
+	[input] = takeWs(input);
+	[input, key] = takeStringTerm(input);
+	[input] = takeWs(input);
 	[input] = takeStr(input, "=");
-	[input, value] = takeRex(input, /\w+/);
+	[input] = takeWs(input);
+	[input, value] = takeTerm(input);
 
 	return [
 		input,
@@ -94,9 +100,9 @@ function takeKv(input: string): [string, KvAST] {
 
 function takeUnaryOp(input: string): [string, UnaryOpAST] {
 	let op: UnaryOpType, operand: FilterAST;
-	input = takeWs(input);
+	[input] = takeWs(input);
 	[input, op] = takeStr(input, "not");
-	input = takeWs(input);
+	[input] = takeWs(input);
 	[input, operand] = takeFilter(input);
 
 	return [
@@ -109,16 +115,16 @@ function takeUnaryOp(input: string): [string, UnaryOpAST] {
 }
 
 function takeBinaryOp(input: string): [string, BinaryOpAST] {
-	let op: BinaryOpType, left: FilterAST, right: FilterAST;
-	input = takeWs(input);
+	let op: BinaryOpType, left: KvAST, right: FilterAST;
+	[input] = takeWs(input);
 	[input, left] = takeKv(input);
-	input = takeWs(input);
+	[input] = takeWs(input);
 	[input, op] = takeOne(
 		input,
 		(s) => takeStr(s, "and"),
 		(s) => takeStr(s, "or"),
 	);
-	input = takeWs(input);
+	[input] = takeWs(input);
 	[input, right] = takeFilter(input);
 
 	return [
@@ -131,10 +137,48 @@ function takeBinaryOp(input: string): [string, BinaryOpAST] {
 	];
 }
 
-function takeRex(input: string, rex: RegExp): [string, string] {
+function takeTerm(input: string): [string, Term] {
+	return takeOne(
+		input,
+		(s) => takeNumericTerm(s),
+		(s) => takeStringTerm(s),
+	);
+}
+
+function takeStringTerm(input: string): [string, StringTerm] {
+	return takeOne(
+		input,
+		(s) => takeRex(s, /"((?:[^\\"]|\\.)*)"/, 1),
+		(s) => takeRex(s, /'((?:[^\\']|\\.)*)'/, 1),
+		(s) => takeRex(s, /[\p{L}$_\-.]+/u),
+	);
+}
+
+function takeNumericTerm(input: string): [string, NumericTerm] {
+	return takeOne(
+		input,
+		(s) => {
+			const [rest, numStr] = takeRex(s, /-?\d+\.\d*/);
+			return [rest, Number.parseFloat(numStr)];
+		},
+		(s) => {
+			const [rest, numStr] = takeRex(s, /-?\d+/);
+			return [rest, BigInt(numStr)];
+		},
+	);
+}
+
+function takeWs(src: string): [string, string] {
+	return takeRex(src, /\s*/);
+}
+
+function takeRex(input: string, rex: RegExp, group = 0): [string, string] {
 	const result = rex.exec(input);
 	if (result?.index === 0) {
-		return [input.substring(result[0].length), result[0]];
+		if (result.length <= group) {
+			throw new Error(`Regex did not contain group ${group} in ${rex}`);
+		}
+		return [input.substring(result[group].length), result[group]];
 	}
 	throw new Error(`Does not match regex ${rex}`);
 }
@@ -144,14 +188,4 @@ function takeStr<T extends string>(input: string, match: T): [string, T] {
 		return [input.substring(match.length), match];
 	}
 	throw new Error(`Expected ${match}`);
-}
-
-function takeWs(src: string): string {
-	for (let i = 0; i < src.length; ++i) {
-		if (!/^\s/.test(src)) {
-			return src;
-		}
-		src = src.substring(1);
-	}
-	return "";
 }
