@@ -49,220 +49,210 @@ export type WhereCommandAST = {
 	expr: ExpressionAST;
 };
 
+export type ParseContext = {
+	source: string;
+	index: number;
+};
+
 export function parseQuery(src: string): QueryAST {
-	return takeQuery(src)[1];
+	const ctx = {
+		source: src,
+		index: 0,
+	};
+	return takeQuery(ctx);
 }
 
-export function takeQuery(src: string): [string, QueryAST] {
-	let pipeline: CommandAST[];
-	[src, pipeline] = takePipeline(src);
+export function takeQuery(ctx: ParseContext): QueryAST {
+	const pipeline = takePipeline(ctx);
 
-	return [
-		src,
-		{
-			type: "query",
-			pipeline,
-		},
-	];
+	return {
+		type: "query",
+		pipeline,
+	};
 }
 
-function takePipeline(src: string): [string, CommandAST[]] {
+function takePipeline(ctx: ParseContext): CommandAST[] {
 	const commands: CommandAST[] = [];
 	while (true) {
 		try {
-			let command: CommandAST;
-			[src] = takeWs(src);
-			[src, command] = takeCommand(src);
+			takeWs(ctx);
+			const command = takeCommand(ctx);
 			commands.push(command);
-			[src] = takeWs(src);
-			[src] = takeLiteral(src, "|");
+			takeWs(ctx);
+			takeLiteral(ctx, "|");
 		} catch {
 			break;
 		}
 	}
-	return [src, commands];
+	return commands;
 }
 
-function takeCommand(src: string): [string, CommandAST] {
-	return takeOne(src, takeStatsCommand, takeSearchCommand, takeWhereCommand);
+function takeCommand(ctx: ParseContext): CommandAST {
+	return takeOne(ctx, takeStatsCommand, takeSearchCommand, takeWhereCommand);
 }
 
-function takeSearchCommand(src: string): [string, SearchCommandAST] {
-	let command: SearchCommandAST;
-	[src] = takeWs(src);
-	[src] = takeLiteral(src, "search");
-	[src] = takeWs(src);
-	[src, command] = takeBareSearch(src);
-
-	return [src, command];
+function takeSearchCommand(ctx: ParseContext): SearchCommandAST {
+	takeWs(ctx);
+	takeLiteral(ctx, "search");
+	takeWs(ctx);
+	return takeBareSearch(ctx);
 }
 
-function takeBareSearch(src: string): [string, SearchCommandAST] {
+function takeBareSearch(ctx: ParseContext): SearchCommandAST {
 	const filters: ExpressionAST[] = [];
 	while (true) {
 		try {
-			let filter: ExpressionAST;
-			[src] = takeWs(src);
-			[src, filter] = takeExpr(src);
+			takeWs(ctx);
+			const filter = takeExpr(ctx);
 			filters.push(filter);
 		} catch {
 			break;
 		}
 	}
-	return [
-		src,
-		{
-			type: "search",
-			filters,
-		},
-	];
+	return {
+		type: "search",
+		filters,
+	};
 }
 
-function takeStatsCommand(src: string): [string, StatsCommandAST] {
-	[src] = takeWs(src);
-	[src] = takeLiteral(src, "stats");
-	return [src, { type: "stats" }];
+function takeStatsCommand(ctx: ParseContext): StatsCommandAST {
+	takeWs(ctx);
+	takeLiteral(ctx, "stats");
+	return { type: "stats" };
 }
 
-function takeWhereCommand(src: string): [string, WhereCommandAST] {
-	let expr: ExpressionAST;
-	[src] = takeWs(src);
-	[src] = takeLiteral(src, "where");
-	[src] = takeWs(src);
-	[src, expr] = takeExpr(src);
-	return [src, { type: "where", expr }];
+function takeWhereCommand(ctx: ParseContext): WhereCommandAST {
+	takeWs(ctx);
+	takeLiteral(ctx, "where");
+	takeWs(ctx);
+	const expr = takeExpr(ctx);
+	return { type: "where", expr };
 }
 
-function takeExpr(src: string): [string, ExpressionAST] {
-	return takeOne(src, takeBinaryOp, takeUnaryOp, takeTerm);
+function takeExpr(ctx: ParseContext): ExpressionAST {
+	return takeOne(ctx, takeBinaryOp, takeUnaryOp, takeTerm);
 }
 
-function takeTerm(input: string): [string, ExpressionAST] {
-	return takeOne(input, takeGroup, takeKv, takeNumeric, takeString);
+function takeTerm(ctx: ParseContext): ExpressionAST {
+	return takeOne(ctx, takeGroup, takeKv, takeNumeric, takeString);
 }
 
-function takeBinaryOp(input: string): [string, BinaryOpAST] {
-	let op: BinaryOpType, left: ExpressionAST, right: ExpressionAST;
-	[input] = takeWs(input);
-	[input, left] = takeTerm(input);
-	[input] = takeWs(input);
-	[input, op] = takeOne(
-		input,
-		(s) => takeLiteral(s, "and"),
-		(s) => takeLiteral(s, "or"),
+function takeBinaryOp(ctx: ParseContext): BinaryOpAST {
+	takeWs(ctx);
+	const left = takeTerm(ctx);
+	takeWs(ctx);
+	const op = takeOne(
+		ctx,
+		(c) => takeLiteral(c, "and"),
+		(c) => takeLiteral(c, "or"),
 	);
-	[input] = takeWs(input);
-	[input, right] = takeExpr(input);
+	takeWs(ctx);
+	const right = takeExpr(ctx);
 
-	return [
-		input,
-		{
-			type: op,
-			left,
-			right,
-		},
-	];
+	return {
+		type: op,
+		left,
+		right,
+	};
 }
 
-function takeUnaryOp(input: string): [string, UnaryOpAST] {
-	let op: UnaryOpType, operand: ExpressionAST;
-	[input] = takeWs(input);
-	[input, op] = takeLiteral(input, "not");
-	[input] = takeWs(input);
-	[input, operand] = takeExpr(input);
+function takeUnaryOp(ctx: ParseContext): UnaryOpAST {
+	takeWs(ctx);
+	const op = takeLiteral(ctx, "not");
+	takeWs(ctx);
+	const operand = takeExpr(ctx);
 
-	return [
-		input,
-		{
-			type: op,
-			operand,
-		},
-	];
+	return {
+		type: op,
+		operand,
+	};
 }
 
-function takeKv(input: string): [string, KvAST] {
-	let key: StringAST, value: ExpressionAST;
-	[input] = takeWs(input);
-	[input, key] = takeString(input);
-	[input] = takeWs(input);
-	[input] = takeLiteral(input, "=");
-	[input] = takeWs(input);
-	[input, value] = takeTerm(input);
+function takeKv(ctx: ParseContext): KvAST {
+	takeWs(ctx);
+	const key = takeString(ctx);
+	takeWs(ctx);
+	takeLiteral(ctx, "=");
+	takeWs(ctx);
+	const value = takeTerm(ctx);
 
-	return [
-		input,
-		{
-			type: "kv",
-			key,
-			value,
-		},
-	];
+	return {
+		type: "kv",
+		key,
+		value,
+	};
 }
 
-function takeGroup(input: string): [string, ExpressionAST] {
-	let expr: ExpressionAST;
-	[input] = takeWs(input);
-	[input] = takeLiteral(input, "(");
-	[input] = takeWs(input);
-	[input, expr] = takeExpr(input);
-	[input] = takeWs(input);
-	[input] = takeLiteral(input, ")");
-	return [input, expr];
+function takeGroup(ctx: ParseContext): ExpressionAST {
+	takeWs(ctx);
+	takeLiteral(ctx, "(");
+	takeWs(ctx);
+	const expr = takeExpr(ctx);
+	takeWs(ctx);
+	takeLiteral(ctx, ")");
+	return expr;
 }
 
-function takeString(input: string): [string, StringAST] {
+function takeString(ctx: ParseContext): StringAST {
 	return takeOne(
-		input,
-		(s) => takeRex(s, /"((?:[^\\"]|\\.)*)"/, 1),
-		(s) => takeRex(s, /'((?:[^\\']|\\.)*)'/, 1),
-		(s) => takeRex(s, /[\p{L}$_\-.]+/u),
+		ctx,
+		(c) => takeRex(c, /"((?:[^\\"]|\\.)*)"/, 1),
+		(c) => takeRex(c, /'((?:[^\\']|\\.)*)'/, 1),
+		(c) => takeRex(c, /[\p{L}$_\-.]+/u),
 	);
 }
 
-function takeNumeric(input: string): [string, NumericAST] {
+function takeNumeric(ctx: ParseContext): NumericAST {
 	return takeOne(
-		input,
-		(s) => {
-			const [rest, numStr] = takeRex(s, /-?\d+\.\d*/);
-			return [rest, Number.parseFloat(numStr)];
+		ctx,
+		(c) => {
+			const numStr = takeRex(c, /-?\d+\.\d*/);
+			return Number.parseFloat(numStr);
 		},
-		(s) => {
-			const [rest, numStr] = takeRex(s, /-?\d+/);
-			return [rest, BigInt(numStr)];
+		(c) => {
+			const numStr = takeRex(c, /-?\d+/);
+			return BigInt(numStr);
 		},
 	);
 }
 
-function takeWs(src: string): [string, string] {
-	return takeRex(src, /\s*/);
+function takeWs(ctx: ParseContext): string {
+	return takeRex(ctx, /\s*/);
 }
 
-function takeOne<TMembers extends ((input: string) => [string, any])[]>(
-	input: string,
+function takeOne<TMembers extends ((ctx: ParseContext) => any)[]>(
+	ctx: ParseContext,
 	...members: TMembers
 ): ReturnType<TMembers[number]> {
+	const originalIndex = ctx.index;
 	for (const member of members) {
 		try {
-			return member(input) as ReturnType<TMembers[number]>;
-		} catch {}
+			return member(ctx) as ReturnType<TMembers[number]>;
+		} catch {
+			ctx.index = originalIndex;
+		}
 	}
 	throw new Error("No matching members");
 }
 
-function takeRex(input: string, rex: RegExp, group = 0): [string, string] {
-	const result = rex.exec(input);
+function takeRex(ctx: ParseContext, rex: RegExp, group = 0): string {
+	const remaining = ctx.source.substring(ctx.index);
+	const result = rex.exec(remaining);
 	if (result?.index === 0) {
 		if (result.length <= group) {
 			throw new Error(`Regex did not contain group ${group} in ${rex}`);
 		}
-		return [input.substring(result[0].length), result[group]];
+		ctx.index += result[0].length;
+		return result[group];
 	}
 	throw new Error(`Does not match regex ${rex}`);
 }
 
-function takeLiteral<T extends string>(input: string, match: T): [string, T] {
-	if (input.startsWith(match)) {
-		return [input.substring(match.length), match];
+function takeLiteral<T extends string>(ctx: ParseContext, match: T): T {
+	const remaining = ctx.source.substring(ctx.index);
+	if (remaining.startsWith(match)) {
+		ctx.index += match.length;
+		return match;
 	}
 	throw new Error(`Expected ${match}`);
 }
