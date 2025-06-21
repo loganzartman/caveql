@@ -54,23 +54,6 @@ export type ParseContext = {
 	index: number;
 };
 
-export class ParseError extends Error {
-	readonly context: ParseContext;
-
-	constructor(
-		message: string,
-		readonly ctx: ParseContext,
-	) {
-		super(message);
-		this.name = "ParseError";
-		this.context = structuredClone(ctx);
-	}
-
-	toString(): string {
-		return `Parse error at index ${this.context.index}: ${this.message}`;
-	}
-}
-
 export function parseQuery(src: string): QueryAST {
 	const ctx = {
 		source: src,
@@ -97,12 +80,8 @@ function takePipeline(ctx: ParseContext): CommandAST[] {
 			commands.push(command);
 			takeWs(ctx);
 			takeLiteral(ctx, "|");
-		} catch (e) {
-			if (e instanceof ParseError) {
-				break;
-			} else {
-				throw e;
-			}
+		} catch {
+			break;
 		}
 	}
 	return commands;
@@ -126,12 +105,8 @@ function takeBareSearch(ctx: ParseContext): SearchCommandAST {
 			takeWs(ctx);
 			const filter = takeExpr(ctx);
 			filters.push(filter);
-		} catch (e) {
-			if (e instanceof ParseError) {
-				break;
-			} else {
-				throw e;
-			}
+		} catch {
+			break;
 		}
 	}
 	return {
@@ -221,9 +196,9 @@ function takeGroup(ctx: ParseContext): ExpressionAST {
 function takeString(ctx: ParseContext): StringAST {
 	return takeOne(
 		ctx,
-		(c) => takeRex(c, /"((?:[^\\"]|\\.)*)"/y, 1),
-		(c) => takeRex(c, /'((?:[^\\']|\\.)*)'/y, 1),
-		(c) => takeRex(c, /[\p{L}$_\-.]+/uy),
+		(c) => takeRex(c, /"((?:[^\\"]|\\.)*)"/, 1),
+		(c) => takeRex(c, /'((?:[^\\']|\\.)*)'/, 1),
+		(c) => takeRex(c, /[\p{L}$_\-.]+/u),
 	);
 }
 
@@ -231,18 +206,18 @@ function takeNumeric(ctx: ParseContext): NumericAST {
 	return takeOne(
 		ctx,
 		(c) => {
-			const numStr = takeRex(c, /-?\d+\.\d*/y);
+			const numStr = takeRex(c, /-?\d+\.\d*/);
 			return Number.parseFloat(numStr);
 		},
 		(c) => {
-			const numStr = takeRex(c, /-?\d+/y);
+			const numStr = takeRex(c, /-?\d+/);
 			return BigInt(numStr);
 		},
 	);
 }
 
 function takeWs(ctx: ParseContext): string {
-	return takeRex(ctx, /\s*/y);
+	return takeRex(ctx, /\s*/);
 }
 
 function takeOne<TMembers extends ((ctx: ParseContext) => any)[]>(
@@ -253,38 +228,31 @@ function takeOne<TMembers extends ((ctx: ParseContext) => any)[]>(
 	for (const member of members) {
 		try {
 			return member(ctx) as ReturnType<TMembers[number]>;
-		} catch (e) {
-			if (e instanceof ParseError) {
-				ctx.index = originalIndex;
-			} else {
-				throw e;
-			}
+		} catch {
+			ctx.index = originalIndex;
 		}
 	}
-	throw new ParseError("No matching members", ctx);
+	throw new Error("No matching members");
 }
 
 function takeRex(ctx: ParseContext, rex: RegExp, group = 0): string {
-	if (!rex.sticky) {
-		throw new Error("Regular expression must have the sticky flag set");
-	}
-	try {
-		rex.lastIndex = ctx.index;
-		const match = rex.exec(ctx.source);
-		if (match && match[group] !== undefined) {
-			ctx.index = rex.lastIndex;
-			return match[group];
+	const remaining = ctx.source.substring(ctx.index);
+	const result = rex.exec(remaining);
+	if (result?.index === 0) {
+		if (result.length <= group) {
+			throw new Error(`Regex did not contain group ${group} in ${rex}`);
 		}
-		throw new ParseError(`Expected match for group ${group} in ${rex}`, ctx);
-	} finally {
-		rex.lastIndex = 0;
+		ctx.index += result[0].length;
+		return result[group];
 	}
+	throw new Error(`Does not match regex ${rex}`);
 }
 
-function takeLiteral<T extends string>(ctx: ParseContext, str: T): T {
-	if (ctx.source.startsWith(str, ctx.index)) {
-		ctx.index += str.length;
-		return str;
+function takeLiteral<T extends string>(ctx: ParseContext, match: T): T {
+	const remaining = ctx.source.substring(ctx.index);
+	if (remaining.startsWith(match)) {
+		ctx.index += match.length;
+		return match;
 	}
-	throw new ParseError(`Expected ${str}`, ctx);
+	throw new Error(`Expected ${match}`);
 }
