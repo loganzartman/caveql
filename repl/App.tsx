@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatTree, parse } from "../src";
+import { formatTree, parseQuery } from "../src";
 
 export function App() {
 	const [source, setSource] = useState(() => {
@@ -12,7 +12,7 @@ export function App() {
 
 	let parseTree: string;
 	try {
-		parseTree = formatTree(parse(source));
+		parseTree = formatTree(parseQuery(source));
 		history.replaceState(undefined, "", `#${btoa(source)}`);
 	} catch (e) {
 		parseTree = `Error: ${e instanceof Error ? e.message : String(e)}`;

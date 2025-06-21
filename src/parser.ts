@@ -8,7 +8,6 @@ export type KvAST = {
 
 export type QueryAST = {
 	type: "query";
-	search: SearchCommandAST;
 	pipeline: CommandAST[];
 };
 
@@ -50,24 +49,45 @@ export type WhereCommandAST = {
 	expr: ExpressionAST;
 };
 
+export function parseQuery(src: string): QueryAST {
+	return takeQuery(src)[1];
+}
+
 export function takeQuery(src: string): [string, QueryAST] {
-	let search: SearchCommandAST;
 	let pipeline: CommandAST[];
-	[src] = takeWs(src);
-	[src, search] = takeOne(src, takeSearchCommand, takeBareSearch);
 	[src, pipeline] = takePipeline(src);
 
 	return [
 		src,
 		{
 			type: "query",
-			search,
 			pipeline,
 		},
 	];
 }
 
-export function takeSearchCommand(src: string): [string, SearchCommandAST] {
+function takePipeline(src: string): [string, CommandAST[]] {
+	const commands: CommandAST[] = [];
+	while (true) {
+		try {
+			let command: CommandAST;
+			[src] = takeWs(src);
+			[src, command] = takeCommand(src);
+			commands.push(command);
+			[src] = takeWs(src);
+			[src] = takeLiteral(src, "|");
+		} catch {
+			break;
+		}
+	}
+	return [src, commands];
+}
+
+function takeCommand(src: string): [string, CommandAST] {
+	return takeOne(src, takeStatsCommand, takeSearchCommand, takeWhereCommand);
+}
+
+function takeSearchCommand(src: string): [string, SearchCommandAST] {
 	let command: SearchCommandAST;
 	[src] = takeWs(src);
 	[src] = takeLiteral(src, "search");
@@ -77,7 +97,7 @@ export function takeSearchCommand(src: string): [string, SearchCommandAST] {
 	return [src, command];
 }
 
-export function takeBareSearch(src: string): [string, SearchCommandAST] {
+function takeBareSearch(src: string): [string, SearchCommandAST] {
 	const filters: ExpressionAST[] = [];
 	while (true) {
 		try {
@@ -96,27 +116,6 @@ export function takeBareSearch(src: string): [string, SearchCommandAST] {
 			filters,
 		},
 	];
-}
-
-function takePipeline(src: string): [string, CommandAST[]] {
-	const commands: CommandAST[] = [];
-	while (true) {
-		try {
-			let command: CommandAST;
-			[src] = takeWs(src);
-			[src] = takeLiteral(src, "|");
-			[src] = takeWs(src);
-			[src, command] = takeCommand(src);
-			commands.push(command);
-		} catch {
-			break;
-		}
-	}
-	return [src, commands];
-}
-
-function takeCommand(src: string): [string, CommandAST] {
-	return takeOne(src, takeStatsCommand, takeSearchCommand, takeWhereCommand);
 }
 
 function takeStatsCommand(src: string): [string, StatsCommandAST] {
