@@ -240,7 +240,15 @@ function takeEqualityExpr(ctx: ParseContext): ExpressionAST {
 }
 
 function takeComparisonExpr(ctx: ParseContext): ExpressionAST {
-	return takeBinaryLevel(ctx, takeUnaryExpr, [">=", "<=", ">", "<"]);
+	return takeBinaryLevel(ctx, takeAdditiveExpr, [">=", "<=", ">", "<"]);
+}
+
+function takeAdditiveExpr(ctx: ParseContext): ExpressionAST {
+	return takeBinaryLevel(ctx, takeMultiplicativeExpr, ["+", "-"]);
+}
+
+function takeMultiplicativeExpr(ctx: ParseContext): ExpressionAST {
+	return takeBinaryLevel(ctx, takeUnaryExpr, ["*", "/", "%"]);
 }
 
 function takeBinaryLevel(
