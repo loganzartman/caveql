@@ -25,14 +25,13 @@ function compilePipeline(pipeline: CommandAST[]): string {
 				${result}
 			)
     `;
-		console.log(result);
 	}
 	return `
-		function* run(records) {
+		(function* run(records) {
 			yield* (
 				${result}
 			);
-		}
+    })
 	`;
 }
 
