@@ -114,7 +114,7 @@ function compileMakeresultsCommand(command: MakeresultsCommandAST): string {
 			}
 			return {
 				_raw: JSON.stringify(item),
-				_time: new Date(),
+				_time: new Date().toISOString(),
 				...item,
 			};
 		});
@@ -127,14 +127,12 @@ function compileMakeresultsCommand(command: MakeresultsCommandAST): string {
     `;
 	}
 
-	const items = Array.from({ length: Number(command.count.value) }, () => ({
-		_time: new Date(),
-	}));
-
 	return `
     function*(records) {
       yield* records;
-      yield* ${JSON.stringify(items)};
+      for (let i = 0; i < ${command.count.value}; ++i) {
+        yield { _time: new Date().toISOString() };
+      }
     }
   `;
 }
