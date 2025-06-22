@@ -99,10 +99,28 @@ function takeWhereCommand(ctx: ParseContext): WhereCommandAST {
 	return { type: "where", expr };
 }
 
-export type ExpressionAST = UnaryOpAST | BinaryOpAST | NumericAST | StringAST;
+export type UnaryOpType = "not";
+
+export type UnaryOpAST = {
+	type: UnaryOpType;
+	operand: ExpressionAST;
+};
+
+export type ExpressionAST =
+	| UnaryOpAST
+	| BinaryOpAST
+	| KeyValueAST
+	| NumericAST
+	| StringAST;
+
+export type KeyValueAST = {
+	type: "kv";
+	key: string;
+	value: ExpressionAST;
+};
 
 function takeExpr(ctx: ParseContext): ExpressionAST {
-	return takeOne(ctx, takeBinaryOp, takeUnaryOp, takeTerm);
+	return takeOrExpr(ctx);
 }
 
 function takeTerm(ctx: ParseContext): ExpressionAST {
@@ -126,49 +144,69 @@ export type BinaryOpAST = {
 	right: ExpressionAST;
 };
 
-function takeBinaryOp(ctx: ParseContext): BinaryOpAST {
-	takeWs(ctx);
-	const left = takeTerm(ctx);
-	takeWs(ctx);
-	const op = takeLiteral(
-		ctx,
-		"and",
-		"or",
-		">=",
-		"<=",
-		"!=",
-		"==",
-		"=",
-		">",
-		"<",
-	);
-	takeWs(ctx);
-	const right = takeExpr(ctx);
+// Precedence levels (lowest to highest):
+// 1. OR
+// 2. AND
+// 3. Equality (=, ==, !=)
+// 4. Comparison (<, <=, >, >=)
+// 5. Unary (not)
+// 6. Terms (parentheses, literals)
 
-	return {
-		type: op,
-		left,
-		right,
-	};
+function takeOrExpr(ctx: ParseContext): ExpressionAST {
+	return takeBinaryLevel(takeAndExpr, ["or"])(ctx);
 }
 
-export type UnaryOpType = "not";
+function takeAndExpr(ctx: ParseContext): ExpressionAST {
+	return takeBinaryLevel(takeEqualityExpr, ["and"])(ctx);
+}
 
-export type UnaryOpAST = {
-	type: UnaryOpType;
-	operand: ExpressionAST;
-};
+function takeEqualityExpr(ctx: ParseContext): ExpressionAST {
+	return takeBinaryLevel(takeComparisonExpr, ["!=", "=="])(ctx);
+}
 
-function takeUnaryOp(ctx: ParseContext): UnaryOpAST {
-	takeWs(ctx);
-	const op = takeLiteral(ctx, "not");
-	takeWs(ctx);
-	const operand = takeExpr(ctx);
+function takeComparisonExpr(ctx: ParseContext): ExpressionAST {
+	return takeBinaryLevel(takeUnaryExpr, [">=", "<=", ">", "<"])(ctx);
+}
 
-	return {
-		type: op,
-		operand,
-	};
+function takeKeyValue(ctx: ParseContext): KeyValueAST {
+	const originalIndex = ctx.index;
+	try {
+		takeWs(ctx);
+		const key = takeString(ctx);
+		takeWs(ctx);
+		takeLiteral(ctx, "=");
+		takeWs(ctx);
+		const value = takeTerm(ctx);
+
+		return {
+			type: "kv",
+			key,
+			value,
+		};
+	} catch (e) {
+		ctx.index = originalIndex;
+		throw e;
+	}
+}
+
+function takeUnaryExpr(ctx: ParseContext): ExpressionAST {
+	try {
+		takeWs(ctx);
+		const op = takeLiteral(ctx, "not");
+		takeWs(ctx);
+		const operand = takeUnaryExpr(ctx); // Right-associative for unary ops
+		return {
+			type: op,
+			operand,
+		};
+	} catch {
+		// Try key-value first, then fall back to term
+		try {
+			return takeKeyValue(ctx);
+		} catch {
+			return takeTerm(ctx);
+		}
+	}
 }
 
 export type ParamAST = {
@@ -233,7 +271,7 @@ function takeWs(ctx: ParseContext): string {
 	return takeRex(ctx, /\s*/);
 }
 
-function takeOne<TMembers extends ((ctx: ParseContext) => any)[]>(
+function takeOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
 	ctx: ParseContext,
 	...members: TMembers
 ): ReturnType<TMembers[number]> {
@@ -246,6 +284,33 @@ function takeOne<TMembers extends ((ctx: ParseContext) => any)[]>(
 		}
 	}
 	throw new Error("No matching members");
+}
+
+function takeBinaryLevel(
+	nextLevel: (ctx: ParseContext) => ExpressionAST,
+	operators: string[],
+): (ctx: ParseContext) => ExpressionAST {
+	return (ctx: ParseContext) => {
+		let left = nextLevel(ctx);
+
+		while (true) {
+			try {
+				takeWs(ctx);
+				const op = takeLiteral(ctx, ...operators);
+				takeWs(ctx);
+				const right = nextLevel(ctx);
+				left = {
+					type: op as BinaryOpType,
+					left,
+					right,
+				};
+			} catch {
+				break;
+			}
+		}
+
+		return left;
+	};
 }
 
 function takeRex(ctx: ParseContext, rex: RegExp, group = 0): string {
