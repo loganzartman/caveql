@@ -1,57 +1,11 @@
-export type StringAST = string;
-export type NumericAST = number | bigint;
-export type KvAST = {
-	type: "kv";
-	key: StringAST;
-	value: ExpressionAST;
+export type ParseContext = {
+	source: string;
+	index: number;
 };
 
 export type QueryAST = {
 	type: "query";
 	pipeline: CommandAST[];
-};
-
-export type ExpressionAST =
-	| UnaryOpAST
-	| BinaryOpAST
-	| KvAST
-	| StringAST
-	| NumericAST;
-
-export type UnaryOpType = "not";
-
-export type UnaryOpAST = {
-	type: UnaryOpType;
-	operand: ExpressionAST;
-};
-
-export type BinaryOpType = "and" | "or";
-
-export type BinaryOpAST = {
-	type: BinaryOpType;
-	left: ExpressionAST;
-	right: ExpressionAST;
-};
-
-export type CommandAST = StatsCommandAST | SearchCommandAST | WhereCommandAST;
-
-export type SearchCommandAST = {
-	type: "search";
-	filters: ExpressionAST[];
-};
-
-export type StatsCommandAST = {
-	type: "stats";
-};
-
-export type WhereCommandAST = {
-	type: "where";
-	expr: ExpressionAST;
-};
-
-export type ParseContext = {
-	source: string;
-	index: number;
 };
 
 export function parseQuery(src: string): QueryAST {
@@ -87,9 +41,16 @@ function takePipeline(ctx: ParseContext): CommandAST[] {
 	return commands;
 }
 
+export type CommandAST = StatsCommandAST | SearchCommandAST | WhereCommandAST;
+
 function takeCommand(ctx: ParseContext): CommandAST {
 	return takeOne(ctx, takeStatsCommand, takeSearchCommand, takeWhereCommand);
 }
+
+export type SearchCommandAST = {
+	type: "search";
+	filters: ExpressionAST[];
+};
 
 function takeSearchCommand(ctx: ParseContext): SearchCommandAST {
 	takeWs(ctx);
@@ -115,11 +76,20 @@ function takeBareSearch(ctx: ParseContext): SearchCommandAST {
 	};
 }
 
+export type StatsCommandAST = {
+	type: "stats";
+};
+
 function takeStatsCommand(ctx: ParseContext): StatsCommandAST {
 	takeWs(ctx);
 	takeLiteral(ctx, "stats");
 	return { type: "stats" };
 }
+
+export type WhereCommandAST = {
+	type: "where";
+	expr: ExpressionAST;
+};
 
 function takeWhereCommand(ctx: ParseContext): WhereCommandAST {
 	takeWs(ctx);
@@ -129,22 +99,48 @@ function takeWhereCommand(ctx: ParseContext): WhereCommandAST {
 	return { type: "where", expr };
 }
 
+export type ExpressionAST = UnaryOpAST | BinaryOpAST | NumericAST | StringAST;
+
 function takeExpr(ctx: ParseContext): ExpressionAST {
 	return takeOne(ctx, takeBinaryOp, takeUnaryOp, takeTerm);
 }
 
 function takeTerm(ctx: ParseContext): ExpressionAST {
-	return takeOne(ctx, takeGroup, takeKv, takeNumeric, takeString);
+	return takeOne(ctx, takeGroup, takeNumeric, takeString);
 }
+
+export type BinaryOpType =
+	| "and"
+	| "or"
+	| "="
+	| "=="
+	| ">"
+	| "<"
+	| ">="
+	| "<="
+	| "!=";
+
+export type BinaryOpAST = {
+	type: BinaryOpType;
+	left: ExpressionAST;
+	right: ExpressionAST;
+};
 
 function takeBinaryOp(ctx: ParseContext): BinaryOpAST {
 	takeWs(ctx);
 	const left = takeTerm(ctx);
 	takeWs(ctx);
-	const op = takeOne(
+	const op = takeLiteral(
 		ctx,
-		(c) => takeLiteral(c, "and"),
-		(c) => takeLiteral(c, "or"),
+		"and",
+		"or",
+		">=",
+		"<=",
+		"!=",
+		"==",
+		"=",
+		">",
+		"<",
 	);
 	takeWs(ctx);
 	const right = takeExpr(ctx);
@@ -155,6 +151,13 @@ function takeBinaryOp(ctx: ParseContext): BinaryOpAST {
 		right,
 	};
 }
+
+export type UnaryOpType = "not";
+
+export type UnaryOpAST = {
+	type: UnaryOpType;
+	operand: ExpressionAST;
+};
 
 function takeUnaryOp(ctx: ParseContext): UnaryOpAST {
 	takeWs(ctx);
@@ -168,7 +171,13 @@ function takeUnaryOp(ctx: ParseContext): UnaryOpAST {
 	};
 }
 
-function takeKv(ctx: ParseContext): KvAST {
+export type ParamAST = {
+	type: "param";
+	key: StringAST;
+	value: ExpressionAST;
+};
+
+function takeParam(ctx: ParseContext): ParamAST {
 	takeWs(ctx);
 	const key = takeString(ctx);
 	takeWs(ctx);
@@ -177,7 +186,7 @@ function takeKv(ctx: ParseContext): KvAST {
 	const value = takeTerm(ctx);
 
 	return {
-		type: "kv",
+		type: "param",
 		key,
 		value,
 	};
@@ -193,6 +202,8 @@ function takeGroup(ctx: ParseContext): ExpressionAST {
 	return expr;
 }
 
+export type StringAST = string;
+
 function takeString(ctx: ParseContext): StringAST {
 	return takeOne(
 		ctx,
@@ -201,6 +212,8 @@ function takeString(ctx: ParseContext): StringAST {
 		(c) => takeRex(c, /[\p{L}$_\-.]+/u),
 	);
 }
+
+export type NumericAST = number | bigint;
 
 function takeNumeric(ctx: ParseContext): NumericAST {
 	return takeOne(
@@ -248,11 +261,16 @@ function takeRex(ctx: ParseContext, rex: RegExp, group = 0): string {
 	throw new Error(`Does not match regex ${rex}`);
 }
 
-function takeLiteral<T extends string>(ctx: ParseContext, match: T): T {
+function takeLiteral<T extends string[]>(
+	ctx: ParseContext,
+	...match: T
+): T[number] {
 	const remaining = ctx.source.substring(ctx.index);
-	if (remaining.startsWith(match)) {
-		ctx.index += match.length;
-		return match;
+	for (const m of match) {
+		if (remaining.startsWith(m)) {
+			ctx.index += m.length;
+			return m;
+		}
 	}
 	throw new Error(`Expected ${match}`);
 }
