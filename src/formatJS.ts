@@ -2,9 +2,26 @@ export function formatJS(code: string): string {
 	const INDENT = "  ";
 	let result = "";
 	let depth = 0;
+	let inString: string | null = null;
 
 	for (let i = 0; i < code.length; i++) {
 		const char = code[i];
+
+		// string literals
+		if ("\"'`".includes(char)) {
+			if (inString === char && code[i - 1] !== "\\") {
+				inString = null;
+			} else {
+				inString = char;
+			}
+			result += char;
+			continue;
+		}
+
+		if (inString) {
+			result += char;
+			continue;
+		}
 
 		// Skip whitespace
 		if (/\s/.test(char)) {
