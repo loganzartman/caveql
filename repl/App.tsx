@@ -20,7 +20,7 @@ export function App() {
 
 	return (
 		<div className="flex flex-row w-full h-full gap-4 p-4">
-			<div className="grow w-0">
+			<div className="grow w-0 flex flex-col gap-2">
 				Type query:
 				<textarea
 					className="w-full h-full font-mono border-2"
@@ -28,7 +28,7 @@ export function App() {
 					onChange={(e) => setSource(e.target.value)}
 				/>
 			</div>
-			<div className="grow w-0">
+			<div className="grow w-0 flex flex-col gap-2">
 				<div>Parse tree:</div>
 				<pre>{parseTree}</pre>
 			</div>
