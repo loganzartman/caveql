@@ -129,7 +129,7 @@ function takeMakeresultsCommand(ctx: ParseContext): MakeresultsCommandAST {
 	takeWs(ctx);
 	takeLiteral(ctx, "makeresults");
 
-	let count: NumericAST = 1n;
+	let count: NumericAST = { type: "val", value: 1n };
 	let format: "csv" | "json" | undefined;
 	let data: StringAST | undefined;
 
@@ -172,18 +172,18 @@ function takeMakeresultsCommand(ctx: ParseContext): MakeresultsCommandAST {
 
 export type EvalCommandAST = {
 	type: "eval";
-	bindings: [StringAST, ExpressionAST][];
+	bindings: [PropAST, ExpressionAST][];
 };
 
 function takeEvalCommand(ctx: ParseContext): EvalCommandAST {
 	takeWs(ctx);
 	takeLiteral(ctx, "eval");
 
-	const bindings: [StringAST, ExpressionAST][] = [];
+	const bindings: [PropAST, ExpressionAST][] = [];
 	while (true) {
 		try {
 			takeWs(ctx);
-			const name = takeString(ctx);
+			const name = takeProp(ctx);
 			takeWs(ctx);
 			takeLiteral(ctx, "=");
 			takeWs(ctx);
@@ -200,14 +200,19 @@ function takeEvalCommand(ctx: ParseContext): EvalCommandAST {
 	return { type: "eval", bindings };
 }
 
-export type ExpressionAST = UnaryOpAST | BinaryOpAST | NumericAST | StringAST;
+export type ExpressionAST =
+	| UnaryOpAST
+	| BinaryOpAST
+	| PropAST
+	| NumericAST
+	| StringAST;
 
 function takeExpr(ctx: ParseContext): ExpressionAST {
 	return takeOrExpr(ctx);
 }
 
 function takeTerm(ctx: ParseContext): ExpressionAST {
-	return takeOne(ctx, takeGroup, takeNumeric, takeString);
+	return takeOne(ctx, takeGroup, takeNumeric, takeProp, takeString);
 }
 
 export type BinaryOpType =
@@ -219,7 +224,12 @@ export type BinaryOpType =
 	| "<"
 	| ">="
 	| "<="
-	| "!=";
+	| "!="
+	| "+"
+	| "-"
+	| "*"
+	| "/"
+	| "%";
 
 export type BinaryOpAST = {
 	type: BinaryOpType;
@@ -254,7 +264,7 @@ function takeMultiplicativeExpr(ctx: ParseContext): ExpressionAST {
 function takeBinaryLevel(
 	ctx: ParseContext,
 	nextLevel: (ctx: ParseContext) => ExpressionAST,
-	operators: string[],
+	operators: BinaryOpType[],
 ): ExpressionAST {
 	let left = nextLevel(ctx);
 
@@ -322,29 +332,51 @@ function takeGroup(ctx: ParseContext): ExpressionAST {
 	return expr;
 }
 
-export type StringAST = string;
+export type PropAST = { type: "prop"; path: string[] };
+
+function takeProp(ctx: ParseContext): PropAST {
+	const path: string[] = [];
+	while (true) {
+		try {
+			takeWs(ctx);
+			const segment = takeRex(ctx, /[\p{L}\-$_]+/u);
+			path.push(segment);
+			takeWs(ctx);
+			takeLiteral(ctx, ".");
+		} catch {
+			break;
+		}
+	}
+	if (path.length === 0) {
+		throw new Error("Expected property path");
+	}
+	return { type: "prop", path };
+}
+
+export type StringAST = { type: "val"; value: string };
 
 function takeString(ctx: ParseContext): StringAST {
 	return takeOne(
 		ctx,
-		(c) => takeRex(c, /"((?:[^\\"]|\\.)*)"/, 1),
-		(c) => takeRex(c, /'((?:[^\\']|\\.)*)'/, 1),
-		(c) => takeRex(c, /[\p{L}$_\-.]+/u),
+		(c) =>
+			({ type: "val", value: takeRex(c, /"((?:[^\\"]|\\.)*)"/, 1) }) as const,
+		(c) =>
+			({ type: "val", value: takeRex(c, /'((?:[^\\']|\\.)*)'/, 1) }) as const,
 	);
 }
 
-export type NumericAST = number | bigint;
+export type NumericAST = { type: "val"; value: number | bigint };
 
 function takeNumeric(ctx: ParseContext): NumericAST {
 	return takeOne(
 		ctx,
 		(c) => {
 			const numStr = takeRex(c, /-?\d+\.\d*/);
-			return Number.parseFloat(numStr);
+			return { type: "val", value: Number.parseFloat(numStr) } as const;
 		},
 		(c) => {
 			const numStr = takeRex(c, /-?\d+/);
-			return BigInt(numStr);
+			return { type: "val", value: BigInt(numStr) } as const;
 		},
 	);
 }
