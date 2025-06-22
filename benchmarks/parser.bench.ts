@@ -20,7 +20,7 @@ compact(() => {
 				);
 				const query = `search ${clauses.join(" and ")}`;
 				yield () => do_not_optimize(parseQuery(query));
-			}).range("count", 1, 2 ** 16);
+			}).range("count", 1, 2 ** 8);
 		});
 
 		group(() => {
@@ -44,7 +44,7 @@ compact(() => {
 				}
 				const finalQuery = `search ${query}`;
 				yield () => do_not_optimize(parseQuery(finalQuery));
-			}).range("count", 1, 256);
+			}).range("count", 1, 2 ** 4);
 		});
 
 		group(() => {
@@ -56,7 +56,7 @@ compact(() => {
 				}
 				const query = commands.join(" | ");
 				yield () => do_not_optimize(parseQuery(query));
-			}).range("length", 1, 2 ** 16);
+			}).range("length", 1, 2 ** 8);
 		});
 
 		group(() => {
@@ -64,7 +64,7 @@ compact(() => {
 				const length = state.get("length");
 				const longQuery = `search message="${"x".repeat(length)}"`;
 				yield () => do_not_optimize(parseQuery(longQuery));
-			}).range("length", 1, 2 ** 20);
+			}).range("length", 1, 2 ** 10);
 		});
 	});
 });
