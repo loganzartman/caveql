@@ -41,10 +41,22 @@ function takePipeline(ctx: ParseContext): CommandAST[] {
 	return commands;
 }
 
-export type CommandAST = StatsCommandAST | SearchCommandAST | WhereCommandAST;
+export type CommandAST =
+	| EvalCommandAST
+	| MakeresultsCommandAST
+	| SearchCommandAST
+	| StatsCommandAST
+	| WhereCommandAST;
 
 function takeCommand(ctx: ParseContext): CommandAST {
-	return takeOne(ctx, takeStatsCommand, takeSearchCommand, takeWhereCommand);
+	return takeOne(
+		ctx,
+		takeEvalCommand,
+		takeMakeresultsCommand,
+		takeSearchCommand,
+		takeStatsCommand,
+		takeWhereCommand,
+	);
 }
 
 export type SearchCommandAST = {
@@ -99,12 +111,94 @@ function takeWhereCommand(ctx: ParseContext): WhereCommandAST {
 	return { type: "where", expr };
 }
 
-export type UnaryOpType = "not";
+export type MakeresultsCommandAST = {
+	type: "makeresults";
+	count: NumericAST;
+} & (
+	| {
+			format: "csv" | "json";
+			data: StringAST;
+	  }
+	| {
+			format?: undefined;
+			data?: undefined;
+	  }
+);
 
-export type UnaryOpAST = {
-	type: UnaryOpType;
-	operand: ExpressionAST;
+function takeMakeresultsCommand(ctx: ParseContext): MakeresultsCommandAST {
+	takeWs(ctx);
+	takeLiteral(ctx, "makeresults");
+
+	let count: NumericAST = 1n;
+	let format: "csv" | "json" | undefined;
+	let data: StringAST | undefined;
+
+	while (true) {
+		try {
+			takeWs(ctx);
+			takeOne(
+				ctx,
+				(c) => {
+					count = takeParam(c, "count", takeNumeric);
+				},
+				(c) => {
+					format = takeParam(c, "format", (c) => takeLiteral(c, "csv", "json"));
+				},
+				(c) => {
+					data = takeParam(c, "data", takeString);
+				},
+			);
+		} catch {
+			break;
+		}
+	}
+
+	if (format !== undefined || data !== undefined) {
+		if (format === undefined || data === undefined) {
+			throw new Error("If format or data is specified, both must be specified");
+		}
+		return {
+			type: "makeresults",
+			count,
+			format,
+			data,
+		};
+	}
+	return {
+		type: "makeresults",
+		count,
+	};
+}
+
+export type EvalCommandAST = {
+	type: "eval";
+	bindings: [StringAST, ExpressionAST][];
 };
+
+function takeEvalCommand(ctx: ParseContext): EvalCommandAST {
+	takeWs(ctx);
+	takeLiteral(ctx, "eval");
+
+	const bindings: [StringAST, ExpressionAST][] = [];
+	while (true) {
+		try {
+			takeWs(ctx);
+			const name = takeString(ctx);
+			takeWs(ctx);
+			takeLiteral(ctx, "=");
+			takeWs(ctx);
+			const expr = takeExpr(ctx);
+			bindings.push([name, expr]);
+
+			takeWs(ctx);
+			takeLiteral(ctx, ",");
+		} catch {
+			break;
+		}
+	}
+
+	return { type: "eval", bindings };
+}
 
 export type ExpressionAST = UnaryOpAST | BinaryOpAST | NumericAST | StringAST;
 
@@ -175,6 +269,13 @@ function takeBinaryLevel(
 	return left;
 }
 
+export type UnaryOpType = "not";
+
+export type UnaryOpAST = {
+	type: UnaryOpType;
+	operand: ExpressionAST;
+};
+
 function takeUnaryExpr(ctx: ParseContext): ExpressionAST {
 	try {
 		takeWs(ctx);
@@ -190,25 +291,17 @@ function takeUnaryExpr(ctx: ParseContext): ExpressionAST {
 	}
 }
 
-export type ParamAST = {
-	type: "param";
-	key: StringAST;
-	value: ExpressionAST;
-};
-
-function takeParam(ctx: ParseContext): ParamAST {
+function takeParam<T>(
+	ctx: ParseContext,
+	param: string,
+	takeValue: (ctx: ParseContext) => T,
+): T {
 	takeWs(ctx);
-	const key = takeString(ctx);
+	takeLiteral(ctx, param);
 	takeWs(ctx);
 	takeLiteral(ctx, "=");
 	takeWs(ctx);
-	const value = takeTerm(ctx);
-
-	return {
-		type: "param",
-		key,
-		value,
-	};
+	return takeValue(ctx);
 }
 
 function takeGroup(ctx: ParseContext): ExpressionAST {

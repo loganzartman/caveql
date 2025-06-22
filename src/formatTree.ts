@@ -1,10 +1,14 @@
-export type TreeLeaf = string | number | bigint;
+export type TreeLeaf = string | number | bigint | undefined;
 
 export type TreeNode = TreeLeaf | TreeNode[] | { [k: string]: TreeNode };
 
 const targetLength = 40;
 
 export function formatTree(x: TreeNode, depth = 0): string {
+	if (x === undefined) {
+		return "";
+	}
+
 	if (typeof x === "string" || typeof x === "number" || typeof x === "bigint") {
 		return String(x);
 	}
@@ -21,7 +25,9 @@ export function formatTree(x: TreeNode, depth = 0): string {
 		].join("\n");
 	}
 
-	const items = Object.entries(x).map(([k, v]) => `${k}: ${formatTree(v, 0)}`);
+	const items = Object.entries(x)
+		.filter(([, v]) => v !== "undefined")
+		.map(([k, v]) => `${k}: ${formatTree(v, 0)}`);
 	if (items.reduce((len, e) => len + e.length, 0) < targetLength) {
 		return `{ ${items.join(", ")} }`;
 	}
