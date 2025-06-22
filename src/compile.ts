@@ -139,11 +139,11 @@ function compileMakeresultsCommand(command: MakeresultsCommandAST): string {
   `;
 }
 
-function compileWhereCommand(command: WhereCommandAST): string {
+function compileWhereCommand(_command: WhereCommandAST): string {
 	throw new Error("not implemented");
 }
 
-function compileStatsCommand(command: StatsCommandAST): string {
+function compileStatsCommand(_command: StatsCommandAST): string {
 	throw new Error("not implemented");
 }
 

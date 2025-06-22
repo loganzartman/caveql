@@ -12,7 +12,16 @@ describe("parser", () => {
 		assert.deepEqual(result, {
 			type: "query",
 			pipeline: [
-				{ type: "search", filters: [{ type: "kv", key: "a", value: "b" }] },
+				{
+					type: "search",
+					filters: [
+						{
+							type: "=",
+							left: { type: "prop", path: ["a"] },
+							right: { type: "prop", path: ["b"] },
+						},
+					],
+				},
 			],
 		});
 	});
@@ -25,10 +34,22 @@ describe("parser", () => {
 				type: "or",
 				left: {
 					type: "and",
-					left: { type: "kv", key: "a", value: 1n },
-					right: { type: "kv", key: "b", value: 2n },
+					left: {
+						type: "=",
+						left: { type: "prop", path: ["a"] },
+						right: { type: "val", value: 1n },
+					},
+					right: {
+						type: "=",
+						left: { type: "prop", path: ["b"] },
+						right: { type: "val", value: 2n },
+					},
 				},
-				right: { type: "kv", key: "c", value: 3n },
+				right: {
+					type: "=",
+					left: { type: "prop", path: ["c"] },
+					right: { type: "val", value: 3n },
+				},
 			});
 		});
 
@@ -38,10 +59,18 @@ describe("parser", () => {
 			assert.deepEqual(searchCmd.filters[0], {
 				type: "and",
 				left: {
-					type: "not",
-					operand: { type: "kv", key: "a", value: 1n },
+					type: "=",
+					left: {
+						type: "not",
+						operand: { type: "prop", path: ["a"] },
+					},
+					right: { type: "val", value: 1n },
 				},
-				right: { type: "kv", key: "b", value: 2n },
+				right: {
+					type: "=",
+					left: { type: "prop", path: ["b"] },
+					right: { type: "val", value: 2n },
+				},
 			});
 		});
 
@@ -51,11 +80,19 @@ describe("parser", () => {
 			assert.deepEqual(searchCmd.filters[0], {
 				type: "and",
 				left: {
-					type: ">",
-					left: { type: "kv", key: "a", value: 1n },
-					right: 0n,
+					type: "=",
+					left: { type: "prop", path: ["a"] },
+					right: {
+						type: ">",
+						left: { type: "val", value: 1n },
+						right: { type: "val", value: 0n },
+					},
 				},
-				right: { type: "kv", key: "b", value: 2n },
+				right: {
+					type: "=",
+					left: { type: "prop", path: ["b"] },
+					right: { type: "val", value: 2n },
+				},
 			});
 		});
 
@@ -64,7 +101,11 @@ describe("parser", () => {
 			const searchCmd = result.pipeline[0] as SearchCommandAST;
 			assert.deepEqual(searchCmd.filters[0], {
 				type: "not",
-				operand: { type: "kv", key: "a", value: 1n },
+				operand: {
+					type: "=",
+					left: { type: "prop", path: ["a"] },
+					right: { type: "val", value: 1n },
+				},
 			});
 		});
 	});
@@ -77,14 +118,20 @@ describe("parser", () => {
 				pipeline: [
 					{
 						type: "search",
-						filters: [{ type: "kv", key: "a", value: "b" }],
+						filters: [
+							{
+								type: "=",
+								left: { type: "prop", path: ["a"] },
+								right: { type: "prop", path: ["b"] },
+							},
+						],
 					},
 					{
 						type: "where",
 						expr: {
 							type: "<",
-							left: "a",
-							right: 2n,
+							left: { type: "prop", path: ["a"] },
+							right: { type: "val", value: 2n },
 						},
 					},
 				],
@@ -98,14 +145,20 @@ describe("parser", () => {
 				pipeline: [
 					{
 						type: "search",
-						filters: [{ type: "kv", key: "a", value: "b" }],
+						filters: [
+							{
+								type: "=",
+								left: { type: "prop", path: ["a"] },
+								right: { type: "prop", path: ["b"] },
+							},
+						],
 					},
 					{
 						type: "where",
 						expr: {
 							type: "<",
-							left: "a",
-							right: 2n,
+							left: { type: "prop", path: ["a"] },
+							right: { type: "val", value: 2n },
 						},
 					},
 					{
@@ -125,8 +178,16 @@ describe("parser", () => {
 						filters: [
 							{
 								type: "and",
-								left: { type: "kv", key: "x", value: 1n },
-								right: { type: "kv", key: "y", value: 2n },
+								left: {
+									type: "=",
+									left: { type: "prop", path: ["x"] },
+									right: { type: "val", value: 1n },
+								},
+								right: {
+									type: "=",
+									left: { type: "prop", path: ["y"] },
+									right: { type: "val", value: 2n },
+								},
 							},
 						],
 					},
@@ -136,13 +197,13 @@ describe("parser", () => {
 							type: "or",
 							left: {
 								type: ">",
-								left: "z",
-								right: 5n,
+								left: { type: "prop", path: ["z"] },
+								right: { type: "val", value: 5n },
 							},
 							right: {
 								type: "<",
-								left: "w",
-								right: 10n,
+								left: { type: "prop", path: ["w"] },
+								right: { type: "val", value: 10n },
 							},
 						},
 					},
@@ -157,7 +218,7 @@ describe("parser", () => {
 			const whereCmd = result.pipeline[0] as WhereCommandAST;
 			assert.deepEqual(whereCmd, {
 				type: "where",
-				expr: "a",
+				expr: { type: "prop", path: ["a"] },
 			});
 		});
 
@@ -166,7 +227,7 @@ describe("parser", () => {
 			const whereCmd = result.pipeline[0] as WhereCommandAST;
 			assert.deepEqual(whereCmd, {
 				type: "where",
-				expr: 123n,
+				expr: { type: "val", value: 123n },
 			});
 		});
 
@@ -175,7 +236,7 @@ describe("parser", () => {
 			const whereCmd = result.pipeline[0] as WhereCommandAST;
 			assert.deepEqual(whereCmd, {
 				type: "where",
-				expr: "hello",
+				expr: { type: "val", value: "hello" },
 			});
 		});
 	});
@@ -196,8 +257,8 @@ describe("parser", () => {
 				type: "where",
 				expr: {
 					type: ">=",
-					left: "a",
-					right: 5n,
+					left: { type: "prop", path: ["a"] },
+					right: { type: "val", value: 5n },
 				},
 			});
 		});

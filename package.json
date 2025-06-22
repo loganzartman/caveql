@@ -27,6 +27,8 @@
 		"build": "parcel build",
 		"repl": "parcel repl/index.html",
 		"test": "node --import tsx --test **/*.test.ts",
+		"check": "biome check",
+		"check:fix": "biome check --write",
 		"bench": "node --import tsx benchmarks/parser.bench.ts"
 	},
 	"devDependencies": {
