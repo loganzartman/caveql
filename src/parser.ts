@@ -1,6 +1,7 @@
 export type ParseContext = {
 	source: string;
 	index: number;
+	compareExpr: boolean;
 };
 
 export type QueryAST = {
@@ -12,6 +13,7 @@ export function parseQuery(src: string): QueryAST {
 	const ctx = {
 		source: src,
 		index: 0,
+		compareExpr: false,
 	};
 	return takeQuery(ctx);
 }
@@ -76,10 +78,13 @@ function takeBareSearch(ctx: ParseContext): SearchCommandAST {
 	while (true) {
 		try {
 			takeWs(ctx);
+			ctx.compareExpr = true;
 			const filter = takeExpr(ctx);
 			filters.push(filter);
 		} catch {
 			break;
+		} finally {
+			ctx.compareExpr = false;
 		}
 	}
 	return {
@@ -213,6 +218,8 @@ function takeTerm(ctx: ParseContext): ExpressionAST {
 export type BinaryOpType =
 	| "and"
 	| "or"
+	| "AND"
+	| "OR"
 	| "="
 	| "=="
 	| ">"
@@ -233,10 +240,16 @@ export type BinaryOpAST = {
 };
 
 function takeOrExpr(ctx: ParseContext): ExpressionAST {
+	if (ctx.compareExpr) {
+		return takeBinaryLevel(ctx, takeAndExpr, ["OR"]);
+	}
 	return takeBinaryLevel(ctx, takeAndExpr, ["or"]);
 }
 
 function takeAndExpr(ctx: ParseContext): ExpressionAST {
+	if (ctx.compareExpr) {
+		return takeBinaryLevel(ctx, takeEqualityExpr, ["AND"]);
+	}
 	return takeBinaryLevel(ctx, takeEqualityExpr, ["and"]);
 }
 
@@ -282,7 +295,7 @@ function takeBinaryLevel(
 	return left;
 }
 
-export type UnaryOpType = "not";
+export type UnaryOpType = "not" | "NOT";
 
 export type UnaryOpAST = {
 	type: UnaryOpType;
@@ -292,9 +305,15 @@ export type UnaryOpAST = {
 function takeUnaryExpr(ctx: ParseContext): ExpressionAST {
 	try {
 		takeWs(ctx);
-		const op = takeLiteral(ctx, "not");
+		let op: UnaryOpType;
+		if (ctx.compareExpr) {
+			op = takeLiteral(ctx, "NOT");
+		} else {
+			op = takeLiteral(ctx, "not");
+		}
+
 		takeWs(ctx);
-		const operand = takeUnaryExpr(ctx);
+		const operand = takeExpr(ctx);
 		return {
 			type: op,
 			operand,

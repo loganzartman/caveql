@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+	type EvalCommandAST,
 	parseQuery,
 	type SearchCommandAST,
 	type WhereCommandAST,
@@ -26,14 +27,47 @@ describe("parser", () => {
 		});
 	});
 
-	describe("operator precedence", () => {
-		it("handles AND with higher precedence than OR", () => {
+	describe("search filters", () => {
+		it("parses multiple search terms as separate filters", () => {
 			const result = parseQuery("search a=1 and b=2 or c=3");
 			const searchCmd = result.pipeline[0] as SearchCommandAST;
+			// In Splunk, this would be searching for records containing "a=1", "and", "b=2", "or", "c=3" as separate terms
+			assert.equal(searchCmd.filters.length, 5);
 			assert.deepEqual(searchCmd.filters[0], {
-				type: "or",
+				type: "=",
+				left: { type: "string", quoted: false, value: "a" },
+				right: { type: "number", value: 1n },
+			});
+			assert.deepEqual(searchCmd.filters[1], {
+				type: "string",
+				quoted: false,
+				value: "and",
+			});
+			assert.deepEqual(searchCmd.filters[2], {
+				type: "=",
+				left: { type: "string", quoted: false, value: "b" },
+				right: { type: "number", value: 2n },
+			});
+			assert.deepEqual(searchCmd.filters[3], {
+				type: "string",
+				quoted: false,
+				value: "or",
+			});
+			assert.deepEqual(searchCmd.filters[4], {
+				type: "=",
+				left: { type: "string", quoted: false, value: "c" },
+				right: { type: "number", value: 3n },
+			});
+		});
+
+		it("parses logical expressions using uppercase operators", () => {
+			const result = parseQuery("search a=1 AND b=2 OR NOT c=3");
+			const searchCmd = result.pipeline[0] as SearchCommandAST;
+			assert.equal(searchCmd.filters.length, 1);
+			assert.deepEqual(searchCmd.filters[0], {
+				type: "OR",
 				left: {
-					type: "and",
+					type: "AND",
 					left: {
 						type: "=",
 						left: { type: "string", quoted: false, value: "a" },
@@ -46,61 +80,21 @@ describe("parser", () => {
 					},
 				},
 				right: {
-					type: "=",
-					left: { type: "string", quoted: false, value: "c" },
-					right: { type: "number", value: 3n },
-				},
-			});
-		});
-
-		it("handles NOT with higher precedence than AND", () => {
-			const result = parseQuery("search not a=1 and b=2");
-			const searchCmd = result.pipeline[0] as SearchCommandAST;
-			assert.deepEqual(searchCmd.filters[0], {
-				type: "and",
-				left: {
-					type: "=",
-					left: {
-						type: "not",
-						operand: { type: "string", quoted: false, value: "a" },
+					type: "NOT",
+					operand: {
+						type: "=",
+						left: { type: "string", quoted: false, value: "c" },
+						right: { type: "number", value: 3n },
 					},
-					right: { type: "number", value: 1n },
-				},
-				right: {
-					type: "=",
-					left: { type: "string", quoted: false, value: "b" },
-					right: { type: "number", value: 2n },
-				},
-			});
-		});
-
-		it("handles comparison operators with correct precedence", () => {
-			const result = parseQuery("search a=1 > 0 and b=2");
-			const searchCmd = result.pipeline[0] as SearchCommandAST;
-			assert.deepEqual(searchCmd.filters[0], {
-				type: "and",
-				left: {
-					type: "=",
-					left: { type: "string", quoted: false, value: "a" },
-					right: {
-						type: ">",
-						left: { type: "number", value: 1n },
-						right: { type: "number", value: 0n },
-					},
-				},
-				right: {
-					type: "=",
-					left: { type: "string", quoted: false, value: "b" },
-					right: { type: "number", value: 2n },
 				},
 			});
 		});
 
 		it("respects parentheses for grouping", () => {
-			const result = parseQuery("search not (a=1)");
+			const result = parseQuery("search NOT (a=1)");
 			const searchCmd = result.pipeline[0] as SearchCommandAST;
 			assert.deepEqual(searchCmd.filters[0], {
-				type: "not",
+				type: "NOT",
 				operand: {
 					type: "=",
 					left: { type: "string", quoted: false, value: "a" },
@@ -177,17 +171,19 @@ describe("parser", () => {
 						type: "search",
 						filters: [
 							{
-								type: "and",
-								left: {
-									type: "=",
-									left: { type: "string", quoted: false, value: "x" },
-									right: { type: "number", value: 1n },
-								},
-								right: {
-									type: "=",
-									left: { type: "string", quoted: false, value: "y" },
-									right: { type: "number", value: 2n },
-								},
+								type: "=",
+								left: { type: "string", quoted: false, value: "x" },
+								right: { type: "number", value: 1n },
+							},
+							{
+								type: "string",
+								quoted: false,
+								value: "and",
+							},
+							{
+								type: "=",
+								left: { type: "string", quoted: false, value: "y" },
+								right: { type: "number", value: 2n },
 							},
 						],
 					},
@@ -259,6 +255,66 @@ describe("parser", () => {
 					type: ">=",
 					left: { type: "string", quoted: false, value: "a" },
 					right: { type: "number", value: 5n },
+				},
+			});
+		});
+	});
+
+	describe("operator case sensitivity", () => {
+		it("uses uppercase operators (AND, OR, NOT) in search command comparison expressions", () => {
+			const result = parseQuery("search a=1 AND b=2 OR NOT c=3");
+			const searchCmd = result.pipeline[0] as SearchCommandAST;
+			assert.deepEqual(searchCmd.filters[0], {
+				type: "OR",
+				left: {
+					type: "AND",
+					left: {
+						type: "=",
+						left: { type: "string", quoted: false, value: "a" },
+						right: { type: "number", value: 1n },
+					},
+					right: {
+						type: "=",
+						left: { type: "string", quoted: false, value: "b" },
+						right: { type: "number", value: 2n },
+					},
+				},
+				right: {
+					type: "NOT",
+					operand: {
+						type: "=",
+						left: { type: "string", quoted: false, value: "c" },
+						right: { type: "number", value: 3n },
+					},
+				},
+			});
+		});
+
+		it("uses lowercase operators (and, or, not) in eval command expressions", () => {
+			const result = parseQuery("eval result = a=1 and b=2 or not c=3");
+			const evalCmd = result.pipeline[0] as EvalCommandAST;
+			assert.deepEqual(evalCmd.bindings[0][1], {
+				type: "or",
+				left: {
+					type: "and",
+					left: {
+						type: "=",
+						left: { type: "string", quoted: false, value: "a" },
+						right: { type: "number", value: 1n },
+					},
+					right: {
+						type: "=",
+						left: { type: "string", quoted: false, value: "b" },
+						right: { type: "number", value: 2n },
+					},
+				},
+				right: {
+					type: "not",
+					operand: {
+						type: "=",
+						left: { type: "string", quoted: false, value: "c" },
+						right: { type: "number", value: 3n },
+					},
 				},
 			});
 		});
