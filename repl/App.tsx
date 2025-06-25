@@ -11,8 +11,9 @@ export function App() {
 		}
 	});
 
-	let treeString: string;
-	let code: string;
+	let error: string | null = null;
+	let treeString: string | null = null;
+	let code: string | null = null;
 	let results: Record<string, unknown>[] | null;
 	try {
 		const tree = parseQuery(source);
@@ -23,8 +24,7 @@ export function App() {
 		results = [...resultsGenerator];
 		history.replaceState(undefined, "", `#${btoa(source)}`);
 	} catch (e) {
-		treeString = `Error: ${e instanceof Error ? e.message : String(e)}`;
-		code = treeString;
+		error = `Error: ${e instanceof Error ? e.message : String(e)}`;
 		results = null;
 	}
 
@@ -41,11 +41,15 @@ export function App() {
 			<div className="flex-2/4 grow h-0 flex flex-row gap-4">
 				<div className="grow w-0 flex flex-col gap-2">
 					<div>Parse tree:</div>
-					<pre className="text-wrap break-all overflow-auto">{treeString}</pre>
+					<pre className="text-wrap break-all overflow-auto">
+						{treeString ?? error}
+					</pre>
 				</div>
 				<div className="grow w-0 flex flex-col gap-2">
 					<div>Generated code:</div>
-					<pre className="text-wrap break-all overflow-auto">{code}</pre>
+					<pre className="text-wrap break-all overflow-auto">
+						{code ?? error}
+					</pre>
 				</div>
 			</div>
 			<div className="flex-1/4 grow h-0 overflow-auto">

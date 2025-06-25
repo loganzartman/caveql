@@ -48,6 +48,7 @@ export type CommandAST =
 	| MakeresultsCommandAST
 	| SearchCommandAST
 	| StatsCommandAST
+	| StreamstatsCommandAST
 	| WhereCommandAST;
 
 function takeCommand(ctx: ParseContext): CommandAST {
@@ -57,6 +58,7 @@ function takeCommand(ctx: ParseContext): CommandAST {
 		takeMakeresultsCommand,
 		takeSearchCommand,
 		takeStatsCommand,
+		takeStreamstatsCommand,
 		takeWhereCommand,
 	);
 }
@@ -95,12 +97,80 @@ function takeBareSearch(ctx: ParseContext): SearchCommandAST {
 
 export type StatsCommandAST = {
 	type: "stats";
+	aggregations: AggregationTermAST[];
 };
 
 function takeStatsCommand(ctx: ParseContext): StatsCommandAST {
 	takeWs(ctx);
 	takeLiteral(ctx, "stats");
-	return { type: "stats" };
+
+	const terms: AggregationTermAST[] = [];
+	while (true) {
+		try {
+			takeWs(ctx);
+			const term = takeAggregationTerm(ctx);
+			terms.push(term);
+		} catch {
+			break;
+		}
+	}
+	return { type: "stats", aggregations: terms };
+}
+
+export type AggregationTermType =
+	| "count"
+	| "distinct"
+	| "sum"
+	| "avg"
+	| "min"
+	| "max"
+	| "mode"
+	| "median"
+	| "perc";
+
+export type AggregationTermAST = {
+	type: AggregationTermType;
+	field?: StringAST;
+};
+
+function takeAggregationTerm(ctx: ParseContext): AggregationTermAST {
+	takeWs(ctx);
+	const type = takeLiteral(
+		ctx,
+		"count",
+		"distinct",
+		"sum",
+		"avg",
+		"min",
+		"max",
+		"mode",
+		"median",
+		"perc",
+	);
+
+	let field: StringAST | undefined;
+	try {
+		takeWs(ctx);
+		takeLiteral(ctx, "(");
+		takeWs(ctx);
+		field = takeString(ctx);
+		takeWs(ctx);
+		takeLiteral(ctx, ")");
+	} catch {
+		// pass
+	}
+
+	return { type, field };
+}
+
+export type StreamstatsCommandAST = {
+	type: "streamstats";
+};
+
+function takeStreamstatsCommand(ctx: ParseContext): StreamstatsCommandAST {
+	takeWs(ctx);
+	takeLiteral(ctx, "streamstats");
+	return { type: "streamstats" };
 }
 
 export type WhereCommandAST = {
