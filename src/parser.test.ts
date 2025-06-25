@@ -17,8 +17,8 @@ describe("parser", () => {
 					filters: [
 						{
 							type: "=",
-							left: { type: "prop", path: ["a"] },
-							right: { type: "prop", path: ["b"] },
+							left: { type: "string", quoted: false, value: "a" },
+							right: { type: "string", quoted: false, value: "b" },
 						},
 					],
 				},
@@ -36,19 +36,19 @@ describe("parser", () => {
 					type: "and",
 					left: {
 						type: "=",
-						left: { type: "prop", path: ["a"] },
-						right: { type: "val", value: 1n },
+						left: { type: "string", quoted: false, value: "a" },
+						right: { type: "number", value: 1n },
 					},
 					right: {
 						type: "=",
-						left: { type: "prop", path: ["b"] },
-						right: { type: "val", value: 2n },
+						left: { type: "string", quoted: false, value: "b" },
+						right: { type: "number", value: 2n },
 					},
 				},
 				right: {
 					type: "=",
-					left: { type: "prop", path: ["c"] },
-					right: { type: "val", value: 3n },
+					left: { type: "string", quoted: false, value: "c" },
+					right: { type: "number", value: 3n },
 				},
 			});
 		});
@@ -62,14 +62,14 @@ describe("parser", () => {
 					type: "=",
 					left: {
 						type: "not",
-						operand: { type: "prop", path: ["a"] },
+						operand: { type: "string", quoted: false, value: "a" },
 					},
-					right: { type: "val", value: 1n },
+					right: { type: "number", value: 1n },
 				},
 				right: {
 					type: "=",
-					left: { type: "prop", path: ["b"] },
-					right: { type: "val", value: 2n },
+					left: { type: "string", quoted: false, value: "b" },
+					right: { type: "number", value: 2n },
 				},
 			});
 		});
@@ -81,17 +81,17 @@ describe("parser", () => {
 				type: "and",
 				left: {
 					type: "=",
-					left: { type: "prop", path: ["a"] },
+					left: { type: "string", quoted: false, value: "a" },
 					right: {
 						type: ">",
-						left: { type: "val", value: 1n },
-						right: { type: "val", value: 0n },
+						left: { type: "number", value: 1n },
+						right: { type: "number", value: 0n },
 					},
 				},
 				right: {
 					type: "=",
-					left: { type: "prop", path: ["b"] },
-					right: { type: "val", value: 2n },
+					left: { type: "string", quoted: false, value: "b" },
+					right: { type: "number", value: 2n },
 				},
 			});
 		});
@@ -103,8 +103,8 @@ describe("parser", () => {
 				type: "not",
 				operand: {
 					type: "=",
-					left: { type: "prop", path: ["a"] },
-					right: { type: "val", value: 1n },
+					left: { type: "string", quoted: false, value: "a" },
+					right: { type: "number", value: 1n },
 				},
 			});
 		});
@@ -121,8 +121,8 @@ describe("parser", () => {
 						filters: [
 							{
 								type: "=",
-								left: { type: "prop", path: ["a"] },
-								right: { type: "prop", path: ["b"] },
+								left: { type: "string", quoted: false, value: "a" },
+								right: { type: "string", quoted: false, value: "b" },
 							},
 						],
 					},
@@ -130,8 +130,8 @@ describe("parser", () => {
 						type: "where",
 						expr: {
 							type: "<",
-							left: { type: "prop", path: ["a"] },
-							right: { type: "val", value: 2n },
+							left: { type: "string", quoted: false, value: "a" },
+							right: { type: "number", value: 2n },
 						},
 					},
 				],
@@ -148,8 +148,8 @@ describe("parser", () => {
 						filters: [
 							{
 								type: "=",
-								left: { type: "prop", path: ["a"] },
-								right: { type: "prop", path: ["b"] },
+								left: { type: "string", quoted: false, value: "a" },
+								right: { type: "string", quoted: false, value: "b" },
 							},
 						],
 					},
@@ -157,8 +157,8 @@ describe("parser", () => {
 						type: "where",
 						expr: {
 							type: "<",
-							left: { type: "prop", path: ["a"] },
-							right: { type: "val", value: 2n },
+							left: { type: "string", quoted: false, value: "a" },
+							right: { type: "number", value: 2n },
 						},
 					},
 					{
@@ -180,13 +180,13 @@ describe("parser", () => {
 								type: "and",
 								left: {
 									type: "=",
-									left: { type: "prop", path: ["x"] },
-									right: { type: "val", value: 1n },
+									left: { type: "string", quoted: false, value: "x" },
+									right: { type: "number", value: 1n },
 								},
 								right: {
 									type: "=",
-									left: { type: "prop", path: ["y"] },
-									right: { type: "val", value: 2n },
+									left: { type: "string", quoted: false, value: "y" },
+									right: { type: "number", value: 2n },
 								},
 							},
 						],
@@ -197,13 +197,13 @@ describe("parser", () => {
 							type: "or",
 							left: {
 								type: ">",
-								left: { type: "prop", path: ["z"] },
-								right: { type: "val", value: 5n },
+								left: { type: "string", quoted: false, value: "z" },
+								right: { type: "number", value: 5n },
 							},
 							right: {
 								type: "<",
-								left: { type: "prop", path: ["w"] },
-								right: { type: "val", value: 10n },
+								left: { type: "string", quoted: false, value: "w" },
+								right: { type: "number", value: 10n },
 							},
 						},
 					},
@@ -218,7 +218,7 @@ describe("parser", () => {
 			const whereCmd = result.pipeline[0] as WhereCommandAST;
 			assert.deepEqual(whereCmd, {
 				type: "where",
-				expr: { type: "prop", path: ["a"] },
+				expr: { type: "string", quoted: false, value: "a" },
 			});
 		});
 
@@ -227,7 +227,7 @@ describe("parser", () => {
 			const whereCmd = result.pipeline[0] as WhereCommandAST;
 			assert.deepEqual(whereCmd, {
 				type: "where",
-				expr: { type: "val", value: 123n },
+				expr: { type: "number", value: 123n },
 			});
 		});
 
@@ -236,7 +236,7 @@ describe("parser", () => {
 			const whereCmd = result.pipeline[0] as WhereCommandAST;
 			assert.deepEqual(whereCmd, {
 				type: "where",
-				expr: { type: "val", value: "hello" },
+				expr: { type: "string", quoted: true, value: "hello" },
 			});
 		});
 	});
@@ -257,8 +257,8 @@ describe("parser", () => {
 				type: "where",
 				expr: {
 					type: ">=",
-					left: { type: "prop", path: ["a"] },
-					right: { type: "val", value: 5n },
+					left: { type: "string", quoted: false, value: "a" },
+					right: { type: "number", value: 5n },
 				},
 			});
 		});

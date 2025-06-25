@@ -4,5 +4,15 @@
 	"editor.codeActionsOnSave": {
 		"source.fixAll.biome": "always",
 		"source.organizeImports": "always"
-	}
+	},
+	"nodejs-testing.extensions": [
+		{
+			"extensions": ["mjs", "cjs", "js"],
+			"parameters": []
+		},
+		{
+			"extensions": ["mts", "cts", "ts"],
+			"parameters": ["--import", "tsx"]
+		}
+	]
 }

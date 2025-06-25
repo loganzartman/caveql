@@ -1,14 +1,15 @@
 import { formatJS } from "./formatJS";
 import { impossible } from "./impossible";
-import type {
-	CommandAST,
-	EvalCommandAST,
-	ExpressionAST,
-	MakeresultsCommandAST,
-	QueryAST,
-	SearchCommandAST,
-	StatsCommandAST,
-	WhereCommandAST,
+import {
+	asPath,
+	type CommandAST,
+	type EvalCommandAST,
+	type ExpressionAST,
+	type MakeresultsCommandAST,
+	type QueryAST,
+	type SearchCommandAST,
+	type StatsCommandAST,
+	type WhereCommandAST,
 } from "./parser";
 
 export function compileQuery(query: QueryAST): string {
@@ -75,8 +76,9 @@ function compileSearchCommand(command: SearchCommandAST): string {
 function compileEvalCommand(command: EvalCommandAST): string {
 	const exprs = command.bindings
 		.map(([prop, expr]) => {
-			if (prop.path.length === 1) {
-				return `${JSON.stringify(prop.path[0])}: (${compileExpression(expr)})`;
+			const path = asPath(prop);
+			if (path.length === 1) {
+				return `${JSON.stringify(path[0])}: (${compileExpression(expr)})`;
 			}
 			throw new Error("complex eval target not implemented");
 		})
@@ -145,13 +147,17 @@ function compileStatsCommand(_command: StatsCommandAST): string {
 	throw new Error("not implemented");
 }
 
-export function compileExpression(expr: ExpressionAST): string {
+function compileExpression(expr: ExpressionAST): string {
 	switch (expr.type) {
-		case "prop":
-			return `record[${expr.path.map((seg) => JSON.stringify(seg)).join("]?.[")}]`;
-		case "val":
+		case "number":
 			if (typeof expr.value === "bigint") {
 				return `${expr.value}n`;
+			}
+			return `${expr.value}`;
+		case "string":
+			if (!expr.quoted) {
+				const path = expr.value.split(".");
+				return `record[${path.map((seg) => JSON.stringify(seg)).join("]?.[")}]`;
 			}
 			return JSON.stringify(expr.value);
 		case "<":

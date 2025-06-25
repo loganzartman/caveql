@@ -1,4 +1,4 @@
-export type TreeLeaf = string | number | bigint | undefined;
+export type TreeLeaf = string | number | bigint | boolean | undefined;
 
 export type TreeNode = TreeLeaf | TreeNode[] | { [k: string]: TreeNode };
 
@@ -9,7 +9,12 @@ export function formatTree(x: TreeNode, depth = 0): string {
 		return "";
 	}
 
-	if (typeof x === "string" || typeof x === "number" || typeof x === "bigint") {
+	if (
+		typeof x === "string" ||
+		typeof x === "number" ||
+		typeof x === "bigint" ||
+		typeof x === "boolean"
+	) {
 		return String(x);
 	}
 
