@@ -1,6 +1,7 @@
 import { formatJS } from "./formatJS";
 import { impossible } from "./impossible";
 import {
+	type AggregationTermAST,
 	asPath,
 	type CommandAST,
 	type EvalCommandAST,
@@ -48,6 +49,8 @@ function compileCommand(command: CommandAST): string {
 			return compileWhereCommand(command);
 		case "stats":
 			return compileStatsCommand(command);
+		case "streamstats":
+			throw new Error("streamstats command not implemented");
 		default:
 			impossible(command);
 	}
@@ -140,11 +143,113 @@ function compileMakeresultsCommand(command: MakeresultsCommandAST): string {
 }
 
 function compileWhereCommand(_command: WhereCommandAST): string {
-	throw new Error("not implemented");
+	throw new Error("where not implemented");
 }
 
-function compileStatsCommand(_command: StatsCommandAST): string {
-	throw new Error("not implemented");
+function compileStatsCommand(command: StatsCommandAST): string {
+	return `
+		function* (records) {
+			const agg = {
+				${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
+			};
+
+			let n = 0;
+			for (const record of records) {
+				++n;
+				${command.aggregations.map(compileAggregationCollect).join(";\n")}
+			};
+
+			yield {
+				${command.aggregations
+					.map((agg) => [aggKey(agg), compileAggregationFinal(agg)])
+					.filter(([, final]) => Boolean(final))
+					.map(([name, final]) => `${name}: ${final}`)
+					.join(",\n")}
+			}
+		}
+	`;
+}
+
+function aggKey(agg: AggregationTermAST) {
+	if (agg.field === undefined) {
+		return JSON.stringify(agg.type);
+	}
+	return JSON.stringify(`${agg.type}(${agg.field.value})`);
+}
+
+function compileAggregationInit(agg: AggregationTermAST): string {
+	switch (agg.type) {
+		case "avg":
+		case "count":
+		case "distinct":
+		case "sum":
+			return "0";
+		case "max":
+		case "min":
+		case "median":
+		case "mode":
+		case "perc":
+			return "undefined";
+		default:
+			impossible(agg.type);
+	}
+}
+
+function compileAggregationCollect(agg: AggregationTermAST): string {
+	const k = aggKey(agg);
+	switch (agg.type) {
+		case "avg": {
+			const recordValue = compileExpression({
+				type: "string",
+				quoted: false,
+				value: must(agg.field, "avg() aggregation requires a field name").value,
+			});
+			return `agg[${k}] += (${recordValue})`;
+		}
+		case "count":
+			return `++agg[${k}]`;
+		case "max": {
+			const recordValue = compileExpression({
+				type: "string",
+				quoted: false,
+				value: must(agg.field, "max() aggregation requires a field name").value,
+			});
+			return `
+				agg[${k}] = agg[${k}] === undefined 
+					? (${recordValue})
+					: Math.max(agg[${k}], (${recordValue}))
+			`;
+		}
+		case "distinct":
+		case "median":
+		case "min":
+		case "mode":
+		case "perc":
+		case "sum":
+			throw new Error("Aggregation not implemented");
+		default:
+			impossible(agg.type);
+	}
+}
+
+function compileAggregationFinal(agg: AggregationTermAST): string | undefined {
+	const k = aggKey(agg);
+	switch (agg.type) {
+		case "avg":
+			return `agg[${k}] / n`;
+		case "count":
+		case "max":
+			return `agg[${k}]`;
+		case "distinct":
+		case "median":
+		case "min":
+		case "mode":
+		case "perc":
+		case "sum":
+			throw new Error("Aggregation not implemented");
+		default:
+			impossible(agg.type);
+	}
 }
 
 function compileExpression(expr: ExpressionAST): string {
@@ -248,4 +353,11 @@ function compileCompareExpression(
 		default:
 			impossible(expr);
 	}
+}
+
+function must<T>(x: T | null | undefined, msg: string): T {
+	if (x === null || x === undefined) {
+		throw new Error(msg);
+	}
+	return x;
 }
