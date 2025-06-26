@@ -157,6 +157,7 @@ describe("parser", () => {
 					},
 					{
 						type: "stats",
+						aggregations: [],
 					},
 				],
 			});
@@ -242,7 +243,7 @@ describe("parser", () => {
 			const result = parseQuery("stats");
 			assert.deepEqual(result, {
 				type: "query",
-				pipeline: [{ type: "stats" }],
+				pipeline: [{ type: "stats", aggregations: [] }],
 			});
 		});
 
