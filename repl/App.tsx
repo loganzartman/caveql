@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { formatTree, parseQuery } from "../src";
 import { compileQuery } from "../src/compile";
+import { formatJS } from "../src/formatJS";
 
 export function App() {
 	const [source, setSource] = useState(() => {
@@ -18,10 +19,9 @@ export function App() {
 	try {
 		const tree = parseQuery(source);
 		treeString = formatTree(tree);
-		code = compileQuery(tree);
-		// biome-ignore lint/security/noGlobalEval: yolo
-		const resultsGenerator = eval(code)([]);
-		results = [...resultsGenerator];
+		const run = compileQuery(tree);
+		code = formatJS(run.source);
+		results = [...run([])];
 		history.replaceState(undefined, "", `#${btoa(source)}`);
 	} catch (e) {
 		error = `Error: ${e instanceof Error ? e.message : String(e)}`;

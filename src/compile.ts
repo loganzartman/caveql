@@ -1,4 +1,3 @@
-import { formatJS } from "./formatJS";
 import { impossible } from "./impossible";
 import {
 	type AggregationTermAST,
@@ -13,8 +12,22 @@ import {
 	type WhereCommandAST,
 } from "./parser";
 
-export function compileQuery(query: QueryAST): string {
-	return formatJS(compilePipeline(query.pipeline));
+export type QueryFunction = ((
+	records: Iterable<unknown>,
+) => Generator<Record<string, unknown>>) & { source: string };
+
+const GeneratorFunction = function* () {}.constructor as {
+	new (...args: string[]): GeneratorFunction;
+};
+
+export function compileQuery(query: QueryAST): QueryFunction {
+	const source = compilePipeline(query.pipeline);
+	const fn = new GeneratorFunction(
+		"records",
+		source,
+	) as unknown as QueryFunction;
+	fn.source = source;
+	return fn;
 }
 
 function compilePipeline(pipeline: CommandAST[]): string {
@@ -29,11 +42,9 @@ function compilePipeline(pipeline: CommandAST[]): string {
     `;
 	}
 	return `
-		(function* run(records) {
-			yield* (
-				${result}
-			);
-    })
+		yield* (
+			${result}
+		);
 	`;
 }
 
