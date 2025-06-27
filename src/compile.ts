@@ -9,6 +9,7 @@ import {
 	type QueryAST,
 	type SearchCommandAST,
 	type StatsCommandAST,
+	type StreamstatsCommandAST,
 	type WhereCommandAST,
 } from "./parser";
 
@@ -61,7 +62,7 @@ function compileCommand(command: CommandAST): string {
 		case "stats":
 			return compileStatsCommand(command);
 		case "streamstats":
-			throw new Error("streamstats command not implemented");
+			return compileStreamstatsCommand(command);
 		default:
 			impossible(command);
 	}
@@ -167,7 +168,7 @@ function compileStatsCommand(command: StatsCommandAST): string {
 			let n = 0;
 			for (const record of records) {
 				++n;
-				${command.aggregations.map(compileAggregationCollect).join(";\n")}
+				${command.aggregations.map(compileAggregationCollect).join(";\n")};
 			};
 
 			yield {
@@ -261,6 +262,31 @@ function compileAggregationFinal(agg: AggregationTermAST): string | undefined {
 		default:
 			impossible(agg.type);
 	}
+}
+
+function compileStreamstatsCommand(command: StreamstatsCommandAST): string {
+	return `
+		function* (records) {
+			const agg = {
+				${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
+			};
+
+			let n = 0;
+			for (const record of records) {
+				++n;
+				${command.aggregations.map(compileAggregationCollect).join(";\n")};
+
+				yield {
+					...record,
+					${command.aggregations
+						.map((agg) => [aggKey(agg), compileAggregationFinal(agg)])
+						.filter(([, final]) => Boolean(final))
+						.map(([name, final]) => `${name}: ${final}`)
+						.join(",\n")}
+				}
+			}
+		}
+	`;
 }
 
 function compileExpression(expr: ExpressionAST): string {

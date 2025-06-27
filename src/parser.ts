@@ -165,12 +165,24 @@ function takeAggregationTerm(ctx: ParseContext): AggregationTermAST {
 
 export type StreamstatsCommandAST = {
 	type: "streamstats";
+	aggregations: AggregationTermAST[];
 };
 
 function takeStreamstatsCommand(ctx: ParseContext): StreamstatsCommandAST {
 	takeWs(ctx);
 	takeLiteral(ctx, "streamstats");
-	return { type: "streamstats" };
+
+	const terms: AggregationTermAST[] = [];
+	while (true) {
+		try {
+			takeWs(ctx);
+			const term = takeAggregationTerm(ctx);
+			terms.push(term);
+		} catch {
+			break;
+		}
+	}
+	return { type: "streamstats", aggregations: terms };
 }
 
 export type WhereCommandAST = {
