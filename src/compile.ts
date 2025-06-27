@@ -232,12 +232,30 @@ function compileAggregationCollect(agg: AggregationTermAST): string {
 					: Math.max(agg[${k}], (${recordValue}))
 			`;
 		}
+		case "min": {
+			const recordValue = compileExpression({
+				type: "string",
+				quoted: false,
+				value: must(agg.field, "max() aggregation requires a field name").value,
+			});
+			return `
+				agg[${k}] = agg[${k}] === undefined 
+					? (${recordValue})
+					: Math.min(agg[${k}], (${recordValue}))
+			`;
+		}
+		case "sum": {
+			const recordValue = compileExpression({
+				type: "string",
+				quoted: false,
+				value: must(agg.field, "avg() aggregation requires a field name").value,
+			});
+			return `agg[${k}] += (${recordValue})`;
+		}
 		case "distinct":
 		case "median":
-		case "min":
 		case "mode":
 		case "perc":
-		case "sum":
 			throw new Error("Aggregation not implemented");
 		default:
 			impossible(agg.type);
@@ -251,13 +269,13 @@ function compileAggregationFinal(agg: AggregationTermAST): string | undefined {
 			return `agg[${k}] / n`;
 		case "count":
 		case "max":
+		case "min":
+		case "sum":
 			return `agg[${k}]`;
 		case "distinct":
 		case "median":
-		case "min":
 		case "mode":
 		case "perc":
-		case "sum":
 			throw new Error("Aggregation not implemented");
 		default:
 			impossible(agg.type);
