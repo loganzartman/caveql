@@ -1,13 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { monaco } from "./monaco";
 
-export function Editor() {
+export function Editor({
+	value,
+	onChange,
+}: {
+	value?: string;
+	onChange?: (value: string) => void;
+}) {
 	const divEl = useRef<HTMLDivElement>(null);
 	const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+	const onChangeRef = useRef(onChange);
+	const valueRef = useRef(value);
+
+	onChangeRef.current = onChange;
+	valueRef.current = value;
 
 	const [fontsLoaded, setFontsLoaded] = useState(false);
 	useState(() => {
-		Promise.all([document.fonts.load("400 1em Font Name")]).then(() =>
+		Promise.all([document.fonts.load("1em 'Monaspace Neon Var'")]).then(() =>
 			setFontsLoaded(true),
 		);
 	});
@@ -19,22 +30,30 @@ export function Editor() {
 		}
 
 		const editor = monaco.editor.create(divEl.current, {
+			value: valueRef.current ?? "",
+			placeholder: "Enter your query here...",
 			minimap: {
 				enabled: false,
 			},
-			scrollBeyondLastLine: false,
-			automaticLayout: true,
-			theme: "vs-dark",
 
+			// behavior
+			automaticLayout: true,
+			scrollBeyondLastLine: false,
+			scrollbar: {
+				alwaysConsumeMouseWheel: false,
+			},
+
+			// visual
+			theme: "vs-dark",
 			overviewRulerLanes: 0,
 			hideCursorInOverviewRuler: true,
 			overviewRulerBorder: false,
+			lineNumbers: "off",
 
 			fontFamily: "Monaspace Neon Var",
 			fontSize: 18,
-
-			placeholder: "type a query...",
 		});
+
 		editorRef.current = editor;
 
 		editor.onDidContentSizeChange((event) => {
@@ -44,10 +63,29 @@ export function Editor() {
 			}
 		});
 
+		editor.onDidChangeModelContent((event) => {
+			onChangeRef.current?.(editor.getValue());
+		});
+
+		editor.focus();
+
 		return () => {
 			editor.dispose();
 		};
 	}, [fontsLoaded]);
+
+	useEffect(() => {
+		if (editorRef.current && value !== undefined) {
+			editorRef.current.executeEdits("", [
+				{
+					range: editorRef.current.getModel()!.getFullModelRange(),
+					text: value,
+					forceMoveMarkers: true,
+				},
+			]);
+			editorRef.current.pushUndoStop();
+		}
+	}, [value]);
 
 	return <div className="w-full h-full min-h-32" ref={divEl}></div>;
 }
