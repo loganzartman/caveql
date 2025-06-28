@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      monaco-editor:
+        specifier: ^0.52.2
+        version: 0.52.2
       react:
         specifier: ^19.1.0
         version: 19.1.0
@@ -1123,6 +1126,9 @@ packages:
     resolution: {integrity: sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg==}
     engines: {node: '>=10'}
     hasBin: true
+
+  monaco-editor@0.52.2:
+    resolution: {integrity: sha512-GEQWEZmfkOGLdd3XK8ryrfWz3AIP8YymVXiPHEdewrUq7mh0qrKrfHLNCXcbB6sTnMLnOZ3ztSiKcciFUkIJwQ==}
 
   msgpackr-extract@3.0.3:
     resolution: {integrity: sha512-P0efT1C9jIdVRefqjzOQ9Xml57zpOXnIuS+csaB4MdZbTdmGDLo8XhzBG1N7aO11gKDDkJvBLULeFTo46wwreA==}
@@ -2449,6 +2455,8 @@ snapshots:
   mitata@1.0.34: {}
 
   mkdirp@3.0.1: {}
+
+  monaco-editor@0.52.2: {}
 
   msgpackr-extract@3.0.3:
     dependencies:
