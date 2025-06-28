@@ -1,7 +1,12 @@
 import CaveqlSvg from "jsx:./caveql.svg";
-import { CodeBracketIcon, TableCellsIcon } from "@heroicons/react/20/solid";
+import {
+	ArrowLeftIcon,
+	ArrowRightIcon,
+	CodeBracketIcon,
+	TableCellsIcon,
+} from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTree, parseQuery } from "../src";
 import { compileQuery } from "../src/compile";
 import { formatJS } from "../src/formatJS";
@@ -17,6 +22,9 @@ export function App() {
 	const [editorRef, setEditorRef] =
 		useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 	const [source, setSource] = useState("");
+	const [inputRecords, setInputRecords] = useState<Record<string, unknown>[]>(
+		[],
+	);
 
 	useEffect(() => {
 		if (!editorRef) return;
@@ -34,6 +42,10 @@ export function App() {
 		setSource(source);
 	}, []);
 
+	const countFormatter = useMemo(() => {
+		return new Intl.NumberFormat(undefined, {});
+	}, []);
+
 	let error: string | null = null;
 	let treeString: string | null = null;
 	let code: string | null = null;
@@ -43,7 +55,7 @@ export function App() {
 		treeString = formatTree(tree);
 		const run = compileQuery(tree);
 		code = formatJS(run.source);
-		results = [...run([])];
+		results = [...run(inputRecords)];
 	} catch (e) {
 		error = `Error: ${e instanceof Error ? e.message : String(e)}`;
 		results = null;
@@ -55,11 +67,12 @@ export function App() {
 		<div className="flex flex-col w-full h-full gap-4 p-4 overflow-auto">
 			<div className="flex flex-row justify-between">
 				<CaveqlSvg />
-				<div className="flex flex-row gap-4">
-					<div className="font-black">no data</div>
-					<div className="font-light">
-						drag n' drop json or csv anywhere (soon)
-					</div>
+				<div className="flex flex-row gap-1 items-center">
+					<ArrowRightIcon className="w-[1em]" />
+					<span className="font-black">
+						{countFormatter.format(inputRecords.length)}
+					</span>{" "}
+					records in
 				</div>
 			</div>
 			<div className="">
@@ -67,11 +80,22 @@ export function App() {
 			</div>
 			<div className="grow shrink relative">
 				<TabGroup>
-					<TabList>
-						<Tab icon={<TableCellsIcon />}>table</Tab>
-						<Tab icon={<CodeBracketIcon />}>parse tree</Tab>
-						<Tab icon={<CodeBracketIcon />}>generated</Tab>
-					</TabList>
+					<div className="flex flex-row justify-between">
+						<TabList>
+							<Tab icon={<TableCellsIcon />}>table</Tab>
+							<Tab icon={<CodeBracketIcon />}>parse tree</Tab>
+							<Tab icon={<CodeBracketIcon />}>generated</Tab>
+						</TabList>
+						{results && (
+							<div className="shrink-0 flex flex-row gap-1 items-center">
+								<ArrowLeftIcon className="w-[1em]" />
+								<span className="font-black">
+									{countFormatter.format(results.length)}
+								</span>{" "}
+								results out
+							</div>
+						)}
+					</div>
 					<TabPanels>
 						<TabPanel>
 							<table className="w-full table-auto border-collapse">
