@@ -45,6 +45,36 @@
 		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+@property --gradient-angle {
+	syntax: "<angle>";
+	inherits: false;
+	initial-value: 0deg;
+}
+
+@keyframes rotate-conic {
+	from {
+		--gradient-angle: 0deg;
+	}
+	50% {
+		--gradient-angle: 180deg;
+	}
+	to {
+		--gradient-angle: 360deg;
+	}
+}
+
+.hero-bg {
+	@apply motion-safe:duration-[10s];
+	animation: rotate-conic var(--tw-duration) linear infinite;
+	background-image: repeating-conic-gradient(
+		from var(--gradient-angle) at 30% -200% in oklab,
+		var(--color-amber-900) 0%,
+		var(--color-amber-800) 15%,
+		var(--color-amber-500) 30%,
+		var(--color-amber-800) 33%
+	);
+}
+
 @theme {
 	--color-fg: var(--color-stone-900);
 	--color-bg: var(--color-stone-100);

@@ -15,6 +15,7 @@ import { TabGroup } from "./components/TabGroup";
 import { TabList } from "./components/TabList";
 import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
+import { UploadButton } from "./components/UploadButton";
 import { Editor } from "./Editor";
 import type { monaco } from "./monaco";
 
@@ -46,6 +47,24 @@ export function App() {
 		return new Intl.NumberFormat(undefined, {});
 	}, []);
 
+	const handleUpload = useCallback(({ files }: { files: FileList }) => {
+		(async () => {
+			const file = files[0];
+			if (!file) {
+				throw new Error("Expected exactly one file upload");
+			}
+			if (file.type !== "application/json") {
+				throw new Error("Expected JSON");
+			}
+			const text = await file.text();
+			const json = JSON.parse(text);
+			if (!Array.isArray(json)) {
+				throw new Error("Expected JSON array");
+			}
+			setInputRecords(json);
+		})().catch((e) => console.error(e));
+	}, []);
+
 	let error: string | null = null;
 	let treeString: string | null = null;
 	let code: string | null = null;
@@ -67,12 +86,19 @@ export function App() {
 		<div className="flex flex-col w-full h-full gap-4 p-4 overflow-auto">
 			<div className="flex flex-row justify-between">
 				<CaveqlSvg />
-				<div className="flex flex-row gap-1 items-center">
-					<ArrowRightIcon className="w-[1em]" />
-					<span className="font-black">
-						{countFormatter.format(inputRecords.length)}
-					</span>{" "}
-					records in
+				<div className="flex flex-row gap-4">
+					<UploadButton
+						highlight={inputRecords.length === 0 && !results?.length}
+						label="add data"
+						onChange={handleUpload}
+					/>
+					<div className="flex flex-row gap-1 items-center">
+						<ArrowRightIcon className="w-[1em]" />
+						<span className="font-black">
+							{countFormatter.format(inputRecords.length)}
+						</span>{" "}
+						records in
+					</div>
 				</div>
 			</div>
 			<div className="">
