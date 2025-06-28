@@ -6,7 +6,7 @@ import {
 	TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatTree, parseQuery } from "../src";
 import { compileQuery } from "../src/compile";
 import { formatJS } from "../src/formatJS";
