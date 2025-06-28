@@ -12,6 +12,7 @@ export function Editor({
 	const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 	const onChangeRef = useRef(onChange);
 	const valueRef = useRef(value);
+	const cancelUpdateRef = useRef(false);
 
 	onChangeRef.current = onChange;
 	valueRef.current = value;
@@ -64,6 +65,10 @@ export function Editor({
 		});
 
 		editor.onDidChangeModelContent((event) => {
+			if (cancelUpdateRef.current) {
+				cancelUpdateRef.current = false;
+				return;
+			}
 			onChangeRef.current?.(editor.getValue());
 		});
 
@@ -83,6 +88,7 @@ export function Editor({
 					forceMoveMarkers: true,
 				},
 			]);
+			cancelUpdateRef.current = true;
 			editorRef.current.pushUndoStop();
 		}
 	}, [value]);

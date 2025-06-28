@@ -1,4 +1,6 @@
 import CaveqlSvg from "jsx:./caveql.svg";
+import { CodeBracketIcon, TableCellsIcon } from "@heroicons/react/20/solid";
+import { clsx } from "clsx";
 import { useState } from "react";
 import { formatTree, parseQuery } from "../src";
 import { compileQuery } from "../src/compile";
@@ -35,12 +37,14 @@ export function App() {
 		results = null;
 	}
 
+	const cols = new Set(results?.flatMap((result) => Object.keys(result)));
+
 	return (
 		<div className="flex flex-col w-full h-full gap-4 p-4 overflow-auto">
 			<div className="flex flex-row justify-between">
 				<CaveqlSvg />
 				<div className="flex flex-row gap-4">
-					<div className="font-black">no input</div>
+					<div className="font-black">no data</div>
 					<div className="font-light">
 						drag n' drop json or csv anywhere (soon)
 					</div>
@@ -49,66 +53,65 @@ export function App() {
 			<div className="">
 				<Editor value={source} onChange={setSource} />
 			</div>
-			<div className="grow shrink">
+			<div className="grow shrink relative">
 				<TabGroup>
 					<TabList>
-						<Tab>table</Tab>
-						<Tab>parse tree</Tab>
-						<Tab>generated</Tab>
+						<Tab icon={<TableCellsIcon />}>table</Tab>
+						<Tab icon={<CodeBracketIcon />}>parse tree</Tab>
+						<Tab icon={<CodeBracketIcon />}>generated</Tab>
 					</TabList>
 					<TabPanels>
 						<TabPanel>
-							<div className="flex-1/4 grow h-0 overflow-auto">
-								<table className="w-full table-auto border-collapse border border-stone-400">
-									<thead>
-										<tr className="sticky top-0 bg-fg text-bg">
-											{results && results.length > 0 ? (
-												Object.keys(results[0]).map((key) => (
-													<th
-														key={key}
-														className="border border-stone-300 px-2"
-													>
-														{key}
-													</th>
-												))
-											) : (
-												<th className="border border-stone-300 px-2">
-													No results
+							<table className="w-full table-auto border-collapse">
+								<thead>
+									<tr className="sticky -top-4 bg-stone-400 text-stone-950">
+										{results && results.length > 0 ? (
+											Object.keys(results[0]).map((key) => (
+												<th key={key} className="px-3 py-1">
+													{key}
 												</th>
-											)}
-										</tr>
-									</thead>
-									<tbody>
-										{results?.map((result, i) => (
+											))
+										) : (
+											<th className="px-2">No results</th>
+										)}
+									</tr>
+								</thead>
+								<tbody>
+									{results?.map((result, i) => (
+										<tr
 											// biome-ignore lint/suspicious/noArrayIndexKey: no guaranteed key
-											<tr key={i}>
-												{Object.values(result).map((value, j) => (
-													// biome-ignore lint/suspicious/noArrayIndexKey: no guaranteed key
-													<td key={j} className="border border-stone-300 px-2">
-														{String(value)}
+											key={i}
+											className="relative even:bg-stone-900 odd:bg-stone-800 hover:ring-1 hover:ring-amber-600 hover:z-10 hover:text-amber-300"
+										>
+											{[...cols].map((col, j) => {
+												const value = result[col];
+												return (
+													<td
+														// biome-ignore lint/suspicious/noArrayIndexKey: no guaranteed key
+														key={j}
+														className={clsx(
+															"px-3 py-1  hover:bg-amber-900/50 hover:text-amber-100",
+															typeof value !== "string" && "text-right",
+														)}
+													>
+														{value !== undefined ? String(value) : null}
 													</td>
-												))}
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</div>
+												);
+											})}
+										</tr>
+									))}
+								</tbody>
+							</table>
 						</TabPanel>
 						<TabPanel>
-							<div className="grow flex flex-col gap-2">
-								<div>Parse tree:</div>
-								<pre className="text-wrap break-all overflow-auto">
-									{treeString ?? error}
-								</pre>
-							</div>
+							<pre className="text-wrap break-all overflow-auto">
+								{treeString ?? error}
+							</pre>
 						</TabPanel>
 						<TabPanel>
-							<div className="grow flex flex-col gap-2">
-								<div>Generated code:</div>
-								<pre className="text-wrap break-all overflow-auto">
-									{code ?? error}
-								</pre>
-							</div>
+							<pre className="text-wrap break-all overflow-auto">
+								{code ?? error}
+							</pre>
 						</TabPanel>
 					</TabPanels>
 				</TabGroup>
