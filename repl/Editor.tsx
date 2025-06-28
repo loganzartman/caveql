@@ -2,20 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { monaco } from "./monaco";
 
 export function Editor({
-	value,
+	editorRef,
 	onChange,
 }: {
-	value?: string;
+	editorRef?: React.Ref<monaco.editor.IStandaloneCodeEditor | null>;
 	onChange?: (value: string) => void;
 }) {
 	const divEl = useRef<HTMLDivElement>(null);
-	const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+	const internalEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(
+		null,
+	);
 	const onChangeRef = useRef(onChange);
-	const valueRef = useRef(value);
-	const cancelUpdateRef = useRef(false);
+	const firstUpdateRef = useRef(false);
 
 	onChangeRef.current = onChange;
-	valueRef.current = value;
 
 	const [fontsLoaded, setFontsLoaded] = useState(false);
 	useState(() => {
@@ -30,8 +30,9 @@ export function Editor({
 			throw new Error("divEl is not defined");
 		}
 
+		firstUpdateRef.current = true;
 		const editor = monaco.editor.create(divEl.current, {
-			value: valueRef.current ?? "",
+			value: "",
 			placeholder: "Enter your query here...",
 			minimap: {
 				enabled: false,
@@ -55,7 +56,14 @@ export function Editor({
 			fontSize: 18,
 		});
 
-		editorRef.current = editor;
+		internalEditorRef.current = editor;
+		if (editorRef) {
+			if (typeof editorRef === "function") {
+				editorRef(editor);
+			} else {
+				editorRef.current = editor;
+			}
+		}
 
 		editor.onDidContentSizeChange((event) => {
 			const { contentHeight } = event;
@@ -65,8 +73,8 @@ export function Editor({
 		});
 
 		editor.onDidChangeModelContent((event) => {
-			if (cancelUpdateRef.current) {
-				cancelUpdateRef.current = false;
+			if (firstUpdateRef.current) {
+				firstUpdateRef.current = false;
 				return;
 			}
 			onChangeRef.current?.(editor.getValue());
@@ -77,21 +85,7 @@ export function Editor({
 		return () => {
 			editor.dispose();
 		};
-	}, [fontsLoaded]);
-
-	useEffect(() => {
-		if (editorRef.current && value !== undefined) {
-			editorRef.current.executeEdits("", [
-				{
-					range: editorRef.current.getModel()!.getFullModelRange(),
-					text: value,
-					forceMoveMarkers: true,
-				},
-			]);
-			cancelUpdateRef.current = true;
-			editorRef.current.pushUndoStop();
-		}
-	}, [value]);
+	}, [fontsLoaded, editorRef]);
 
 	return <div className="w-full h-full min-h-32" ref={divEl}></div>;
 }

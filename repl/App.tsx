@@ -1,7 +1,7 @@
 import CaveqlSvg from "jsx:./caveql.svg";
 import { CodeBracketIcon, TableCellsIcon } from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatTree, parseQuery } from "../src";
 import { compileQuery } from "../src/compile";
 import { formatJS } from "../src/formatJS";
@@ -11,15 +11,28 @@ import { TabList } from "./components/TabList";
 import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { Editor } from "./Editor";
+import type { monaco } from "./monaco";
 
 export function App() {
-	const [source, setSource] = useState(() => {
+	const [editorRef, setEditorRef] =
+		useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+	const [source, setSource] = useState("");
+
+	useEffect(() => {
+		if (!editorRef) return;
 		try {
-			return atob(window.location.hash.substring(1));
+			const src = atob(window.location.hash.substring(1));
+			editorRef.setValue(src);
+			setSource(src);
 		} catch {
-			return "";
+			console.log("Failed to parse document hash");
 		}
-	});
+	}, [editorRef]);
+
+	const updateSource = useCallback((source: string) => {
+		history.replaceState(undefined, "", `#${btoa(source)}`);
+		setSource(source);
+	}, []);
 
 	let error: string | null = null;
 	let treeString: string | null = null;
@@ -31,7 +44,6 @@ export function App() {
 		const run = compileQuery(tree);
 		code = formatJS(run.source);
 		results = [...run([])];
-		history.replaceState(undefined, "", `#${btoa(source)}`);
 	} catch (e) {
 		error = `Error: ${e instanceof Error ? e.message : String(e)}`;
 		results = null;
@@ -51,7 +63,7 @@ export function App() {
 				</div>
 			</div>
 			<div className="">
-				<Editor value={source} onChange={setSource} />
+				<Editor editorRef={setEditorRef} onChange={updateSource} />
 			</div>
 			<div className="grow shrink relative">
 				<TabGroup>
