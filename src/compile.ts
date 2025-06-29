@@ -43,6 +43,12 @@ function compilePipeline(pipeline: CommandAST[]): string {
     `;
 	}
 	return `
+		function eqIgnoreCase(a, b) {
+		  if (typeof a === 'string') a = a.toLowerCase();
+			if (typeof b === 'string') b = b.toLowerCase();
+			return a == b;
+		}
+
 		yield* (
 			${result}
 		);
@@ -363,7 +369,11 @@ function compileCompareExpression(
 	switch (expr.type) {
 		case "number":
 			if (!comparison) {
-				return `Object.values(record).some((v) => v === ${expr.value})`;
+				return `
+					Object.entries(record)
+						.flat()
+						.some((v) => v == ${expr.value})
+				`;
 			}
 			if (lhs) {
 				throw new Error(
@@ -376,7 +386,15 @@ function compileCompareExpression(
 			return `${expr.value}`;
 		case "string":
 			if (!comparison) {
-				return `Object.values(record).some((v) => v === ${JSON.stringify(expr.value)})`;
+				return `
+					Object.entries(record)
+						.flat()
+						.some((v) => 
+							typeof v === 'string'
+								? v.toLowerCase() === (${JSON.stringify(expr.value.toLowerCase())})
+								: v == (${JSON.stringify(expr.value)})
+						)
+				`;
 			}
 			if (lhs || !expr.quoted) {
 				const path = expr.value.split(".");
@@ -394,23 +412,23 @@ function compileCompareExpression(
 				comparison: true,
 			})})`;
 		case "!=":
-			return `(${compileCompareExpression(expr.left, {
+			return `(!eqIgnoreCase(${compileCompareExpression(expr.left, {
 				lhs: true,
 				comparison: true,
-			})} !== ${compileCompareExpression(expr.right, {
+			})}, ${compileCompareExpression(expr.right, {
 				comparison: true,
-			})})`;
+			})}))`;
 		case "==":
 			throw new Error(
 				`Don't use '==' in comparison expressions. Use '=' instead.`,
 			);
 		case "=":
-			return `(${compileCompareExpression(expr.left, {
+			return `(eqIgnoreCase(${compileCompareExpression(expr.left, {
 				lhs: true,
 				comparison: true,
-			})} === ${compileCompareExpression(expr.right, {
+			})}, ${compileCompareExpression(expr.right, {
 				comparison: true,
-			})})`;
+			})}))`;
 		case "AND":
 			return `(${compileCompareExpression(expr.left, {
 				lhs: true,

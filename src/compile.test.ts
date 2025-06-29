@@ -18,6 +18,44 @@ describe("compiler", () => {
 			assert.deepEqual(results, [{ country: "US", value: 1 }]);
 		});
 
+		it("matches bare numbers", () => {
+			const run = compileQuery(parseQuery("search 1"));
+			const results = [
+				...run([
+					{ country: "AUS", value: 3 },
+					{ country: "CA", value: 2 },
+					{ country: "US", value: 1 },
+				]),
+			];
+
+			assert.deepEqual(results, [{ country: "US", value: 1 }]);
+		});
+
+		it("is case insensitive for bare words", () => {
+			const run = compileQuery(parseQuery("search us"));
+			const results = [
+				...run([
+					{ country: "AUS", value: 3 },
+					{ country: "CA", value: 2 },
+					{ country: "US", value: 1 },
+				]),
+			];
+
+			assert.deepEqual(results, [{ country: "US", value: 1 }]);
+		});
+
+		it("coerces numbers to strings", () => {
+			const run = compileQuery(parseQuery("search 1"));
+			const results = [
+				...run([
+					{ country: "CA", value: "2" },
+					{ country: "US", value: "1" },
+				]),
+			];
+
+			assert.deepEqual(results, [{ country: "US", value: "1" }]);
+		});
+
 		it("filters by comparison", () => {
 			const run = compileQuery(parseQuery("search value <= 2"));
 			const results = [
@@ -45,6 +83,35 @@ describe("compiler", () => {
 			];
 
 			assert.deepEqual(results, [{ country: "CA", value: 2 }]);
+		});
+
+		it("is case insensitive for key/value", () => {
+			const run = compileQuery(parseQuery("search country = 'ca'"));
+			const results = [
+				...run([
+					{ country: "AUS", value: 3 },
+					{ country: "CA", value: 2 },
+					{ country: "US", value: 1 },
+				]),
+			];
+
+			assert.deepEqual(results, [{ country: "CA", value: 2 }]);
+		});
+
+		it("is case insensitive for inequality key/value", () => {
+			const run = compileQuery(parseQuery("search country != 'ca'"));
+			const results = [
+				...run([
+					{ country: "AUS", value: 3 },
+					{ country: "CA", value: 2 },
+					{ country: "US", value: 1 },
+				]),
+			];
+
+			assert.deepEqual(results, [
+				{ country: "AUS", value: 3 },
+				{ country: "US", value: 1 },
+			]);
 		});
 	});
 });
