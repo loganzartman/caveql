@@ -113,6 +113,48 @@ describe("compiler", () => {
 				{ country: "US", value: 1 },
 			]);
 		});
+
+		it("lets boolean OR combine bare words", () => {
+			const run = compileQuery(parseQuery("search US OR CA"));
+			const results = [
+				...run([
+					{ country: "AUS", value: 3 },
+					{ country: "CA", value: 2 },
+					{ country: "US", value: 1 },
+				]),
+			];
+
+			assert.deepEqual(results, [
+				{ country: "CA", value: 2 },
+				{ country: "US", value: 1 },
+			]);
+		});
+
+		it("lets boolean AND combine bare words", () => {
+			const run = compileQuery(parseQuery("search US AND WA"));
+			const results = [
+				...run([
+					{ country: "US", state: "HI" },
+					{ country: "US", state: "WA" },
+					{ country: "CA", state: "BC" },
+				]),
+			];
+
+			assert.deepEqual(results, [{ country: "US", state: "WA" }]);
+		});
+
+		it("lets boolean NOT exclude bare words", () => {
+			const run = compileQuery(parseQuery("search NOT US"));
+			const results = [
+				...run([
+					{ country: "US", state: "HI" },
+					{ country: "US", state: "WA" },
+					{ country: "CA", state: "BC" },
+				]),
+			];
+
+			assert.deepEqual(results, [{ country: "CA", state: "BC" }]);
+		});
 	});
 
 	describe("where", () => {

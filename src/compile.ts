@@ -438,19 +438,13 @@ function compileCompareExpression(
 		case "AND":
 			return `(${compileCompareExpression(expr.left, {
 				lhs: true,
-				comparison: true,
-			})} && ${compileCompareExpression(expr.right, {
-				comparison: true,
-			})})`;
+			})} && ${compileCompareExpression(expr.right)})`;
 		case "and":
 			throw new Error("Internal error: got 'and' in compare expression");
 		case "OR":
 			return `(${compileCompareExpression(expr.left, {
 				lhs: true,
-				comparison: true,
-			})} || ${compileCompareExpression(expr.right, {
-				comparison: true,
-			})})`;
+			})} || ${compileCompareExpression(expr.right)})`;
 		case "or":
 			throw new Error("Internal error: got 'or' in compare expression");
 		case "NOT":
