@@ -7,7 +7,7 @@ import {
   type k_state,
   run,
 } from "mitata";
-import { parseQuery } from "../src/parser.js";
+import { parseQuery } from "../src/parser";
 
 compact(() => {
   barplot(() => {
