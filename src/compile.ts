@@ -160,8 +160,18 @@ function compileMakeresultsCommand(command: MakeresultsCommandAST): string {
   `;
 }
 
-function compileWhereCommand(_command: WhereCommandAST): string {
-	throw new Error("where not implemented");
+function compileWhereCommand(command: WhereCommandAST): string {
+	return `
+    function* (records) {
+		  for (const record of records) {
+			  if (
+				  ${compileExpression(command.expr)}
+				) {
+				  yield record;
+				}
+			}
+		}
+	`;
 }
 
 function compileStatsCommand(command: StatsCommandAST): string {

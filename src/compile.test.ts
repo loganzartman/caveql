@@ -114,4 +114,19 @@ describe("compiler", () => {
 			]);
 		});
 	});
+
+	describe("where", () => {
+		it("filters records by expression", () => {
+			const run = compileQuery(parseQuery("where value > 2"));
+			const results = [
+				...run([
+					{ country: "AUS", value: 3 },
+					{ country: "CA", value: 2 },
+					{ country: "US", value: 1 },
+				]),
+			];
+
+			assert.deepEqual(results, [{ country: "AUS", value: 3 }]);
+		});
+	});
 });
