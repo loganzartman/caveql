@@ -5,7 +5,7 @@ import {
   parseQuery,
   type SearchCommandAST,
   type WhereCommandAST,
-} from "./parser";
+} from "./index";
 
 describe("parser", () => {
   it("parses basic search with key-value", () => {

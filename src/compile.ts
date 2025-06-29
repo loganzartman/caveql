@@ -1,16 +1,15 @@
 import { impossible } from "./impossible";
-import {
-  type AggregationTermAST,
-  asPath,
-  type CommandAST,
-  type EvalCommandAST,
-  type ExpressionAST,
-  type MakeresultsCommandAST,
-  type QueryAST,
-  type SearchCommandAST,
-  type StatsCommandAST,
-  type StreamstatsCommandAST,
-  type WhereCommandAST,
+import type {
+  AggregationTermAST,
+  CommandAST,
+  EvalCommandAST,
+  ExpressionAST,
+  MakeresultsCommandAST,
+  QueryAST,
+  SearchCommandAST,
+  StatsCommandAST,
+  StreamstatsCommandAST,
+  WhereCommandAST,
 } from "./parser";
 
 export type QueryFunction = ((
@@ -467,4 +466,13 @@ function must<T>(x: T | null | undefined, msg: string): T {
     throw new Error(msg);
   }
   return x;
+}
+
+function asPath(stringAST: StringAST): string[] {
+  return stringAST.value.split(".").map((seg) => {
+    if (seg.length === 0) {
+      throw new Error("Empty segment in path");
+    }
+    return seg;
+  });
 }
