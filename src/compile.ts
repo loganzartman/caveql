@@ -43,7 +43,7 @@ function compilePipeline(pipeline: CommandAST[]): string {
     `;
 	}
 	return `
-		function eqIgnoreCase(a, b) {
+		function looseEq(a, b) {
 		  if (typeof a === 'string') a = a.toLowerCase();
 			if (typeof b === 'string') b = b.toLowerCase();
 			return a == b;
@@ -389,11 +389,7 @@ function compileCompareExpression(
 				return `
 					Object.entries(record)
 						.flat()
-						.some((v) => 
-							typeof v === 'string'
-								? v.toLowerCase() === (${JSON.stringify(expr.value.toLowerCase())})
-								: v == (${JSON.stringify(expr.value)})
-						)
+						.some((v) => looseEq(v, ${JSON.stringify(expr.value)}))
 				`;
 			}
 			if (lhs || !expr.quoted) {
@@ -412,7 +408,7 @@ function compileCompareExpression(
 				comparison: true,
 			})})`;
 		case "!=":
-			return `(!eqIgnoreCase(${compileCompareExpression(expr.left, {
+			return `(!looseEq(${compileCompareExpression(expr.left, {
 				lhs: true,
 				comparison: true,
 			})}, ${compileCompareExpression(expr.right, {
@@ -423,7 +419,7 @@ function compileCompareExpression(
 				`Don't use '==' in comparison expressions. Use '=' instead.`,
 			);
 		case "=":
-			return `(eqIgnoreCase(${compileCompareExpression(expr.left, {
+			return `(looseEq(${compileCompareExpression(expr.left, {
 				lhs: true,
 				comparison: true,
 			})}, ${compileCompareExpression(expr.right, {
