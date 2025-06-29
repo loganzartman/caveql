@@ -1,5 +1,14 @@
 {
 	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+	"files": {
+		"includes": ["**", "!sample"]
+	},
+	"vcs": {
+		"enabled": true,
+		"useIgnoreFile": true,
+		"clientKind": "git",
+		"defaultBranch": "main"
+	},
 	"linter": {
 		"rules": {
 			"suspicious": {

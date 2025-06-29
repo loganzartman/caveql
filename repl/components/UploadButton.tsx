@@ -1,15 +1,12 @@
 import { Button, Input } from "@headlessui/react";
 import { ArrowUpTrayIcon } from "@heroicons/react/20/solid";
-import clsx from "clsx";
 import { useRef } from "react";
 
 export function UploadButton({
 	label,
-	highlight,
 	onChange,
 }: {
 	label: string;
-	highlight?: boolean;
 	onChange?: (params: { files: FileList }) => void;
 }) {
 	const inputRef = useRef<HTMLInputElement | null>(null);

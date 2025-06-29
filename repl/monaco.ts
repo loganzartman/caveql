@@ -7,7 +7,7 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import { caveqlLanguage } from "./language";
 
 self.MonacoEnvironment = {
-	getWorkerUrl: (moduleId, label) => {
+	getWorkerUrl: (_moduleId, label) => {
 		if (label === "json") {
 			return JSONWorker;
 		}

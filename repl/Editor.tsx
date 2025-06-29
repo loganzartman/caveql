@@ -72,7 +72,7 @@ export function Editor({
 			}
 		});
 
-		editor.onDidChangeModelContent((event) => {
+		editor.onDidChangeModelContent(() => {
 			if (firstUpdateRef.current) {
 				firstUpdateRef.current = false;
 				return;

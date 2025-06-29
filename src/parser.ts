@@ -15,11 +15,11 @@ export function parseQuery(src: string): QueryAST {
 		index: 0,
 		compareExpr: false,
 	};
-	return takeQuery(ctx);
+	return parseQuery_(ctx);
 }
 
-export function takeQuery(ctx: ParseContext): QueryAST {
-	const pipeline = takePipeline(ctx);
+function parseQuery_(ctx: ParseContext): QueryAST {
+	const pipeline = parsePipeline(ctx);
 
 	return {
 		type: "query",
@@ -27,19 +27,19 @@ export function takeQuery(ctx: ParseContext): QueryAST {
 	};
 }
 
-function takePipeline(ctx: ParseContext): CommandAST[] {
+function parsePipeline(ctx: ParseContext): CommandAST[] {
 	const commands: CommandAST[] = [];
 	let first = true;
 	while (true) {
 		try {
-			takeWs(ctx);
+			parseWs(ctx);
 			// allow bare search without the search keyword
 			const command = first
-				? takeOne(ctx, takeCommand, takeBareSearch)
-				: takeCommand(ctx);
+				? parseOne(ctx, parseCommand, parseBareSearch)
+				: parseCommand(ctx);
 			commands.push(command);
-			takeWs(ctx);
-			takeLiteral(ctx, "|");
+			parseWs(ctx);
+			parseLiteral(ctx, "|");
 		} catch {
 			break;
 		}
@@ -56,15 +56,15 @@ export type CommandAST =
 	| StreamstatsCommandAST
 	| WhereCommandAST;
 
-function takeCommand(ctx: ParseContext): CommandAST {
-	return takeOne(
+function parseCommand(ctx: ParseContext): CommandAST {
+	return parseOne(
 		ctx,
-		takeEvalCommand,
-		takeMakeresultsCommand,
-		takeSearchCommand,
-		takeStatsCommand,
-		takeStreamstatsCommand,
-		takeWhereCommand,
+		parseEvalCommand,
+		parseMakeresultsCommand,
+		parseSearchCommand,
+		parseStatsCommand,
+		parseStreamstatsCommand,
+		parseWhereCommand,
 	);
 }
 
@@ -73,20 +73,20 @@ export type SearchCommandAST = {
 	filters: ExpressionAST[];
 };
 
-function takeSearchCommand(ctx: ParseContext): SearchCommandAST {
-	takeWs(ctx);
-	takeLiteral(ctx, "search");
-	takeWs(ctx);
-	return takeBareSearch(ctx);
+function parseSearchCommand(ctx: ParseContext): SearchCommandAST {
+	parseWs(ctx);
+	parseLiteral(ctx, "search");
+	parseWs(ctx);
+	return parseBareSearch(ctx);
 }
 
-function takeBareSearch(ctx: ParseContext): SearchCommandAST {
+function parseBareSearch(ctx: ParseContext): SearchCommandAST {
 	const filters: ExpressionAST[] = [];
 	while (true) {
 		try {
-			takeWs(ctx);
+			parseWs(ctx);
 			ctx.compareExpr = true;
-			const filter = takeExpr(ctx);
+			const filter = parseExpr(ctx);
 			filters.push(filter);
 		} catch {
 			break;
@@ -105,15 +105,15 @@ export type StatsCommandAST = {
 	aggregations: AggregationTermAST[];
 };
 
-function takeStatsCommand(ctx: ParseContext): StatsCommandAST {
-	takeWs(ctx);
-	takeLiteral(ctx, "stats");
+function parseStatsCommand(ctx: ParseContext): StatsCommandAST {
+	parseWs(ctx);
+	parseLiteral(ctx, "stats");
 
 	const terms: AggregationTermAST[] = [];
 	while (true) {
 		try {
-			takeWs(ctx);
-			const term = takeAggregationTerm(ctx);
+			parseWs(ctx);
+			const term = parseAggregationTerm(ctx);
 			terms.push(term);
 		} catch {
 			break;
@@ -138,9 +138,9 @@ export type AggregationTermAST = {
 	field?: StringAST;
 };
 
-function takeAggregationTerm(ctx: ParseContext): AggregationTermAST {
-	takeWs(ctx);
-	const type = takeLiteral(
+function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
+	parseWs(ctx);
+	const type = parseLiteral(
 		ctx,
 		"count",
 		"distinct",
@@ -155,12 +155,12 @@ function takeAggregationTerm(ctx: ParseContext): AggregationTermAST {
 
 	let field: StringAST | undefined;
 	try {
-		takeWs(ctx);
-		takeLiteral(ctx, "(");
-		takeWs(ctx);
-		field = takeString(ctx);
-		takeWs(ctx);
-		takeLiteral(ctx, ")");
+		parseWs(ctx);
+		parseLiteral(ctx, "(");
+		parseWs(ctx);
+		field = parseString(ctx);
+		parseWs(ctx);
+		parseLiteral(ctx, ")");
 	} catch {
 		// pass
 	}
@@ -173,15 +173,15 @@ export type StreamstatsCommandAST = {
 	aggregations: AggregationTermAST[];
 };
 
-function takeStreamstatsCommand(ctx: ParseContext): StreamstatsCommandAST {
-	takeWs(ctx);
-	takeLiteral(ctx, "streamstats");
+function parseStreamstatsCommand(ctx: ParseContext): StreamstatsCommandAST {
+	parseWs(ctx);
+	parseLiteral(ctx, "streamstats");
 
 	const terms: AggregationTermAST[] = [];
 	while (true) {
 		try {
-			takeWs(ctx);
-			const term = takeAggregationTerm(ctx);
+			parseWs(ctx);
+			const term = parseAggregationTerm(ctx);
 			terms.push(term);
 		} catch {
 			break;
@@ -195,11 +195,11 @@ export type WhereCommandAST = {
 	expr: ExpressionAST;
 };
 
-function takeWhereCommand(ctx: ParseContext): WhereCommandAST {
-	takeWs(ctx);
-	takeLiteral(ctx, "where");
-	takeWs(ctx);
-	const expr = takeExpr(ctx);
+function parseWhereCommand(ctx: ParseContext): WhereCommandAST {
+	parseWs(ctx);
+	parseLiteral(ctx, "where");
+	parseWs(ctx);
+	const expr = parseExpr(ctx);
 	return { type: "where", expr };
 }
 
@@ -217,9 +217,9 @@ export type MakeresultsCommandAST = {
 	  }
 );
 
-function takeMakeresultsCommand(ctx: ParseContext): MakeresultsCommandAST {
-	takeWs(ctx);
-	takeLiteral(ctx, "makeresults");
+function parseMakeresultsCommand(ctx: ParseContext): MakeresultsCommandAST {
+	parseWs(ctx);
+	parseLiteral(ctx, "makeresults");
 
 	let count: NumericAST = { type: "number", value: 1n };
 	let format: "csv" | "json" | undefined;
@@ -227,17 +227,19 @@ function takeMakeresultsCommand(ctx: ParseContext): MakeresultsCommandAST {
 
 	while (true) {
 		try {
-			takeWs(ctx);
-			takeOne(
+			parseWs(ctx);
+			parseOne(
 				ctx,
 				(c) => {
-					count = takeParam(c, "count", takeNumeric);
+					count = parseParam(c, "count", parseNumeric);
 				},
 				(c) => {
-					format = takeParam(c, "format", (c) => takeLiteral(c, "csv", "json"));
+					format = parseParam(c, "format", (c) =>
+						parseLiteral(c, "csv", "json"),
+					);
 				},
 				(c) => {
-					data = takeParam(c, "data", takeString);
+					data = parseParam(c, "data", parseString);
 				},
 			);
 		} catch {
@@ -267,23 +269,23 @@ export type EvalCommandAST = {
 	bindings: [StringAST, ExpressionAST][];
 };
 
-function takeEvalCommand(ctx: ParseContext): EvalCommandAST {
-	takeWs(ctx);
-	takeLiteral(ctx, "eval");
+function parseEvalCommand(ctx: ParseContext): EvalCommandAST {
+	parseWs(ctx);
+	parseLiteral(ctx, "eval");
 
 	const bindings: [StringAST, ExpressionAST][] = [];
 	while (true) {
 		try {
-			takeWs(ctx);
-			const name = takeString(ctx);
-			takeWs(ctx);
-			takeLiteral(ctx, "=");
-			takeWs(ctx);
-			const expr = takeExpr(ctx);
+			parseWs(ctx);
+			const name = parseString(ctx);
+			parseWs(ctx);
+			parseLiteral(ctx, "=");
+			parseWs(ctx);
+			const expr = parseExpr(ctx);
 			bindings.push([name, expr]);
 
-			takeWs(ctx);
-			takeLiteral(ctx, ",");
+			parseWs(ctx);
+			parseLiteral(ctx, ",");
 		} catch {
 			break;
 		}
@@ -294,12 +296,12 @@ function takeEvalCommand(ctx: ParseContext): EvalCommandAST {
 
 export type ExpressionAST = UnaryOpAST | BinaryOpAST | NumericAST | StringAST;
 
-function takeExpr(ctx: ParseContext): ExpressionAST {
-	return takeOrExpr(ctx);
+function parseExpr(ctx: ParseContext): ExpressionAST {
+	return parseOrExpr(ctx);
 }
 
-function takeTerm(ctx: ParseContext): ExpressionAST {
-	return takeOne(ctx, takeGroup, takeNumeric, takeString);
+function parseTerm(ctx: ParseContext): ExpressionAST {
+	return parseOne(ctx, parseGroup, parseNumeric, parseString);
 }
 
 export type BinaryOpType =
@@ -326,37 +328,37 @@ export type BinaryOpAST = {
 	right: ExpressionAST;
 };
 
-function takeOrExpr(ctx: ParseContext): ExpressionAST {
+function parseOrExpr(ctx: ParseContext): ExpressionAST {
 	if (ctx.compareExpr) {
-		return takeBinaryLevel(ctx, takeAndExpr, ["OR"]);
+		return parseBinaryLevel(ctx, parseAndExpr, ["OR"]);
 	}
-	return takeBinaryLevel(ctx, takeAndExpr, ["or"]);
+	return parseBinaryLevel(ctx, parseAndExpr, ["or"]);
 }
 
-function takeAndExpr(ctx: ParseContext): ExpressionAST {
+function parseAndExpr(ctx: ParseContext): ExpressionAST {
 	if (ctx.compareExpr) {
-		return takeBinaryLevel(ctx, takeEqualityExpr, ["AND"]);
+		return parseBinaryLevel(ctx, parseEqualityExpr, ["AND"]);
 	}
-	return takeBinaryLevel(ctx, takeEqualityExpr, ["and"]);
+	return parseBinaryLevel(ctx, parseEqualityExpr, ["and"]);
 }
 
-function takeEqualityExpr(ctx: ParseContext): ExpressionAST {
-	return takeBinaryLevel(ctx, takeComparisonExpr, ["!=", "==", "="]);
+function parseEqualityExpr(ctx: ParseContext): ExpressionAST {
+	return parseBinaryLevel(ctx, parseComparisonExpr, ["!=", "==", "="]);
 }
 
-function takeComparisonExpr(ctx: ParseContext): ExpressionAST {
-	return takeBinaryLevel(ctx, takeAdditiveExpr, [">=", "<=", ">", "<"]);
+function parseComparisonExpr(ctx: ParseContext): ExpressionAST {
+	return parseBinaryLevel(ctx, parseAdditiveExpr, [">=", "<=", ">", "<"]);
 }
 
-function takeAdditiveExpr(ctx: ParseContext): ExpressionAST {
-	return takeBinaryLevel(ctx, takeMultiplicativeExpr, ["+", "-"]);
+function parseAdditiveExpr(ctx: ParseContext): ExpressionAST {
+	return parseBinaryLevel(ctx, parseMultiplicativeExpr, ["+", "-"]);
 }
 
-function takeMultiplicativeExpr(ctx: ParseContext): ExpressionAST {
-	return takeBinaryLevel(ctx, takeUnaryExpr, ["*", "/", "%"]);
+function parseMultiplicativeExpr(ctx: ParseContext): ExpressionAST {
+	return parseBinaryLevel(ctx, parseUnaryExpr, ["*", "/", "%"]);
 }
 
-function takeBinaryLevel(
+function parseBinaryLevel(
 	ctx: ParseContext,
 	nextLevel: (ctx: ParseContext) => ExpressionAST,
 	operators: BinaryOpType[],
@@ -365,9 +367,9 @@ function takeBinaryLevel(
 
 	while (true) {
 		try {
-			takeWs(ctx);
-			const op = takeLiteral(ctx, ...operators);
-			takeWs(ctx);
+			parseWs(ctx);
+			const op = parseLiteral(ctx, ...operators);
+			parseWs(ctx);
 			const right = nextLevel(ctx);
 			left = {
 				type: op as BinaryOpType,
@@ -389,72 +391,72 @@ export type UnaryOpAST = {
 	operand: ExpressionAST;
 };
 
-function takeUnaryExpr(ctx: ParseContext): ExpressionAST {
+function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
 	try {
-		takeWs(ctx);
+		parseWs(ctx);
 		let op: UnaryOpType;
 		if (ctx.compareExpr) {
-			op = takeLiteral(ctx, "NOT");
+			op = parseLiteral(ctx, "NOT");
 		} else {
-			op = takeLiteral(ctx, "not");
+			op = parseLiteral(ctx, "not");
 		}
 
-		takeWs(ctx);
-		const operand = takeExpr(ctx);
+		parseWs(ctx);
+		const operand = parseExpr(ctx);
 		return {
 			type: op,
 			operand,
 		};
 	} catch {
-		return takeTerm(ctx);
+		return parseTerm(ctx);
 	}
 }
 
-function takeParam<T>(
+function parseParam<T>(
 	ctx: ParseContext,
 	param: string,
-	takeValue: (ctx: ParseContext) => T,
+	parseValue: (ctx: ParseContext) => T,
 ): T {
-	takeWs(ctx);
-	takeLiteral(ctx, param);
-	takeWs(ctx);
-	takeLiteral(ctx, "=");
-	takeWs(ctx);
-	return takeValue(ctx);
+	parseWs(ctx);
+	parseLiteral(ctx, param);
+	parseWs(ctx);
+	parseLiteral(ctx, "=");
+	parseWs(ctx);
+	return parseValue(ctx);
 }
 
-function takeGroup(ctx: ParseContext): ExpressionAST {
-	takeWs(ctx);
-	takeLiteral(ctx, "(");
-	takeWs(ctx);
-	const expr = takeExpr(ctx);
-	takeWs(ctx);
-	takeLiteral(ctx, ")");
+function parseGroup(ctx: ParseContext): ExpressionAST {
+	parseWs(ctx);
+	parseLiteral(ctx, "(");
+	parseWs(ctx);
+	const expr = parseExpr(ctx);
+	parseWs(ctx);
+	parseLiteral(ctx, ")");
 	return expr;
 }
 
 export type StringAST = { type: "string"; quoted: boolean; value: string };
 
-function takeString(ctx: ParseContext): StringAST {
-	return takeOne(
+function parseString(ctx: ParseContext): StringAST {
+	return parseOne(
 		ctx,
 		(c) =>
 			({
 				type: "string",
 				quoted: true,
-				value: takeRex(c, /"((?:[^\\"]|\\.)*)"/, 1),
+				value: parseRex(c, /"((?:[^\\"]|\\.)*)"/, 1),
 			}) as const,
 		(c) =>
 			({
 				type: "string",
 				quoted: true,
-				value: takeRex(c, /'((?:[^\\']|\\.)*)'/, 1),
+				value: parseRex(c, /'((?:[^\\']|\\.)*)'/, 1),
 			}) as const,
 		(c) =>
 			({
 				type: "string",
 				quoted: false,
-				value: takeRex(c, /[\p{L}$_][\p{L}\p{N}\-$_.]*/u),
+				value: parseRex(c, /[\p{L}$_][\p{L}\p{N}\-$_.]*/u),
 			}) as const,
 	);
 }
@@ -470,25 +472,25 @@ export function asPath(stringAST: StringAST): string[] {
 
 export type NumericAST = { type: "number"; value: number | bigint };
 
-function takeNumeric(ctx: ParseContext): NumericAST {
-	return takeOne(
+function parseNumeric(ctx: ParseContext): NumericAST {
+	return parseOne(
 		ctx,
 		(c) => {
-			const numStr = takeRex(c, /-?\d+\.\d*/);
+			const numStr = parseRex(c, /-?\d+\.\d*/);
 			return { type: "number", value: Number.parseFloat(numStr) } as const;
 		},
 		(c) => {
-			const numStr = takeRex(c, /-?\d+/);
+			const numStr = parseRex(c, /-?\d+/);
 			return { type: "number", value: BigInt(numStr) } as const;
 		},
 	);
 }
 
-function takeWs(ctx: ParseContext): string {
-	return takeRex(ctx, /\s*/);
+function parseWs(ctx: ParseContext): string {
+	return parseRex(ctx, /\s*/);
 }
 
-function takeOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
+function parseOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
 	ctx: ParseContext,
 	...members: TMembers
 ): ReturnType<TMembers[number]> {
@@ -503,7 +505,7 @@ function takeOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
 	throw new Error("No matching members");
 }
 
-function takeRex(ctx: ParseContext, rex: RegExp, group = 0): string {
+function parseRex(ctx: ParseContext, rex: RegExp, group = 0): string {
 	const remaining = ctx.source.substring(ctx.index);
 	const result = rex.exec(remaining);
 	if (result?.index === 0) {
@@ -516,7 +518,7 @@ function takeRex(ctx: ParseContext, rex: RegExp, group = 0): string {
 	throw new Error(`Does not match regex ${rex}`);
 }
 
-function takeLiteral<T extends string[]>(
+function parseLiteral<T extends string[]>(
 	ctx: ParseContext,
 	...match: T
 ): T[number] {
