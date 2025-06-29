@@ -29,16 +29,21 @@ export function takeQuery(ctx: ParseContext): QueryAST {
 
 function takePipeline(ctx: ParseContext): CommandAST[] {
 	const commands: CommandAST[] = [];
+	let first = true;
 	while (true) {
 		try {
 			takeWs(ctx);
-			const command = takeCommand(ctx);
+			// allow bare search without the search keyword
+			const command = first
+				? takeOne(ctx, takeCommand, takeBareSearch)
+				: takeCommand(ctx);
 			commands.push(command);
 			takeWs(ctx);
 			takeLiteral(ctx, "|");
 		} catch {
 			break;
 		}
+		first = false;
 	}
 	return commands;
 }

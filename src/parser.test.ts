@@ -27,7 +27,7 @@ describe("parser", () => {
 		});
 	});
 
-	describe("search filters", () => {
+	describe("search", () => {
 		it("parses multiple search terms as separate filters", () => {
 			const result = parseQuery("search a=1 and b=2 or c=3");
 			const searchCmd = result.pipeline[0] as SearchCommandAST;
@@ -127,6 +127,33 @@ describe("parser", () => {
 							left: { type: "string", quoted: false, value: "a" },
 							right: { type: "number", value: 2n },
 						},
+					},
+				],
+			});
+		});
+
+		it("allows bare search as first command", () => {
+			const result = parseQuery("a<b AND c=d");
+			assert.deepEqual(result, {
+				type: "query",
+				pipeline: [
+					{
+						type: "search",
+						filters: [
+							{
+								type: "AND",
+								left: {
+									type: "<",
+									left: { type: "string", quoted: false, value: "a" },
+									right: { type: "string", quoted: false, value: "b" },
+								},
+								right: {
+									type: "=",
+									left: { type: "string", quoted: false, value: "c" },
+									right: { type: "string", quoted: false, value: "d" },
+								},
+							},
+						],
 					},
 				],
 			});
