@@ -355,10 +355,16 @@ function compileExpression(expr: ExpressionAST): string {
 
 function compileCompareExpression(
 	expr: ExpressionAST,
-	{ lhs = false }: { lhs?: boolean } = {},
+	{
+		lhs = false,
+		comparison = false,
+	}: { lhs?: boolean; comparison?: boolean } = {},
 ): string {
 	switch (expr.type) {
 		case "number":
+			if (!comparison) {
+				return `Object.values(record).some((v) => v === ${expr.value})`;
+			}
 			if (lhs) {
 				throw new Error(
 					`Don't use number ${expr.value} on the left-hand side. Consider reversing the comparison.`,
@@ -369,6 +375,9 @@ function compileCompareExpression(
 			}
 			return `${expr.value}`;
 		case "string":
+			if (!comparison) {
+				return `Object.values(record).some((v) => v === ${JSON.stringify(expr.value)})`;
+			}
 			if (lhs || !expr.quoted) {
 				const path = expr.value.split(".");
 				return `record[${path.map((seg) => JSON.stringify(seg)).join("]?.[")}]`;
@@ -378,21 +387,46 @@ function compileCompareExpression(
 		case "<=":
 		case ">=":
 		case ">":
-			return `(${compileCompareExpression(expr.left, { lhs: true })} ${expr.type} ${compileCompareExpression(expr.right)})`;
+			return `(${compileCompareExpression(expr.left, {
+				lhs: true,
+				comparison: true,
+			})} ${expr.type} ${compileCompareExpression(expr.right, {
+				comparison: true,
+			})})`;
 		case "!=":
-			return `(${compileCompareExpression(expr.left, { lhs: true })} !== ${compileCompareExpression(expr.right)})`;
+			return `(${compileCompareExpression(expr.left, {
+				lhs: true,
+				comparison: true,
+			})} !== ${compileCompareExpression(expr.right, {
+				comparison: true,
+			})})`;
 		case "==":
 			throw new Error(
 				`Don't use '==' in comparison expressions. Use '=' instead.`,
 			);
 		case "=":
-			return `(${compileCompareExpression(expr.left, { lhs: true })} === ${compileCompareExpression(expr.right)})`;
+			return `(${compileCompareExpression(expr.left, {
+				lhs: true,
+				comparison: true,
+			})} === ${compileCompareExpression(expr.right, {
+				comparison: true,
+			})})`;
 		case "AND":
-			return `(${compileCompareExpression(expr.left, { lhs: true })} && ${compileCompareExpression(expr.right)})`;
+			return `(${compileCompareExpression(expr.left, {
+				lhs: true,
+				comparison: true,
+			})} && ${compileCompareExpression(expr.right, {
+				comparison: true,
+			})})`;
 		case "and":
 			throw new Error("Internal error: got 'and' in compare expression");
 		case "OR":
-			return `(${compileCompareExpression(expr.left, { lhs: true })} || ${compileCompareExpression(expr.right)})`;
+			return `(${compileCompareExpression(expr.left, {
+				lhs: true,
+				comparison: true,
+			})} || ${compileCompareExpression(expr.right, {
+				comparison: true,
+			})})`;
 		case "or":
 			throw new Error("Internal error: got 'or' in compare expression");
 		case "NOT":
