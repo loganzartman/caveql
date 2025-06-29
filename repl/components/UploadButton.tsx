@@ -34,11 +34,7 @@ export function UploadButton({
 				className="hidden"
 				onChange={handleChange}
 			/>
-			<Button
-				className={clsx("p-[2px]", highlight ? "hero-bg" : "bg-amber-900")}
-				aria-hidden
-				onClick={handleButtonClick}
-			>
+			<Button aria-hidden onClick={handleButtonClick}>
 				<div className="flex flex-row items-center gap-2 px-2 py-1.5 transition-colors bg-stone-800 hover:bg-amber-900">
 					<ArrowUpTrayIcon className="w-[1em]" />
 					{label}

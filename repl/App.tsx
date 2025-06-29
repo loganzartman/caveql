@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatTree, parseQuery } from "../src";
 import { compileQuery } from "../src/compile";
 import { formatJS } from "../src/formatJS";
+import { Highlight } from "./components/Highlight";
 import { Tab } from "./components/Tab";
 import { TabGroup } from "./components/TabGroup";
 import { TabList } from "./components/TabList";
@@ -87,11 +88,9 @@ export function App() {
 			<div className="flex flex-row justify-between">
 				<CaveqlSvg />
 				<div className="flex flex-row gap-4">
-					<UploadButton
-						highlight={inputRecords.length === 0 && !results?.length}
-						label="add data"
-						onChange={handleUpload}
-					/>
+					<Highlight enabled={inputRecords.length === 0 && !results?.length}>
+						<UploadButton label="add data" onChange={handleUpload} />
+					</Highlight>
 					<div className="flex flex-row gap-1 items-center">
 						<ArrowRightIcon className="w-[1em]" />
 						<span className="font-black">

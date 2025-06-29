@@ -55,23 +55,21 @@
 	from {
 		--gradient-angle: 0deg;
 	}
-	50% {
-		--gradient-angle: 180deg;
-	}
 	to {
 		--gradient-angle: 360deg;
 	}
 }
 
-.hero-bg {
-	@apply motion-safe:duration-[10s];
+.highlight-bg {
+	@apply motion-safe:duration-[2s];
 	animation: rotate-conic var(--tw-duration) linear infinite;
-	background-image: repeating-conic-gradient(
-		from var(--gradient-angle) at 30% -200% in oklab,
+	background-image: conic-gradient(
+		from var(--gradient-angle) at 50% 50% in oklab,
 		var(--color-amber-900) 0%,
-		var(--color-amber-800) 15%,
-		var(--color-amber-500) 30%,
-		var(--color-amber-800) 33%
+		var(--color-amber-700) 20%,
+		var(--color-amber-200) 50%,
+		var(--color-amber-800) 70%,
+		var(--color-amber-900) 100%
 	);
 }
 
