@@ -27,6 +27,65 @@ describe("parser", () => {
 		});
 	});
 
+	describe("strings", () => {
+		it("handles a double-quoted string", () => {
+			const result = parseQuery(`"hello world!"`);
+			assert.deepEqual(result, {
+				type: "query",
+				pipeline: [
+					{
+						type: "search",
+						filters: [
+							{
+								type: "string",
+								quoted: true,
+								value: "hello world!",
+							},
+						],
+					},
+				],
+			});
+		});
+
+		it("handles a single-quoted string", () => {
+			const result = parseQuery(`'hello world!'`);
+			assert.deepEqual(result, {
+				type: "query",
+				pipeline: [
+					{
+						type: "search",
+						filters: [
+							{
+								type: "string",
+								quoted: true,
+								value: "hello world!",
+							},
+						],
+					},
+				],
+			});
+		});
+
+		it("handles a bare string", () => {
+			const result = parseQuery("h3llo-world$");
+			assert.deepEqual(result, {
+				type: "query",
+				pipeline: [
+					{
+						type: "search",
+						filters: [
+							{
+								type: "string",
+								quoted: false,
+								value: "h3llo-world$",
+							},
+						],
+					},
+				],
+			});
+		});
+	});
+
 	describe("search", () => {
 		it("parses multiple search terms as separate filters", () => {
 			const result = parseQuery("search a=1 and b=2 or c=3");

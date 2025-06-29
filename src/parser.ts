@@ -454,7 +454,7 @@ function takeString(ctx: ParseContext): StringAST {
 			({
 				type: "string",
 				quoted: false,
-				value: takeRex(c, /[\p{L}\-$_.]+/u),
+				value: takeRex(c, /[\p{L}$_][\p{L}\p{N}\-$_.]*/u),
 			}) as const,
 	);
 }
