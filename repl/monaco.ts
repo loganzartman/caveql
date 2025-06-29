@@ -7,21 +7,21 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import { caveqlLanguage } from "./language";
 
 self.MonacoEnvironment = {
-	getWorkerUrl: (_moduleId, label) => {
-		if (label === "json") {
-			return JSONWorker;
-		}
-		if (label === "css" || label === "scss" || label === "less") {
-			return CSSWorker;
-		}
-		if (label === "html" || label === "handlebars" || label === "razor") {
-			return HTMLWorker;
-		}
-		if (label === "typescript" || label === "javascript") {
-			return TSWorker;
-		}
-		return EditorWorker;
-	},
+  getWorkerUrl: (_moduleId, label) => {
+    if (label === "json") {
+      return JSONWorker;
+    }
+    if (label === "css" || label === "scss" || label === "less") {
+      return CSSWorker;
+    }
+    if (label === "html" || label === "handlebars" || label === "razor") {
+      return HTMLWorker;
+    }
+    if (label === "typescript" || label === "javascript") {
+      return TSWorker;
+    }
+    return EditorWorker;
+  },
 };
 
 monaco.languages.register({ id: "caveql" });
