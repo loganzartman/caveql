@@ -49,6 +49,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
+    "@tanstack/react-virtual": "^3.13.12",
     "clsx": "^2.1.1",
     "monaco-editor": "^0.52.2",
     "react": "^19.1.0",
