@@ -7,9 +7,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatTree, parseQuery } from "../src";
-import { compileQuery } from "../src/compile";
-import { formatJS } from "../src/formatJS";
+import { compileQuery, formatJS, formatTree, parseQuery } from "../src";
 import { Highlight } from "./components/Highlight";
 import { Tab } from "./components/Tab";
 import { TabGroup } from "./components/TabGroup";

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { compileQuery } from "./compile";
-import { parseQuery } from "./parser";
+import { parseQuery } from "../parser";
+import { compileQuery } from "./compileQuery";
 
 describe("compiler", () => {
   describe("search", () => {
