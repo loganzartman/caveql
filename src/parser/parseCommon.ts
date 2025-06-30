@@ -74,6 +74,17 @@ export function parseOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
   throw new Error("No matching members");
 }
 
+export function parseOptional<T>(
+  ctx: ParseContext,
+  parseFn: (ctx: ParseContext) => T,
+): T | undefined {
+  try {
+    return parseFn(ctx);
+  } catch {
+    return undefined;
+  }
+}
+
 export function parseRex(ctx: ParseContext, rex: RegExp, group = 0): string {
   const remaining = ctx.source.substring(ctx.index);
   const result = rex.exec(remaining);

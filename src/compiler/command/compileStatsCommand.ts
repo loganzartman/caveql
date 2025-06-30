@@ -8,7 +8,7 @@ import {
 
 export function compileStatsCommand(command: StatsCommandAST): string {
   return `
-		function* (records) {
+		function* statsCommand(records) {
 			const agg = {
 				${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
 			};

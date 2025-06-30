@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { SortCommandAST } from "./command/parseSortCommand";
 import {
   type EvalCommandAST,
   parseQuery,
@@ -403,6 +404,139 @@ describe("parser", () => {
             right: { type: "number", value: 3n },
           },
         },
+      });
+    });
+  });
+
+  describe("sort command", () => {
+    it("parses simple sort command", () => {
+      const result = parseQuery("| sort a");
+      const sortCmd = result.pipeline[1] as SortCommandAST;
+      assert.deepEqual(sortCmd, {
+        type: "sort",
+        count: undefined,
+        fields: [
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "a" },
+            comparator: undefined,
+            desc: undefined,
+          },
+        ],
+      });
+    });
+
+    it("parses sort with count", () => {
+      const result = parseQuery("| sort 1000 a");
+      const sortCmd = result.pipeline[1] as SortCommandAST;
+      assert.deepEqual(sortCmd, {
+        type: "sort",
+        count: { type: "number", value: 1000n },
+        fields: [
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "a" },
+            comparator: undefined,
+            desc: undefined,
+          },
+        ],
+      });
+    });
+
+    it("parses sort with comparator", () => {
+      const result = parseQuery("| sort 1000 str(a)");
+      const sortCmd = result.pipeline[1] as SortCommandAST;
+      assert.deepEqual(sortCmd, {
+        type: "sort",
+        count: { type: "number", value: 1000n },
+        fields: [
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "a" },
+            comparator: "str",
+            desc: undefined,
+          },
+        ],
+      });
+    });
+
+    it("parses sort with descending field", () => {
+      const result = parseQuery("| sort -a");
+      const sortCmd = result.pipeline[1] as SortCommandAST;
+      assert.deepEqual(sortCmd, {
+        type: "sort",
+        count: undefined,
+        fields: [
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "a" },
+            comparator: undefined,
+            desc: true,
+          },
+        ],
+      });
+    });
+
+    it("parses sort with explicit ascending field", () => {
+      const result = parseQuery("| sort +a");
+      const sortCmd = result.pipeline[1] as SortCommandAST;
+      assert.deepEqual(sortCmd, {
+        type: "sort",
+        count: undefined,
+        fields: [
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "a" },
+            comparator: undefined,
+            desc: false,
+          },
+        ],
+      });
+    });
+
+    it("parses sort with comparator and descending field", () => {
+      const result = parseQuery("| sort -str(a)");
+      const sortCmd = result.pipeline[1] as SortCommandAST;
+      assert.deepEqual(sortCmd, {
+        type: "sort",
+        count: undefined,
+        fields: [
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "a" },
+            comparator: "str",
+            desc: true,
+          },
+        ],
+      });
+    });
+
+    it("parses complex sort", () => {
+      const result = parseQuery("| sort 200 -str(a), beta, auto(gamma)");
+      const sortCmd = result.pipeline[1] as SortCommandAST;
+      assert.deepEqual(sortCmd, {
+        type: "sort",
+        count: { type: "number", value: 200n },
+        fields: [
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "a" },
+            comparator: "str",
+            desc: true,
+          },
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "beta" },
+            comparator: undefined,
+            desc: undefined,
+          },
+          {
+            type: "sort-field",
+            field: { type: "string", quoted: false, value: "gamma" },
+            comparator: "auto",
+            desc: undefined,
+          },
+        ],
       });
     });
   });

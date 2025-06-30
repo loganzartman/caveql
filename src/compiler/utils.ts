@@ -15,3 +15,9 @@ export function asPath(stringAST: StringAST): string[] {
     return seg;
   });
 }
+
+export function asPathAccessor(stringAST: StringAST): string {
+  return asPath(stringAST)
+    .map((seg) => `?.[${JSON.stringify(seg)}]`)
+    .join("");
+}

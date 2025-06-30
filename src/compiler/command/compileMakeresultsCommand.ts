@@ -30,7 +30,7 @@ export function compileMakeresultsCommand(
     });
 
     return `
-      function*(records) {
+      function* makeresultsCommand(records) {
         yield* records;
         yield* ${JSON.stringify(items)};
       }
@@ -38,7 +38,7 @@ export function compileMakeresultsCommand(
   }
 
   return `
-    function*(records) {
+    function* makeresultsCommand(records) {
       yield* records;
       for (let i = 0; i < ${command.count.value}; ++i) {
         yield { _time: new Date().toISOString() };

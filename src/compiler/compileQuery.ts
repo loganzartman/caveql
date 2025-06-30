@@ -1,15 +1,25 @@
-import { impossible } from "../impossible";
+import TinyQueue from "tinyqueue";
 import type { CommandAST, QueryAST } from "../parser";
-import { compileEvalCommand } from "./command/compileEvalCommand";
-import { compileMakeresultsCommand } from "./command/compileMakeresultsCommand";
-import { compileSearchCommand } from "./command/compileSearchCommand";
-import { compileStatsCommand } from "./command/compileStatsCommand";
-import { compileStreamstatsCommand } from "./command/compileStreamstatsCommand";
-import { compileWhereCommand } from "./command/compileWhereCommand";
+import {
+  compareFieldAuto,
+  compareFieldNumber,
+  compareFieldString,
+} from "./command/compileSortCommand";
+import { compileCommand } from "./compileCommand";
 
 export type QueryFunction = ((
   records: Iterable<unknown>,
 ) => Generator<Record<string, unknown>>) & { source: string };
+
+// runtime dependencies required by the compiled function, which should be
+// injected as a parameter rather than compiled into the function itself.
+type InjectedDeps = {
+  compareFieldAuto: typeof compareFieldAuto;
+  compareFieldNumber: typeof compareFieldNumber;
+  compareFieldString: typeof compareFieldString;
+  looseEq: typeof looseEq;
+  TinyQueue: typeof TinyQueue;
+};
 
 const GeneratorFunction = function* () {}.constructor as {
   new (...args: string[]): GeneratorFunction;
@@ -17,12 +27,28 @@ const GeneratorFunction = function* () {}.constructor as {
 
 export function compileQuery(query: QueryAST): QueryFunction {
   const source = compilePipeline(query.pipeline);
-  const fn = new GeneratorFunction(
+
+  const compiledFn = new GeneratorFunction(
+    "deps",
     "records",
     source,
-  ) as unknown as QueryFunction;
-  fn.source = source;
-  return fn;
+  ) as unknown as (
+    deps: InjectedDeps,
+    records: Iterable<unknown>,
+  ) => Generator<Record<string, unknown>>;
+
+  const deps = {
+    compareFieldAuto,
+    compareFieldNumber,
+    compareFieldString,
+    looseEq,
+    TinyQueue,
+  };
+
+  const injectedFn = (records: Iterable<unknown>) => compiledFn(deps, records);
+  injectedFn.source = source;
+
+  return injectedFn;
 }
 
 function compilePipeline(pipeline: CommandAST[]): string {
@@ -37,11 +63,13 @@ function compilePipeline(pipeline: CommandAST[]): string {
     `;
   }
   return `
-		function looseEq(a, b) {
-		  if (typeof a === 'string') a = a.toLowerCase();
-			if (typeof b === 'string') b = b.toLowerCase();
-			return a == b;
-		}
+    const {
+      compareFieldAuto,
+      compareFieldNumber,
+      compareFieldString,
+      looseEq,
+      TinyQueue,
+    } = deps;
 
 		yield* (
 			${result}
@@ -49,21 +77,9 @@ function compilePipeline(pipeline: CommandAST[]): string {
 	`;
 }
 
-function compileCommand(command: CommandAST): string {
-  switch (command.type) {
-    case "search":
-      return compileSearchCommand(command);
-    case "eval":
-      return compileEvalCommand(command);
-    case "makeresults":
-      return compileMakeresultsCommand(command);
-    case "where":
-      return compileWhereCommand(command);
-    case "stats":
-      return compileStatsCommand(command);
-    case "streamstats":
-      return compileStreamstatsCommand(command);
-    default:
-      impossible(command);
-  }
+function looseEq(a: unknown, b: unknown): boolean {
+  if (typeof a === "string") a = a.toLowerCase();
+  if (typeof b === "string") b = b.toLowerCase();
+  // biome-ignore lint/suspicious/noDoubleEquals: coerce it!
+  return a == b;
 }

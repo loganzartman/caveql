@@ -10,7 +10,7 @@ export function compileStreamstatsCommand(
   command: StreamstatsCommandAST,
 ): string {
   return `
-		function* (records) {
+		function* streamstatsCommand(records) {
 			const agg = {
 				${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
 			};

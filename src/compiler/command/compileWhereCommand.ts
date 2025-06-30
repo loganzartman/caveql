@@ -3,7 +3,7 @@ import { compileExpression } from "../compileExpression";
 
 export function compileWhereCommand(command: WhereCommandAST): string {
   return `
-    function* (records) {
+    function* whereCommand(records) {
 		  for (const record of records) {
 			  if (
 				  ${compileExpression(command.expr)}

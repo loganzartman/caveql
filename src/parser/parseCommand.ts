@@ -8,6 +8,10 @@ import {
   type SearchCommandAST,
 } from "./command/parseSearchCommand";
 import {
+  parseSortCommand,
+  type SortCommandAST,
+} from "./command/parseSortCommand";
+import {
   parseStatsCommand,
   type StatsCommandAST,
 } from "./command/parseStatsCommand";
@@ -27,6 +31,7 @@ export type CommandAST =
   | EvalCommandAST
   | MakeresultsCommandAST
   | SearchCommandAST
+  | SortCommandAST
   | StatsCommandAST
   | StreamstatsCommandAST
   | WhereCommandAST;
@@ -37,6 +42,7 @@ export function parseCommand(ctx: ParseContext): CommandAST {
     parseEvalCommand,
     parseMakeresultsCommand,
     parseSearchCommand,
+    parseSortCommand,
     parseStatsCommand,
     parseStreamstatsCommand,
     parseWhereCommand,
