@@ -55,11 +55,11 @@ function compilePipeline(pipeline: CommandAST[]): string {
   let result = "records";
   for (const command of pipeline) {
     result = `
-			(
-				${compileCommand(command)}
-			)(
-				${result}
-			)
+      (
+        ${compileCommand(command)}
+      )(
+        ${result}
+      )
     `;
   }
   return `
@@ -71,10 +71,10 @@ function compilePipeline(pipeline: CommandAST[]): string {
       TinyQueue,
     } = deps;
 
-		yield* (
-			${result}
-		);
-	`;
+    yield* (
+      ${result}
+    );
+  `;
 }
 
 function looseEq(a: unknown, b: unknown): boolean {

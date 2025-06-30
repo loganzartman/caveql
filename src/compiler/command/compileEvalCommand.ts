@@ -13,13 +13,13 @@ export function compileEvalCommand(command: EvalCommandAST): string {
     })
     .join(",\n");
   return `
-		function* evalCommand(records) {
-			for (const record of records) {
-				yield {
-					...record,
-					${exprs}
-				};
-			}
-		}
-	`;
+    function* evalCommand(records) {
+      for (const record of records) {
+        yield {
+          ...record,
+          ${exprs}
+        };
+      }
+    }
+  `;
 }

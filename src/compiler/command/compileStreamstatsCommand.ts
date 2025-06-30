@@ -10,25 +10,25 @@ export function compileStreamstatsCommand(
   command: StreamstatsCommandAST,
 ): string {
   return `
-		function* streamstatsCommand(records) {
-			const agg = {
-				${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
-			};
+    function* streamstatsCommand(records) {
+      const agg = {
+        ${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
+      };
 
-			let n = 0;
-			for (const record of records) {
-				++n;
-				${command.aggregations.map(compileAggregationCollect).join(";\n")};
+      let n = 0;
+      for (const record of records) {
+        ++n;
+        ${command.aggregations.map(compileAggregationCollect).join(";\n")};
 
-				yield {
-					...record,
-					${command.aggregations
+        yield {
+          ...record,
+          ${command.aggregations
             .map((agg) => [aggKey(agg), compileAggregationFinal(agg)])
             .filter(([, final]) => Boolean(final))
             .map(([name, final]) => `${name}: ${final}`)
             .join(",\n")}
-				}
-			}
-		}
-	`;
+        }
+      }
+    }
+  `;
 }

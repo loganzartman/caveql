@@ -48,10 +48,10 @@ export function compileAggregationCollect(agg: AggregationTermAST): string {
         value: must(agg.field, "max() aggregation requires a field name").value,
       });
       return `
-				agg[${k}] = agg[${k}] === undefined 
-					? (${recordValue})
-					: Math.max(agg[${k}], (${recordValue}))
-			`;
+        agg[${k}] = agg[${k}] === undefined 
+          ? (${recordValue})
+          : Math.max(agg[${k}], (${recordValue}))
+      `;
     }
     case "min": {
       const recordValue = compileExpression({
@@ -60,10 +60,10 @@ export function compileAggregationCollect(agg: AggregationTermAST): string {
         value: must(agg.field, "max() aggregation requires a field name").value,
       });
       return `
-				agg[${k}] = agg[${k}] === undefined 
-					? (${recordValue})
-					: Math.min(agg[${k}], (${recordValue}))
-			`;
+        agg[${k}] = agg[${k}] === undefined 
+          ? (${recordValue})
+          : Math.min(agg[${k}], (${recordValue}))
+      `;
     }
     case "sum": {
       const recordValue = compileExpression({

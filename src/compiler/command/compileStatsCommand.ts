@@ -8,24 +8,24 @@ import {
 
 export function compileStatsCommand(command: StatsCommandAST): string {
   return `
-		function* statsCommand(records) {
-			const agg = {
-				${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
-			};
+    function* statsCommand(records) {
+      const agg = {
+        ${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
+      };
 
-			let n = 0;
-			for (const record of records) {
-				++n;
-				${command.aggregations.map(compileAggregationCollect).join(";\n")};
-			};
+      let n = 0;
+      for (const record of records) {
+        ++n;
+        ${command.aggregations.map(compileAggregationCollect).join(";\n")};
+      };
 
-			yield {
-				${command.aggregations
+      yield {
+        ${command.aggregations
           .map((agg) => [aggKey(agg), compileAggregationFinal(agg)])
           .filter(([, final]) => Boolean(final))
           .map(([name, final]) => `${name}: ${final}`)
           .join(",\n")}
-			}
-		}
-	`;
+      }
+    }
+  `;
 }

@@ -9,14 +9,14 @@ export function compileSearchCommand(command: SearchCommandAST): string {
     .map((filter) => `(${compileCompareExpression(filter)})`)
     .join(" && ");
   return `
-		function* searchCommand(records) {
-			for (const record of records) {
-				if (
-					${conditions}
-				) {
-					yield record;
-				}
-			}
-		}
-	`;
+    function* searchCommand(records) {
+      for (const record of records) {
+        if (
+          ${conditions}
+        ) {
+          yield record;
+        }
+      }
+    }
+  `;
 }

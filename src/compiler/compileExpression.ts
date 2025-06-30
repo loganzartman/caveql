@@ -58,10 +58,10 @@ export function compileCompareExpression(
     case "number":
       if (!comparison) {
         return `
-					Object.entries(record)
-						.flat()
-						.some((v) => v == ${expr.value})
-				`;
+          Object.entries(record)
+            .flat()
+            .some((v) => v == ${expr.value})
+        `;
       }
       if (lhs) {
         throw new Error(
@@ -75,10 +75,10 @@ export function compileCompareExpression(
     case "string":
       if (!comparison) {
         return `
-					Object.entries(record)
-						.flat()
-						.some((v) => looseEq(v, ${JSON.stringify(expr.value)}))
-				`;
+          Object.entries(record)
+            .flat()
+            .some((v) => looseEq(v, ${JSON.stringify(expr.value)}))
+        `;
       }
       if (lhs || !expr.quoted) {
         return `record${asPathAccessor(expr)}`;
