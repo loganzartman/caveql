@@ -1,11 +1,11 @@
-import type { CommandAST, QueryAST } from "../parser";
 import { impossible } from "../impossible";
-import { compileSearchCommand } from "./command/compileSearchCommand";
+import type { CommandAST, QueryAST } from "../parser";
 import { compileEvalCommand } from "./command/compileEvalCommand";
 import { compileMakeresultsCommand } from "./command/compileMakeresultsCommand";
-import { compileWhereCommand } from "./command/compileWhereCommand";
+import { compileSearchCommand } from "./command/compileSearchCommand";
 import { compileStatsCommand } from "./command/compileStatsCommand";
 import { compileStreamstatsCommand } from "./command/compileStreamstatsCommand";
+import { compileWhereCommand } from "./command/compileWhereCommand";
 
 export type QueryFunction = ((
   records: Iterable<unknown>,

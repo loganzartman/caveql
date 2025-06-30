@@ -1,5 +1,10 @@
 import type { StatsCommandAST } from "../../parser";
-import { compileAggregationInit, compileAggregationCollect, compileAggregationFinal, aggKey } from "../compileAggregation";
+import {
+  aggKey,
+  compileAggregationCollect,
+  compileAggregationFinal,
+  compileAggregationInit,
+} from "../compileAggregation";
 
 export function compileStatsCommand(command: StatsCommandAST): string {
   return `

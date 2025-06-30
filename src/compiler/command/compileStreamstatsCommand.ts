@@ -1,7 +1,14 @@
 import type { StreamstatsCommandAST } from "../../parser";
-import { compileAggregationInit, compileAggregationCollect, compileAggregationFinal, aggKey } from "../compileAggregation";
+import {
+  aggKey,
+  compileAggregationCollect,
+  compileAggregationFinal,
+  compileAggregationInit,
+} from "../compileAggregation";
 
-export function compileStreamstatsCommand(command: StreamstatsCommandAST): string {
+export function compileStreamstatsCommand(
+  command: StreamstatsCommandAST,
+): string {
   return `
 		function* (records) {
 			const agg = {

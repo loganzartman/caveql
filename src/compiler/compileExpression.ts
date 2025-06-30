@@ -1,5 +1,5 @@
-import type { ExpressionAST } from "../parser";
 import { impossible } from "../impossible";
+import type { ExpressionAST } from "../parser";
 
 export function compileExpression(expr: ExpressionAST): string {
   switch (expr.type) {

@@ -1,7 +1,7 @@
 "use no memo";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 export function ResultsTable({
   results,

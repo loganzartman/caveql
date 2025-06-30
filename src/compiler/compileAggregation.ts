@@ -1,5 +1,5 @@
-import type { AggregationTermAST } from "../parser";
 import { impossible } from "../impossible";
+import type { AggregationTermAST } from "../parser";
 import { compileExpression } from "./compileExpression";
 import { must } from "./utils";
 
@@ -83,7 +83,9 @@ export function compileAggregationCollect(agg: AggregationTermAST): string {
   }
 }
 
-export function compileAggregationFinal(agg: AggregationTermAST): string | undefined {
+export function compileAggregationFinal(
+  agg: AggregationTermAST,
+): string | undefined {
   const k = aggKey(agg);
   switch (agg.type) {
     case "avg":

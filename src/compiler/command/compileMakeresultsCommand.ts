@@ -1,7 +1,9 @@
-import type { MakeresultsCommandAST } from "../../parser";
 import { impossible } from "../../impossible";
+import type { MakeresultsCommandAST } from "../../parser";
 
-export function compileMakeresultsCommand(command: MakeresultsCommandAST): string {
+export function compileMakeresultsCommand(
+  command: MakeresultsCommandAST,
+): string {
   if (command.data) {
     let data: unknown[];
     if (command.format === "json") {
