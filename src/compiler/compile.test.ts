@@ -374,4 +374,48 @@ describe("compiler", () => {
       ]);
     });
   });
+
+  describe("eval", () => {
+    it("can set a field to a literal string", () => {
+      const run = compileQuery(parseQuery("| eval newField='hey'"));
+      const results = [...run([{ id: 1 }, { id: 2 }])];
+
+      assert.deepEqual(results, [
+        { id: 1, newField: "hey" },
+        { id: 2, newField: "hey" },
+      ]);
+    });
+
+    it("can deeply set a new field to a literal string", () => {
+      const run = compileQuery(parseQuery("| eval newField.nested='hey'"));
+      const results = [...run([{ id: 1 }, { id: 2 }])];
+
+      assert.deepEqual(results, [
+        { id: 1, newField: { nested: "hey" } },
+        { id: 2, newField: { nested: "hey" } },
+      ]);
+    });
+
+    it("can deeply set an existing field to a literal string", () => {
+      const run = compileQuery(parseQuery("| eval newField.nested='hey'"));
+      const results = [
+        ...run([
+          { id: 1, newField: { nested: "old", test: "value" } },
+          { id: 2, newField: { nested: "old", test: "value" } },
+        ]),
+      ];
+
+      assert.deepEqual(results, [
+        { id: 1, newField: { nested: "hey", test: "value" } },
+        { id: 2, newField: { nested: "hey", test: "value" } },
+      ]);
+    });
+
+    it("can be used to rename a field", () => {
+      const run = compileQuery(parseQuery("| eval newField=oldField"));
+      const results = [...run([{ oldField: "value" }])];
+
+      assert.deepEqual(results, [{ newField: "value", oldField: "value" }]);
+    });
+  });
 });
