@@ -1,6 +1,6 @@
 import { impossible } from "../impossible";
 import type { ExpressionAST } from "../parser";
-import { asPathAccessor } from "./utils";
+import { compilePathGet } from "./utils";
 
 export function compileExpression(expr: ExpressionAST): string {
   switch (expr.type) {
@@ -11,7 +11,7 @@ export function compileExpression(expr: ExpressionAST): string {
       return `${expr.value}`;
     case "string":
       if (!expr.quoted) {
-        return `record${asPathAccessor(expr)}`;
+        return compilePathGet("record", expr.value);
       }
       return JSON.stringify(expr.value);
     case "<":
@@ -81,7 +81,7 @@ export function compileCompareExpression(
         `;
       }
       if (lhs || !expr.quoted) {
-        return `record${asPathAccessor(expr)}`;
+        return compilePathGet("record", expr.value);
       }
       return JSON.stringify(expr.value);
     case "<":

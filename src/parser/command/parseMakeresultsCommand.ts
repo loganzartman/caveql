@@ -9,7 +9,20 @@ import {
   type StringAST,
 } from "../parseCommon";
 import type { ParseContext } from "../types";
-import type { MakeresultsCommandAST } from "./parseWhereCommand";
+
+export type MakeresultsCommandAST = {
+  type: "makeresults";
+  count: NumericAST;
+} & (
+  | {
+      format: "csv" | "json";
+      data: StringAST;
+    }
+  | {
+      format?: undefined;
+      data?: undefined;
+    }
+);
 
 export function parseMakeresultsCommand(
   ctx: ParseContext,

@@ -2,7 +2,14 @@ import {
   type EvalCommandAST,
   parseEvalCommand,
 } from "./command/parseEvalCommand";
-import { parseMakeresultsCommand } from "./command/parseMakeresultsCommand";
+import {
+  type FieldsCommandAST,
+  parseFieldsCommand,
+} from "./command/parseFieldsCommand";
+import {
+  type MakeresultsCommandAST,
+  parseMakeresultsCommand,
+} from "./command/parseMakeresultsCommand";
 import {
   parseSearchCommand,
   type SearchCommandAST,
@@ -20,7 +27,6 @@ import {
   type StreamstatsCommandAST,
 } from "./command/parseStreamstatsCommand";
 import {
-  type MakeresultsCommandAST,
   parseWhereCommand,
   type WhereCommandAST,
 } from "./command/parseWhereCommand";
@@ -29,6 +35,7 @@ import type { ParseContext } from "./types";
 
 export type CommandAST =
   | EvalCommandAST
+  | FieldsCommandAST
   | MakeresultsCommandAST
   | SearchCommandAST
   | SortCommandAST
@@ -40,6 +47,7 @@ export function parseCommand(ctx: ParseContext): CommandAST {
   return parseOne(
     ctx,
     parseEvalCommand,
+    parseFieldsCommand,
     parseMakeresultsCommand,
     parseSearchCommand,
     parseSortCommand,

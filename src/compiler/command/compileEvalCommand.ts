@@ -5,7 +5,7 @@ import { asPath } from "../utils";
 export function compileEvalCommand(command: EvalCommandAST): string {
   const exprs = command.bindings
     .map(([prop, expr]) => {
-      const path = asPath(prop);
+      const path = asPath(prop.value);
       if (path.length === 1) {
         return `${JSON.stringify(path[0])}: (${compileExpression(expr)})`;
       }

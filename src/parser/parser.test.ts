@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { FieldsCommandAST } from "./command/parseFieldsCommand";
 import type { SortCommandAST } from "./command/parseSortCommand";
 import {
   type EvalCommandAST,
@@ -537,6 +538,64 @@ describe("parser", () => {
             desc: undefined,
           },
         ],
+      });
+    });
+  });
+
+  describe("fields command", () => {
+    it("parses simple fields command", () => {
+      const result = parseQuery("| fields a");
+      const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
+
+      assert.deepEqual(fieldsCmd, {
+        type: "fields",
+        fields: [{ type: "string", quoted: false, value: "a" }],
+        remove: undefined,
+      });
+    });
+
+    it("parses multiple fields", () => {
+      const result = parseQuery("| fields a, b, c");
+      const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
+
+      assert.deepEqual(fieldsCmd, {
+        type: "fields",
+        fields: [
+          { type: "string", quoted: false, value: "a" },
+          { type: "string", quoted: false, value: "b" },
+          { type: "string", quoted: false, value: "c" },
+        ],
+        remove: undefined,
+      });
+    });
+
+    it("parses multiple removed fields", () => {
+      const result = parseQuery("| fields -a, b, c");
+      const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
+
+      assert.deepEqual(fieldsCmd, {
+        type: "fields",
+        fields: [
+          { type: "string", quoted: false, value: "a" },
+          { type: "string", quoted: false, value: "b" },
+          { type: "string", quoted: false, value: "c" },
+        ],
+        remove: true,
+      });
+    });
+
+    it("parses explicit retained fields", () => {
+      const result = parseQuery("| fields +a, b, c");
+      const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
+
+      assert.deepEqual(fieldsCmd, {
+        type: "fields",
+        fields: [
+          { type: "string", quoted: false, value: "a" },
+          { type: "string", quoted: false, value: "b" },
+          { type: "string", quoted: false, value: "c" },
+        ],
+        remove: false,
       });
     });
   });

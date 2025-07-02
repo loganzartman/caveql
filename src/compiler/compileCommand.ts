@@ -1,6 +1,7 @@
 import { impossible } from "../impossible";
 import type { CommandAST } from "../parser/parseCommand";
 import { compileEvalCommand } from "./command/compileEvalCommand";
+import { compileFieldsCommand } from "./command/compileFieldsCommand";
 import { compileMakeresultsCommand } from "./command/compileMakeresultsCommand";
 import { compileSearchCommand } from "./command/compileSearchCommand";
 import { compileSortCommand } from "./command/compileSortCommand";
@@ -14,6 +15,8 @@ export function compileCommand(command: CommandAST): string {
       return compileSearchCommand(command);
     case "eval":
       return compileEvalCommand(command);
+    case "fields":
+      return compileFieldsCommand(command);
     case "makeresults":
       return compileMakeresultsCommand(command);
     case "where":

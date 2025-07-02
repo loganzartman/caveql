@@ -3,7 +3,7 @@ import type {
   SortCommandAST,
   SortFieldAST,
 } from "../../parser/command/parseSortCommand";
-import { asPathAccessor } from "../utils";
+import { compilePathGet } from "../utils";
 
 export function compileSortCommand(command: SortCommandAST): string {
   const { count, fields } = command;
@@ -43,13 +43,13 @@ export function compileSortComparator(fields: SortFieldAST[]): string {
     switch (field.comparator) {
       case undefined:
       case "auto":
-        return `${reversedSign}compareFieldAuto(a${asPathAccessor(field.field)}, b${asPathAccessor(field.field)})`;
+        return `${reversedSign}compareFieldAuto(${compilePathGet("a", field.field.value)}, ${compilePathGet("b", field.field.value)})`;
       case "ip":
         throw new Error("IP sort comparison not implemented");
       case "num":
-        return `${reversedSign}compareFieldNumber(a${asPathAccessor(field.field)}, b${asPathAccessor(field.field)})`;
+        return `${reversedSign}compareFieldNumber(${compilePathGet("a", field.field.value)}, ${compilePathGet("b", field.field.value)})`;
       case "str":
-        return `${reversedSign}compareFieldString(a${asPathAccessor(field.field)}, b${asPathAccessor(field.field)})`;
+        return `${reversedSign}compareFieldString(${compilePathGet("a", field.field.value)}, ${compilePathGet("b", field.field.value)})`;
       default:
         impossible(field.comparator);
     }

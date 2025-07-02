@@ -278,4 +278,100 @@ describe("compiler", () => {
       ]);
     });
   });
+
+  describe("fields", () => {
+    it("reorders fields in records", () => {
+      const run = compileQuery(parseQuery("| fields population, country"));
+      const results = [
+        ...run([
+          { country: "AUS", population: 1000 },
+          { country: "CA", population: 500 },
+          { country: "US", population: 300 },
+        ]),
+      ];
+
+      assert.deepEqual(
+        Object.values(results).map((v) => Object.keys(v)),
+        [
+          ["population", "country"],
+          ["population", "country"],
+          ["population", "country"],
+        ],
+      );
+    });
+
+    it("removes specified fields from records", () => {
+      const run = compileQuery(parseQuery("| fields -country, population"));
+      const results = [
+        ...run([
+          { country: "AUS", value: 3, population: 1000, food: "pavlova" },
+          { country: "CA", value: 2, population: 500, food: "poutine" },
+          { country: "US", value: 1, population: 300, food: "pizza" },
+        ]),
+      ];
+
+      assert.deepEqual(results, [
+        { value: 3, food: "pavlova" },
+        { value: 2, food: "poutine" },
+        { value: 1, food: "pizza" },
+      ]);
+    });
+
+    it("retains specified fields in records", () => {
+      const run = compileQuery(parseQuery("| fields country, food"));
+      const results = [
+        ...run([
+          { country: "AUS", value: 3, population: 1000, food: "pavlova" },
+          { country: "CA", value: 2, population: 500, food: "poutine" },
+          { country: "US", value: 1, population: 300, food: "pizza" },
+        ]),
+      ];
+
+      assert.deepEqual(results, [
+        { country: "AUS", food: "pavlova" },
+        { country: "CA", food: "poutine" },
+        { country: "US", food: "pizza" },
+      ]);
+    });
+
+    it("removes specified deep fields from records", () => {
+      const run = compileQuery(parseQuery("| fields -population.count"));
+      const results = [
+        ...run([
+          { country: "AUS", value: 3, population: { count: 1000 } },
+          { country: "CA", value: 2, population: { count: 500 } },
+          { country: "US", value: 1, population: { count: 300 } },
+        ]),
+      ];
+
+      assert.deepEqual(results, [
+        { country: "AUS", value: 3, population: {} },
+        { country: "CA", value: 2, population: {} },
+        { country: "US", value: 1, population: {} },
+      ]);
+    });
+
+    it("retains specified deep fields in records", () => {
+      const run = compileQuery(
+        parseQuery("| fields country, population.count"),
+      );
+      const results = [
+        ...run([
+          {
+            country: "AUS",
+            value: 3,
+            population: { count: 1000, type: "int" },
+          },
+          { country: "CA", value: 2, population: { count: 500, type: "int" } },
+          { country: "US", value: 1, population: { count: 300, type: "int" } },
+        ]),
+      ];
+
+      assert.deepEqual(results, [
+        { country: "AUS", population: { count: 1000 } },
+        { country: "CA", population: { count: 500 } },
+        { country: "US", population: { count: 300 } },
+      ]);
+    });
+  });
 });
