@@ -2,6 +2,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
+import { ValView } from "./ValView";
 
 export function ResultsTable({
   results,
@@ -68,14 +69,9 @@ export function ResultsTable({
             {cols.map((col) => (
               <div
                 key={col}
-                className={clsx(
-                  "flex-1 px-3 py-1 hover:bg-amber-900/50 hover:text-amber-100",
-                  ["number", "bigint"].includes(
-                    typeof results[item.index][col],
-                  ) && "text-purple-300",
-                )}
+                className="flex-1 px-3 py-1 hover:bg-amber-900/50 hover:text-amber-100"
               >
-                {String(results[item.index][col])}
+                <ValView val={results[item.index][col]} />
               </div>
             ))}
           </div>
