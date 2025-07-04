@@ -21,7 +21,7 @@ export function parseEvalCommand(ctx: ParseContext): EvalCommandAST {
   while (true) {
     try {
       parseWs(ctx);
-      const name = parseString(ctx);
+      const name = parseString(ctx, { isField: true });
       parseWs(ctx);
       parseLiteral(ctx, [Token.operator, "="]);
       parseWs(ctx);

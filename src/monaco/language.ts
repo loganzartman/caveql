@@ -7,6 +7,7 @@ import { Token } from "../tokens";
 const tokenMapping = {
   [Token.comma]: "delimiter.comma",
   [Token.command]: "keyword.command",
+  [Token.field]: "variable.other.property",
   [Token.function]: "keyword.function",
   [Token.number]: "number",
   [Token.operator]: "operator",

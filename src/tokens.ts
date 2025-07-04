@@ -1,6 +1,7 @@
 export enum Token {
   comma,
   command,
+  field,
   function,
   number,
   operator,

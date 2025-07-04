@@ -31,7 +31,13 @@ export function ResultsTable({
           <div>No results.</div>
         </div>
       )}
-      <div className="sticky z-10 flex flex-row -top-4 bg-stone-400 text-stone-950 font-bold">
+      <div
+        className="sticky z-10 flex flex-row -top-4 text-red-300 font-mono font-bold"
+        style={{
+          background:
+            "color-mix(in srgb, var(--color-red-500), var(--color-stone-800) 90%)",
+        }}
+      >
         {cols.map((col) => (
           <div key={col} className="flex-1 px-3 py-1">
             {col}
@@ -62,7 +68,12 @@ export function ResultsTable({
             {cols.map((col) => (
               <div
                 key={col}
-                className="flex-1 px-3 py-1 hover:bg-amber-900/50 hover:text-amber-100"
+                className={clsx(
+                  "flex-1 px-3 py-1 hover:bg-amber-900/50 hover:text-amber-100",
+                  ["number", "bigint"].includes(
+                    typeof results[item.index][col],
+                  ) && "text-purple-300",
+                )}
               >
                 {String(results[item.index][col])}
               </div>

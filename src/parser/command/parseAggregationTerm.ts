@@ -43,7 +43,7 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     parseWs(ctx);
     parseLiteral(ctx, [Token.paren, "("]);
     parseWs(ctx);
-    field = parseString(ctx);
+    field = parseString(ctx, { isField: true });
     parseWs(ctx);
     parseLiteral(ctx, [Token.paren, ")"]);
   } catch {

@@ -71,7 +71,7 @@ export function parseSortField(ctx: ParseContext): SortFieldAST {
       parseWs(c);
       parseLiteral(c, [Token.paren, "("]);
       parseWs(c);
-      const field = parseString(c);
+      const field = parseString(c, { isField: true });
       parseWs(c);
       parseLiteral(c, [Token.paren, ")"]);
       return { field, comparator };

@@ -25,26 +25,39 @@ export function parseParam<T>(
 
 export type StringAST = { type: "string"; quoted: boolean; value: string };
 
-export function parseString(ctx: ParseContext): StringAST {
+export function parseString(
+  ctx: ParseContext,
+  { isField = false }: { isField?: boolean } = {},
+): StringAST {
   return parseOne(
     ctx,
     (c) =>
       ({
         type: "string",
         quoted: true,
-        value: parseRex(c, Token.string, /"((?:[^\\"]|\\.)*)"/, 1),
+        value: parseRex(
+          c,
+          isField ? Token.field : Token.string,
+          /"((?:[^\\"]|\\.)*)"/,
+          1,
+        ),
       }) as const,
     (c) =>
       ({
         type: "string",
         quoted: true,
-        value: parseRex(c, Token.string, /'((?:[^\\']|\\.)*)'/, 1),
+        value: parseRex(
+          c,
+          isField ? Token.field : Token.string,
+          /'((?:[^\\']|\\.)*)'/,
+          1,
+        ),
       }) as const,
     (c) =>
       ({
         type: "string",
         quoted: false,
-        value: parseRex(c, Token.string, /[\p{L}$_][\p{L}\p{N}\-$_.]*/u),
+        value: parseRex(c, Token.field, /[\p{L}$_][\p{L}\p{N}\-$_.]*/u),
       }) as const,
   );
 }
