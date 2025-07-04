@@ -1,3 +1,4 @@
+import { Token } from "../../tokens";
 import { parseLiteral, parseWs } from "../parseCommon";
 import { type ExpressionAST, parseExpr } from "../parseExpr";
 import type { ParseContext } from "../types";
@@ -9,7 +10,7 @@ export type SearchCommandAST = {
 
 export function parseSearchCommand(ctx: ParseContext): SearchCommandAST {
   parseWs(ctx);
-  parseLiteral(ctx, "search");
+  parseLiteral(ctx, [Token.command, "search"]);
   parseWs(ctx);
   return parseBareSearch(ctx);
 }

@@ -1,3 +1,4 @@
+import { Token } from "../../tokens";
 import { parseLiteral, parseWs } from "../parseCommon";
 import type { ParseContext } from "../types";
 import {
@@ -12,7 +13,7 @@ export type StatsCommandAST = {
 
 export function parseStatsCommand(ctx: ParseContext): StatsCommandAST {
   parseWs(ctx);
-  parseLiteral(ctx, "stats");
+  parseLiteral(ctx, [Token.command, "stats"]);
 
   const terms: AggregationTermAST[] = [];
   while (true) {

@@ -1,3 +1,4 @@
+import { Token } from "../../tokens";
 import {
   parseLiteral,
   parseOptional,
@@ -15,11 +16,13 @@ export type FieldsCommandAST = {
 
 export function parseFieldsCommand(ctx: ParseContext): FieldsCommandAST {
   parseWs(ctx);
-  parseLiteral(ctx, "fields");
+  parseLiteral(ctx, [Token.command, "fields"]);
 
   parseWs(ctx);
   let remove: boolean | undefined;
-  const plusMinus = parseOptional(ctx, (c) => parseLiteral(c, "+", "-"));
+  const plusMinus = parseOptional(ctx, (c) =>
+    parseLiteral(c, [Token.operator, "+"], [Token.operator, "-"]),
+  );
   if (plusMinus === "-") remove = true;
   if (plusMinus === "+") remove = false;
 
@@ -29,7 +32,7 @@ export function parseFieldsCommand(ctx: ParseContext): FieldsCommandAST {
       parseWs(ctx);
       fields.push(parseString(ctx));
       parseWs(ctx);
-      parseLiteral(ctx, ",");
+      parseLiteral(ctx, [Token.comma, ","]);
     } catch {
       break;
     }

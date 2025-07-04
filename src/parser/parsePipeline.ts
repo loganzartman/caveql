@@ -1,3 +1,4 @@
+import { Token } from "../tokens";
 import { parseBareSearch } from "./command/parseSearchCommand";
 import { type CommandAST, parseCommand } from "./parseCommand";
 import { parseLiteral, parseOne, parseWs } from "./parseCommon";
@@ -15,7 +16,7 @@ export function parsePipeline(ctx: ParseContext): CommandAST[] {
         : parseCommand(ctx);
       commands.push(command);
       parseWs(ctx);
-      parseLiteral(ctx, "|");
+      parseLiteral(ctx, [Token.pipe, "|"]);
     } catch {
       break;
     }

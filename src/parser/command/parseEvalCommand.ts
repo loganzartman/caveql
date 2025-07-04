@@ -1,3 +1,4 @@
+import { Token } from "../../tokens";
 import {
   parseLiteral,
   parseString,
@@ -14,7 +15,7 @@ export type EvalCommandAST = {
 
 export function parseEvalCommand(ctx: ParseContext): EvalCommandAST {
   parseWs(ctx);
-  parseLiteral(ctx, "eval");
+  parseLiteral(ctx, [Token.command, "eval"]);
 
   const bindings: [StringAST, ExpressionAST][] = [];
   while (true) {
@@ -22,13 +23,13 @@ export function parseEvalCommand(ctx: ParseContext): EvalCommandAST {
       parseWs(ctx);
       const name = parseString(ctx);
       parseWs(ctx);
-      parseLiteral(ctx, "=");
+      parseLiteral(ctx, [Token.operator, "="]);
       parseWs(ctx);
       const expr = parseExpr(ctx);
       bindings.push([name, expr]);
 
       parseWs(ctx);
-      parseLiteral(ctx, ",");
+      parseLiteral(ctx, [Token.comma, ","]);
     } catch {
       break;
     }

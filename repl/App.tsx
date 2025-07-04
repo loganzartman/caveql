@@ -72,7 +72,7 @@ export function App() {
     let code: string | null = null;
     let results: Record<string, unknown>[] | null;
     try {
-      const tree = parseQuery(source);
+      const tree = parseQuery(source).ast;
       treeString = formatTree(tree);
       const run = compileQuery(tree);
       code = formatJS(run.source);

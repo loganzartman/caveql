@@ -11,7 +11,7 @@ import {
 
 describe("parser", () => {
   it("parses basic search with key-value", () => {
-    const result = parseQuery("search a=b");
+    const result = parseQuery("search a=b").ast;
     assert.deepEqual(result, {
       type: "query",
       pipeline: [
@@ -31,7 +31,7 @@ describe("parser", () => {
 
   describe("strings", () => {
     it("handles a double-quoted string", () => {
-      const result = parseQuery(`"hello world!"`);
+      const result = parseQuery(`"hello world!"`).ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [
@@ -50,7 +50,7 @@ describe("parser", () => {
     });
 
     it("handles a single-quoted string", () => {
-      const result = parseQuery(`'hello world!'`);
+      const result = parseQuery(`'hello world!'`).ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [
@@ -69,7 +69,7 @@ describe("parser", () => {
     });
 
     it("handles a bare string", () => {
-      const result = parseQuery("h3llo-world$");
+      const result = parseQuery("h3llo-world$").ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [
@@ -90,7 +90,7 @@ describe("parser", () => {
 
   describe("search", () => {
     it("parses multiple search terms as separate filters", () => {
-      const result = parseQuery("search a=1 and b=2 or c=3");
+      const result = parseQuery("search a=1 and b=2 or c=3").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       // In Splunk, this would be searching for records containing "a=1", "and", "b=2", "or", "c=3" as separate terms
       assert.equal(searchCmd.filters.length, 5);
@@ -122,7 +122,7 @@ describe("parser", () => {
     });
 
     it("parses logical expressions using uppercase operators", () => {
-      const result = parseQuery("search a=1 AND b=2 OR NOT c=3");
+      const result = parseQuery("search a=1 AND b=2 OR NOT c=3").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.equal(searchCmd.filters.length, 1);
       assert.deepEqual(searchCmd.filters[0], {
@@ -152,7 +152,7 @@ describe("parser", () => {
     });
 
     it("respects parentheses for grouping", () => {
-      const result = parseQuery("search NOT (a=1)");
+      const result = parseQuery("search NOT (a=1)").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.deepEqual(searchCmd.filters[0], {
         type: "NOT",
@@ -167,7 +167,7 @@ describe("parser", () => {
 
   describe("pipelines", () => {
     it("parses simple pipeline with search and where", () => {
-      const result = parseQuery("search a=b | where a<2");
+      const result = parseQuery("search a=b | where a<2").ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [
@@ -194,7 +194,7 @@ describe("parser", () => {
     });
 
     it("allows bare search as first command", () => {
-      const result = parseQuery("a<b AND c=d");
+      const result = parseQuery("a<b AND c=d").ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [
@@ -221,7 +221,7 @@ describe("parser", () => {
     });
 
     it("parses three-command pipeline", () => {
-      const result = parseQuery("search a=b | where a<2 | stats");
+      const result = parseQuery("search a=b | where a<2 | stats").ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [
@@ -252,7 +252,7 @@ describe("parser", () => {
     });
 
     it("parses complex expressions in pipeline", () => {
-      const result = parseQuery("search x=1 and y=2 | where z>5 or w<10");
+      const result = parseQuery("search x=1 and y=2 | where z>5 or w<10").ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [
@@ -299,7 +299,7 @@ describe("parser", () => {
 
   describe("expressions", () => {
     it("parses simple identifiers in where clauses", () => {
-      const result = parseQuery("where a");
+      const result = parseQuery("where a").ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;
       assert.deepEqual(whereCmd, {
         type: "where",
@@ -308,7 +308,7 @@ describe("parser", () => {
     });
 
     it("parses numeric literals in where clauses", () => {
-      const result = parseQuery("where 123");
+      const result = parseQuery("where 123").ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;
       assert.deepEqual(whereCmd, {
         type: "where",
@@ -317,7 +317,7 @@ describe("parser", () => {
     });
 
     it("parses quoted strings", () => {
-      const result = parseQuery('where "hello"');
+      const result = parseQuery('where "hello"').ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;
       assert.deepEqual(whereCmd, {
         type: "where",
@@ -328,7 +328,7 @@ describe("parser", () => {
 
   describe("individual commands", () => {
     it("parses stats command", () => {
-      const result = parseQuery("stats");
+      const result = parseQuery("stats").ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [{ type: "stats", aggregations: [] }],
@@ -336,7 +336,7 @@ describe("parser", () => {
     });
 
     it("parses where command with comparison", () => {
-      const result = parseQuery("where a >= 5");
+      const result = parseQuery("where a >= 5").ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;
       assert.deepEqual(whereCmd, {
         type: "where",
@@ -351,7 +351,7 @@ describe("parser", () => {
 
   describe("operator case sensitivity", () => {
     it("uses uppercase operators (AND, OR, NOT) in search command comparison expressions", () => {
-      const result = parseQuery("search a=1 AND b=2 OR NOT c=3");
+      const result = parseQuery("search a=1 AND b=2 OR NOT c=3").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.deepEqual(searchCmd.filters[0], {
         type: "OR",
@@ -380,7 +380,7 @@ describe("parser", () => {
     });
 
     it("uses lowercase operators (and, or, not) in eval command expressions", () => {
-      const result = parseQuery("eval result = a=1 and b=2 or not c=3");
+      const result = parseQuery("eval result = a=1 and b=2 or not c=3").ast;
       const evalCmd = result.pipeline[0] as EvalCommandAST;
       assert.deepEqual(evalCmd.bindings[0][1], {
         type: "or",
@@ -411,7 +411,7 @@ describe("parser", () => {
 
   describe("sort command", () => {
     it("parses simple sort command", () => {
-      const result = parseQuery("| sort a");
+      const result = parseQuery("| sort a").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
       assert.deepEqual(sortCmd, {
         type: "sort",
@@ -428,7 +428,7 @@ describe("parser", () => {
     });
 
     it("parses sort with count", () => {
-      const result = parseQuery("| sort 1000 a");
+      const result = parseQuery("| sort 1000 a").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
       assert.deepEqual(sortCmd, {
         type: "sort",
@@ -445,7 +445,7 @@ describe("parser", () => {
     });
 
     it("parses sort with comparator", () => {
-      const result = parseQuery("| sort 1000 str(a)");
+      const result = parseQuery("| sort 1000 str(a)").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
       assert.deepEqual(sortCmd, {
         type: "sort",
@@ -462,7 +462,7 @@ describe("parser", () => {
     });
 
     it("parses sort with descending field", () => {
-      const result = parseQuery("| sort -a");
+      const result = parseQuery("| sort -a").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
       assert.deepEqual(sortCmd, {
         type: "sort",
@@ -479,7 +479,7 @@ describe("parser", () => {
     });
 
     it("parses sort with explicit ascending field", () => {
-      const result = parseQuery("| sort +a");
+      const result = parseQuery("| sort +a").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
       assert.deepEqual(sortCmd, {
         type: "sort",
@@ -496,7 +496,7 @@ describe("parser", () => {
     });
 
     it("parses sort with comparator and descending field", () => {
-      const result = parseQuery("| sort -str(a)");
+      const result = parseQuery("| sort -str(a)").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
       assert.deepEqual(sortCmd, {
         type: "sort",
@@ -513,7 +513,7 @@ describe("parser", () => {
     });
 
     it("parses complex sort", () => {
-      const result = parseQuery("| sort 200 -str(a), beta, auto(gamma)");
+      const result = parseQuery("| sort 200 -str(a), beta, auto(gamma)").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
       assert.deepEqual(sortCmd, {
         type: "sort",
@@ -544,7 +544,7 @@ describe("parser", () => {
 
   describe("fields command", () => {
     it("parses simple fields command", () => {
-      const result = parseQuery("| fields a");
+      const result = parseQuery("| fields a").ast;
       const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
 
       assert.deepEqual(fieldsCmd, {
@@ -555,7 +555,7 @@ describe("parser", () => {
     });
 
     it("parses multiple fields", () => {
-      const result = parseQuery("| fields a, b, c");
+      const result = parseQuery("| fields a, b, c").ast;
       const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
 
       assert.deepEqual(fieldsCmd, {
@@ -570,7 +570,7 @@ describe("parser", () => {
     });
 
     it("parses multiple removed fields", () => {
-      const result = parseQuery("| fields -a, b, c");
+      const result = parseQuery("| fields -a, b, c").ast;
       const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
 
       assert.deepEqual(fieldsCmd, {
@@ -585,7 +585,7 @@ describe("parser", () => {
     });
 
     it("parses explicit retained fields", () => {
-      const result = parseQuery("| fields +a, b, c");
+      const result = parseQuery("| fields +a, b, c").ast;
       const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
 
       assert.deepEqual(fieldsCmd, {

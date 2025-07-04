@@ -1,3 +1,4 @@
+import { Token } from "../tokens";
 import {
   type NumericAST,
   parseLiteral,
@@ -83,7 +84,10 @@ function parseBinaryLevel(
   while (true) {
     try {
       parseWs(ctx);
-      const op = parseLiteral(ctx, ...operators);
+      const op = parseLiteral(
+        ctx,
+        ...operators.map((o) => [Token.operator, o] as [Token, BinaryOpType]),
+      );
       parseWs(ctx);
       const right = nextLevel(ctx);
       left = {
@@ -111,9 +115,9 @@ export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
     parseWs(ctx);
     let op: UnaryOpType;
     if (ctx.compareExpr) {
-      op = parseLiteral(ctx, "NOT");
+      op = parseLiteral(ctx, [Token.operator, "NOT"]);
     } else {
-      op = parseLiteral(ctx, "not");
+      op = parseLiteral(ctx, [Token.operator, "not"]);
     }
 
     parseWs(ctx);
@@ -129,10 +133,10 @@ export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
 
 export function parseGroup(ctx: ParseContext): ExpressionAST {
   parseWs(ctx);
-  parseLiteral(ctx, "(");
+  parseLiteral(ctx, [Token.paren, "("]);
   parseWs(ctx);
   const expr = parseExpr(ctx);
   parseWs(ctx);
-  parseLiteral(ctx, ")");
+  parseLiteral(ctx, [Token.paren, ")"]);
   return expr;
 }

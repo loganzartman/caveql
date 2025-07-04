@@ -1,3 +1,4 @@
+import { Token } from "../../tokens";
 import {
   type NumericAST,
   parseLiteral,
@@ -28,7 +29,7 @@ export function parseMakeresultsCommand(
   ctx: ParseContext,
 ): MakeresultsCommandAST {
   parseWs(ctx);
-  parseLiteral(ctx, "makeresults");
+  parseLiteral(ctx, [Token.command, "makeresults"]);
 
   let count: NumericAST = { type: "number", value: 1n };
   let format: "csv" | "json" | undefined;
@@ -44,7 +45,7 @@ export function parseMakeresultsCommand(
         },
         (c) => {
           format = parseParam(c, "format", (c) =>
-            parseLiteral(c, "csv", "json"),
+            parseLiteral(c, [Token.string, "csv"], [Token.string, "json"]),
           );
         },
         (c) => {

@@ -1,3 +1,4 @@
+import { Token } from "../../tokens";
 import { parseLiteral, parseWs } from "../parseCommon";
 import type { ParseContext } from "../types";
 import {
@@ -14,7 +15,7 @@ export function parseStreamstatsCommand(
   ctx: ParseContext,
 ): StreamstatsCommandAST {
   parseWs(ctx);
-  parseLiteral(ctx, "streamstats");
+  parseLiteral(ctx, [Token.command, "streamstats"]);
 
   const terms: AggregationTermAST[] = [];
   while (true) {

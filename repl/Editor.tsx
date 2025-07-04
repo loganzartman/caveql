@@ -32,8 +32,10 @@ export function Editor({
 
     firstUpdateRef.current = true;
     const editor = monaco.editor.create(divEl.current, {
+      language: "caveql",
+      "semanticHighlighting.enabled": true,
+
       value: "",
-      placeholder: "Enter your query here...",
       minimap: {
         enabled: false,
       },
@@ -46,7 +48,7 @@ export function Editor({
       },
 
       // visual
-      theme: "vs-dark",
+      theme: "caveql",
       overviewRulerLanes: 0,
       hideCursorInOverviewRuler: true,
       overviewRulerBorder: false,

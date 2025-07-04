@@ -6,7 +6,7 @@ import { compileQuery } from "./compileQuery";
 describe("compiler", () => {
   describe("search", () => {
     it("matches bare words", () => {
-      const run = compileQuery(parseQuery("search US"));
+      const run = compileQuery(parseQuery("search US").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -19,7 +19,7 @@ describe("compiler", () => {
     });
 
     it("matches bare numbers", () => {
-      const run = compileQuery(parseQuery("search 1"));
+      const run = compileQuery(parseQuery("search 1").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -32,7 +32,7 @@ describe("compiler", () => {
     });
 
     it("is case insensitive for bare words", () => {
-      const run = compileQuery(parseQuery("search us"));
+      const run = compileQuery(parseQuery("search us").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -45,7 +45,7 @@ describe("compiler", () => {
     });
 
     it("coerces numbers to strings", () => {
-      const run = compileQuery(parseQuery("search 1"));
+      const run = compileQuery(parseQuery("search 1").ast);
       const results = [
         ...run([
           { country: "CA", value: "2" },
@@ -57,7 +57,7 @@ describe("compiler", () => {
     });
 
     it("filters by comparison", () => {
-      const run = compileQuery(parseQuery("search value <= 2"));
+      const run = compileQuery(parseQuery("search value <= 2").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -73,7 +73,7 @@ describe("compiler", () => {
     });
 
     it("filters by key/value", () => {
-      const run = compileQuery(parseQuery("search country = 'CA'"));
+      const run = compileQuery(parseQuery("search country = 'CA'").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -86,7 +86,7 @@ describe("compiler", () => {
     });
 
     it("is case insensitive for key/value", () => {
-      const run = compileQuery(parseQuery("search country = 'ca'"));
+      const run = compileQuery(parseQuery("search country = 'ca'").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -99,7 +99,7 @@ describe("compiler", () => {
     });
 
     it("is case insensitive for inequality key/value", () => {
-      const run = compileQuery(parseQuery("search country != 'ca'"));
+      const run = compileQuery(parseQuery("search country != 'ca'").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -115,7 +115,7 @@ describe("compiler", () => {
     });
 
     it("lets boolean OR combine bare words", () => {
-      const run = compileQuery(parseQuery("search US OR CA"));
+      const run = compileQuery(parseQuery("search US OR CA").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -131,7 +131,7 @@ describe("compiler", () => {
     });
 
     it("lets boolean AND combine bare words", () => {
-      const run = compileQuery(parseQuery("search US AND WA"));
+      const run = compileQuery(parseQuery("search US AND WA").ast);
       const results = [
         ...run([
           { country: "US", state: "HI" },
@@ -144,7 +144,7 @@ describe("compiler", () => {
     });
 
     it("lets boolean NOT exclude bare words", () => {
-      const run = compileQuery(parseQuery("search NOT US"));
+      const run = compileQuery(parseQuery("search NOT US").ast);
       const results = [
         ...run([
           { country: "US", state: "HI" },
@@ -159,7 +159,7 @@ describe("compiler", () => {
 
   describe("where", () => {
     it("filters records by expression", () => {
-      const run = compileQuery(parseQuery("where value > 2"));
+      const run = compileQuery(parseQuery("where value > 2").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3 },
@@ -174,7 +174,7 @@ describe("compiler", () => {
 
   describe("sort", () => {
     it("sorts records with numeric values", () => {
-      const run = compileQuery(parseQuery("| sort value"));
+      const run = compileQuery(parseQuery("| sort value").ast);
       const results = [
         ...run([
           { country: "AUS", value: 2n },
@@ -191,7 +191,7 @@ describe("compiler", () => {
     });
 
     it("sorts records with string values, descending", () => {
-      const run = compileQuery(parseQuery("| sort -country"));
+      const run = compileQuery(parseQuery("| sort -country").ast);
       const results = [
         ...run([
           { country: "AUS", value: 2 },
@@ -208,7 +208,7 @@ describe("compiler", () => {
     });
 
     it("sorts records by two fields", () => {
-      const run = compileQuery(parseQuery("| sort country, value"));
+      const run = compileQuery(parseQuery("| sort country, value").ast);
       const results = [
         ...run([
           { country: "US", value: 2 },
@@ -225,7 +225,7 @@ describe("compiler", () => {
     });
 
     it("sorts records by heterogeneous fields", () => {
-      const run = compileQuery(parseQuery("| sort value"));
+      const run = compileQuery(parseQuery("| sort value").ast);
       const results = [
         ...run([
           { country: "A", value: "hello" },
@@ -242,7 +242,7 @@ describe("compiler", () => {
     });
 
     it("sorts records by explicit comparator", () => {
-      const run = compileQuery(parseQuery("| sort -str(value)"));
+      const run = compileQuery(parseQuery("| sort -str(value)").ast);
       const results = [
         ...run([
           { country: "C", value: 10000 },
@@ -259,7 +259,7 @@ describe("compiler", () => {
     });
 
     it("returns first N records from sorted order for count N", () => {
-      const run = compileQuery(parseQuery("| sort 3 value"));
+      const run = compileQuery(parseQuery("| sort 3 value").ast);
       const results = [
         ...run([
           { country: "A", value: 6 },
@@ -281,7 +281,7 @@ describe("compiler", () => {
 
   describe("fields", () => {
     it("reorders fields in records", () => {
-      const run = compileQuery(parseQuery("| fields population, country"));
+      const run = compileQuery(parseQuery("| fields population, country").ast);
       const results = [
         ...run([
           { country: "AUS", population: 1000 },
@@ -301,7 +301,7 @@ describe("compiler", () => {
     });
 
     it("removes specified fields from records", () => {
-      const run = compileQuery(parseQuery("| fields -country, population"));
+      const run = compileQuery(parseQuery("| fields -country, population").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3, population: 1000, food: "pavlova" },
@@ -318,7 +318,7 @@ describe("compiler", () => {
     });
 
     it("retains specified fields in records", () => {
-      const run = compileQuery(parseQuery("| fields country, food"));
+      const run = compileQuery(parseQuery("| fields country, food").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3, population: 1000, food: "pavlova" },
@@ -335,7 +335,7 @@ describe("compiler", () => {
     });
 
     it("removes specified deep fields from records", () => {
-      const run = compileQuery(parseQuery("| fields -population.count"));
+      const run = compileQuery(parseQuery("| fields -population.count").ast);
       const results = [
         ...run([
           { country: "AUS", value: 3, population: { count: 1000 } },
@@ -353,7 +353,7 @@ describe("compiler", () => {
 
     it("retains specified deep fields in records", () => {
       const run = compileQuery(
-        parseQuery("| fields country, population.count"),
+        parseQuery("| fields country, population.count").ast,
       );
       const results = [
         ...run([
@@ -377,7 +377,7 @@ describe("compiler", () => {
 
   describe("eval", () => {
     it("can set a field to a literal string", () => {
-      const run = compileQuery(parseQuery("| eval newField='hey'"));
+      const run = compileQuery(parseQuery("| eval newField='hey'").ast);
       const results = [...run([{ id: 1 }, { id: 2 }])];
 
       assert.deepEqual(results, [
@@ -387,7 +387,7 @@ describe("compiler", () => {
     });
 
     it("can deeply set a new field to a literal string", () => {
-      const run = compileQuery(parseQuery("| eval newField.nested='hey'"));
+      const run = compileQuery(parseQuery("| eval newField.nested='hey'").ast);
       const results = [...run([{ id: 1 }, { id: 2 }])];
 
       assert.deepEqual(results, [
@@ -397,7 +397,7 @@ describe("compiler", () => {
     });
 
     it("can deeply set an existing field to a literal string", () => {
-      const run = compileQuery(parseQuery("| eval newField.nested='hey'"));
+      const run = compileQuery(parseQuery("| eval newField.nested='hey'").ast);
       const results = [
         ...run([
           { id: 1, newField: { nested: "old", test: "value" } },
@@ -412,7 +412,7 @@ describe("compiler", () => {
     });
 
     it("can be used to rename a field", () => {
-      const run = compileQuery(parseQuery("| eval newField=oldField"));
+      const run = compileQuery(parseQuery("| eval newField=oldField").ast);
       const results = [...run([{ oldField: "value" }])];
 
       assert.deepEqual(results, [{ newField: "value", oldField: "value" }]);
