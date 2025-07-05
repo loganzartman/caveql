@@ -13,7 +13,7 @@ monaco.editor.defineTheme("caveql", {
   inherit: true,
   colors: {
     "editor.background": "#292524", // stone-800
-    "editor.foreground": "#f5f5f4", // stone-100
+    "editor.foreground": "#a6a09b", // stone-300
     "editor.selectionBackground": "#57534d", // stone-600
     "editor.selectionForeground": "#f5f5f4", // stone-100
   },

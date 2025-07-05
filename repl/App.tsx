@@ -8,8 +8,8 @@ import {
 } from "@heroicons/react/20/solid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { compileQuery, formatJS, formatTree, parseQuery } from "../src";
+import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
-import { ResultsChart } from "./components/ResultsChart";
 import { ResultsTable } from "./components/ResultsTable";
 import { Tab } from "./components/Tab";
 import { TabGroup } from "./components/TabGroup";
