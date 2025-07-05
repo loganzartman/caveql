@@ -2,11 +2,14 @@ import CaveqlSvg from "jsx:./caveql.svg";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
+  ChartBarIcon,
   CodeBracketIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { compileQuery, formatJS, formatTree, parseQuery } from "../src";
+import { ChartTypeSelector } from "./components/ChartTypeSelector";
+import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
 import { ResultsTable } from "./components/ResultsTable";
 import { Tab } from "./components/Tab";
@@ -27,6 +30,7 @@ export function App() {
   const [inputRecords, setInputRecords] = useState<Record<string, unknown>[]>(
     [],
   );
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
   useEffect(() => {
     if (!editorRef) return;
@@ -112,6 +116,7 @@ export function App() {
           <div className="flex flex-row justify-between">
             <TabList>
               <Tab icon={<TableCellsIcon />}>table</Tab>
+              <Tab icon={<ChartBarIcon />}>chart</Tab>
               <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
               <Tab icon={<CodeBracketIcon />}>generated</Tab>
             </TabList>
@@ -130,6 +135,19 @@ export function App() {
               {results && (
                 <ResultsTable results={results} scrollRef={scrollRef} />
               )}
+            </TabPanel>
+            <TabPanel>
+              <div className="flex flex-col h-full">
+                <ChartTypeSelector
+                  chartType={chartType}
+                  onChange={setChartType}
+                />
+                <div className="grow">
+                  {results && (
+                    <ResultsChart type={chartType} results={results} />
+                  )}
+                </div>
+              </div>
             </TabPanel>
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">

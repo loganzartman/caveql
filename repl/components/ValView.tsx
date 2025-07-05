@@ -5,6 +5,8 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/20/solid";
 
+const formatter = new Intl.NumberFormat(undefined, {});
+
 export function ValView({ val }: { val: unknown }) {
   if (val === null || val === undefined) {
     return <span>{String(val)}</span>;
@@ -13,7 +15,7 @@ export function ValView({ val }: { val: unknown }) {
     return <span className="text-stone-200">{val}</span>;
   }
   if (typeof val === "number" || typeof val === "bigint") {
-    return <span className="text-purple-300">{String(val)}</span>;
+    return <span className="text-purple-300">{formatter.format(val)}</span>;
   }
   if (typeof val !== "object") {
     throw new Error(`Unsupported type: ${typeof val}`);
