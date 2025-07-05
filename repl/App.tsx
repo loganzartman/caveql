@@ -8,6 +8,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { compileQuery, formatJS, formatTree, parseQuery } from "../src";
+import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
 import { ResultsTable } from "./components/ResultsTable";
@@ -29,6 +30,7 @@ export function App() {
   const [inputRecords, setInputRecords] = useState<Record<string, unknown>[]>(
     [],
   );
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
   useEffect(() => {
     if (!editorRef) return;
@@ -135,7 +137,17 @@ export function App() {
               )}
             </TabPanel>
             <TabPanel>
-              {results && <ResultsChart type="bar" results={results} />}
+              <div className="flex flex-col h-full">
+                <ChartTypeSelector
+                  chartType={chartType}
+                  onChange={setChartType}
+                />
+                <div className="grow">
+                  {results && (
+                    <ResultsChart type={chartType} results={results} />
+                  )}
+                </div>
+              </div>
             </TabPanel>
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">
