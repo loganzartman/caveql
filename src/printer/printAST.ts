@@ -11,17 +11,14 @@ export function printAST(
 ): string {
   switch (ast.type) {
     case "binary-op": {
-      const left = printAST(ast.left, depth);
-      const right = printAST(ast.right, depth);
-      const op = ast.op;
-      const oneLine = `${left} ${op} ${right}`;
+      const oneLine = `(${printAST(ast.left, depth)} ${ast.op} ${printAST(ast.right, depth)})`;
       if (oneLine.length <= lineLength) {
         return oneLine;
       }
-      return `${left}\n${indent.repeat(depth + 1)}${op} ${right}`;
+      return `(${printAST(ast.left, depth + 1)}\n${indent.repeat(depth + 1)}${ast.op} ${printAST(ast.right, depth + 1)})`;
     }
     case "compare":
-      return `compare ${printAST(ast.left, depth)} ${ast.op} ${printAST(ast.right, depth)}`;
+      return `(${printAST(ast.left, depth)} ${ast.op} ${printAST(ast.right, depth)})`;
     case "eval": {
       const bindings = ast.bindings.map(
         ([name, value]) => `${printAST(name)} = ${printAST(value)}`,
@@ -60,14 +57,24 @@ export function printAST(
       }
       return `search\n${indent.repeat(depth + 1)}${filters.join(`\n${indent.repeat(depth + 1)}`)}`;
     }
-    case "search-binary-op":
-      return "search-binary-op not implemented";
-    case "search-unary-op":
-      return "search-unary-op not implemented";
+    case "search-binary-op": {
+      const oneLine = `(${printAST(ast.left, depth)} ${ast.op} ${printAST(ast.right, depth)})`;
+      if (oneLine.length <= lineLength) {
+        return oneLine;
+      }
+      return `(${printAST(ast.left, depth + 1)}\n${indent.repeat(depth + 1)}${ast.op} ${printAST(ast.right, depth + 1)})`;
+    }
+    case "search-unary-op": {
+      const oneLine = `(${ast.op} ${printAST(ast.operand, depth)})`;
+      if (oneLine.length <= lineLength) {
+        return oneLine;
+      }
+      return `(${ast.op}\n${indent.repeat(depth + 1)}${printAST(ast.operand, depth + 1)})`;
+    }
     case "sort": {
       const sortFields = ast.fields.map((field) => {
         const direction =
-          field.desc !== undefined ? ` ${field.desc ? "-" : "+"}` : "";
+          field.desc !== undefined ? (field.desc ? "-" : "+") : "";
         if (field.comparator) {
           return `${direction}${field.comparator}(${printAST(field.field, depth)})`;
         }
