@@ -1,11 +1,14 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
-import { type ExpressionAST, parseExpr } from "../parseExpr";
-import type { ParseContext } from "../types";
+import {
+  parseSearchExpression,
+  type SearchExpressionAST,
+} from "../parseSearchExpression";
 
 export type SearchCommandAST = {
   type: "search";
-  filters: ExpressionAST[];
+  filters: SearchExpressionAST[];
 };
 
 export function parseSearchCommand(ctx: ParseContext): SearchCommandAST {
@@ -16,17 +19,15 @@ export function parseSearchCommand(ctx: ParseContext): SearchCommandAST {
 }
 
 export function parseBareSearch(ctx: ParseContext): SearchCommandAST {
-  const filters: ExpressionAST[] = [];
+  const filters: SearchExpressionAST[] = [];
   while (true) {
     try {
       parseWs(ctx);
-      ctx.compareExpr = true;
-      const filter = parseExpr(ctx);
+      const filter = parseSearchExpression(ctx);
       filters.push(filter);
-    } catch {
+    } catch (e) {
+      console.log(e);
       break;
-    } finally {
-      ctx.compareExpr = false;
     }
   }
   return {

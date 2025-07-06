@@ -1,4 +1,5 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import {
   type NumericAST,
   parseLiteral,
@@ -9,7 +10,6 @@ import {
   parseWs,
   type StringAST,
 } from "../parseCommon";
-import type { ParseContext } from "../types";
 
 export type MakeresultsCommandAST = {
   type: "makeresults";

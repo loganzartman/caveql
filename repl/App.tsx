@@ -8,6 +8,8 @@ import {
 } from "@heroicons/react/20/solid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { compileQuery, formatJS, formatTree, parseQuery } from "../src";
+import type { QueryAST } from "../src/parser";
+import { printAST } from "../src/printer/printAST";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
@@ -70,13 +72,14 @@ export function App() {
     })().catch((e) => console.error(e));
   }, []);
 
-  const { error, treeString, code, results } = useMemo(() => {
+  const { error, tree, treeString, code, results } = useMemo(() => {
+    let tree: QueryAST | null = null;
     let error: string | null = null;
     let treeString: string | null = null;
     let code: string | null = null;
     let results: Record<string, unknown>[] | null;
     try {
-      const tree = parseQuery(source).ast;
+      tree = parseQuery(source).ast;
       treeString = formatTree(tree);
       const run = compileQuery(tree);
       code = formatJS(run.source);
@@ -85,7 +88,7 @@ export function App() {
       error = `Error: ${e instanceof Error ? e.message : String(e)}`;
       results = null;
     }
-    return { error, treeString, code, results };
+    return { error, tree, treeString, code, results };
   }, [inputRecords, source]);
 
   return (
@@ -119,6 +122,7 @@ export function App() {
               <Tab icon={<ChartBarIcon />}>chart</Tab>
               <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
               <Tab icon={<CodeBracketIcon />}>generated</Tab>
+              <Tab icon={<CodeBracketIcon />}>formatted</Tab>
             </TabList>
             {results && (
               <div className="shrink-0 flex flex-row gap-1 items-center">
@@ -157,6 +161,11 @@ export function App() {
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">
                 {code ?? error}
+              </pre>
+            </TabPanel>
+            <TabPanel>
+              <pre className="text-wrap break-all overflow-auto">
+                {tree ? printAST(tree) : error}
               </pre>
             </TabPanel>
           </TabPanels>

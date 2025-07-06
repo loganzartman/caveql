@@ -7,7 +7,7 @@ export type * from "./command/parseStreamstatsCommand";
 export type * from "./command/parseWhereCommand";
 export type * from "./parseCommand";
 export type * from "./parseCommon";
-export type * from "./parseExpr";
+export type * from "./parseExpression";
 export type * from "./parsePipeline";
 export type * from "./parseQuery";
 

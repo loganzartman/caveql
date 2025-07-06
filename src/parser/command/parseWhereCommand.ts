@@ -1,7 +1,7 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
-import { type ExpressionAST, parseExpr } from "../parseExpr";
-import type { ParseContext } from "../types";
+import { type ExpressionAST, parseExpression } from "../parseExpression";
 
 export type WhereCommandAST = {
   type: "where";
@@ -12,6 +12,6 @@ export function parseWhereCommand(ctx: ParseContext): WhereCommandAST {
   parseWs(ctx);
   parseLiteral(ctx, [Token.command, "where"]);
   parseWs(ctx);
-  const expr = parseExpr(ctx);
+  const expr = parseExpression(ctx);
   return { type: "where", expr };
 }

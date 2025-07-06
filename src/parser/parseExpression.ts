@@ -1,6 +1,9 @@
 import { Token } from "../tokens";
+import type { ParseContext } from "./ParseContext";
 import {
+  type FieldNameAST,
   type NumericAST,
+  parseFieldName,
   parseLiteral,
   parseNumeric,
   parseOne,
@@ -8,16 +11,20 @@ import {
   parseWs,
   type StringAST,
 } from "./parseCommon";
-import type { ParseContext } from "./types";
 
-export type ExpressionAST = UnaryOpAST | BinaryOpAST | NumericAST | StringAST;
+export type ExpressionAST =
+  | UnaryOpAST
+  | BinaryOpAST
+  | NumericAST
+  | StringAST
+  | FieldNameAST;
 
-export function parseExpr(ctx: ParseContext): ExpressionAST {
+export function parseExpression(ctx: ParseContext): ExpressionAST {
   return parseOrExpr(ctx);
 }
 
 export function parseTerm(ctx: ParseContext): ExpressionAST {
-  return parseOne(ctx, parseGroup, parseNumeric, parseString);
+  return parseOne(ctx, parseGroup, parseNumeric, parseString, parseFieldName);
 }
 
 export type BinaryOp =
@@ -46,16 +53,10 @@ export type BinaryOpAST = {
 };
 
 function parseOrExpr(ctx: ParseContext): ExpressionAST {
-  if (ctx.compareExpr) {
-    return parseBinaryLevel(ctx, parseAndExpr, ["OR"]);
-  }
   return parseBinaryLevel(ctx, parseAndExpr, ["or"]);
 }
 
 function parseAndExpr(ctx: ParseContext): ExpressionAST {
-  if (ctx.compareExpr) {
-    return parseBinaryLevel(ctx, parseEqualityExpr, ["AND"]);
-  }
   return parseBinaryLevel(ctx, parseEqualityExpr, ["and"]);
 }
 
@@ -116,15 +117,10 @@ export type UnaryOpAST = {
 export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
   try {
     parseWs(ctx);
-    let op: UnaryOp;
-    if (ctx.compareExpr) {
-      op = parseLiteral(ctx, [Token.operator, "NOT"]);
-    } else {
-      op = parseLiteral(ctx, [Token.operator, "not"]);
-    }
+    const op = parseLiteral(ctx, [Token.operator, "not"]);
 
     parseWs(ctx);
-    const operand = parseExpr(ctx);
+    const operand = parseExpression(ctx);
     return {
       type: "unary-op",
       op,
@@ -139,7 +135,7 @@ export function parseGroup(ctx: ParseContext): ExpressionAST {
   parseWs(ctx);
   parseLiteral(ctx, [Token.paren, "("]);
   parseWs(ctx);
-  const expr = parseExpr(ctx);
+  const expr = parseExpression(ctx);
   parseWs(ctx);
   parseLiteral(ctx, [Token.paren, ")"]);
   return expr;

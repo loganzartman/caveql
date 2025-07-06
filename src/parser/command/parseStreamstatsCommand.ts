@@ -1,6 +1,6 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
-import type { ParseContext } from "../types";
 import {
   type AggregationTermAST,
   parseAggregationTerm,

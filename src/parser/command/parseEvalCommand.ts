@@ -1,31 +1,31 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import {
+  type FieldNameAST,
+  parseFieldName,
   parseLiteral,
-  parseString,
   parseWs,
-  type StringAST,
 } from "../parseCommon";
-import { type ExpressionAST, parseExpr } from "../parseExpr";
-import type { ParseContext } from "../types";
+import { type ExpressionAST, parseExpression } from "../parseExpression";
 
 export type EvalCommandAST = {
   type: "eval";
-  bindings: [StringAST, ExpressionAST][];
+  bindings: [FieldNameAST, ExpressionAST][];
 };
 
 export function parseEvalCommand(ctx: ParseContext): EvalCommandAST {
   parseWs(ctx);
   parseLiteral(ctx, [Token.command, "eval"]);
 
-  const bindings: [StringAST, ExpressionAST][] = [];
+  const bindings: [FieldNameAST, ExpressionAST][] = [];
   while (true) {
     try {
       parseWs(ctx);
-      const name = parseString(ctx, { isField: true });
+      const name = parseFieldName(ctx);
       parseWs(ctx);
       parseLiteral(ctx, [Token.operator, "="]);
       parseWs(ctx);
-      const expr = parseExpr(ctx);
+      const expr = parseExpression(ctx);
       bindings.push([name, expr]);
 
       parseWs(ctx);
