@@ -19,10 +19,10 @@ describe("parser", () => {
           type: "search",
           filters: [
             {
-              type: "binary-op",
+              type: "compare",
               op: "=",
-              left: { type: "string", quoted: false, value: "a" },
-              right: { type: "string", quoted: false, value: "b" },
+              left: { type: "field-name", value: "a" },
+              right: { type: "string", value: "b" },
             },
           ],
         },
@@ -41,7 +41,6 @@ describe("parser", () => {
             filters: [
               {
                 type: "string",
-                quoted: true,
                 value: "hello world!",
               },
             ],
@@ -60,7 +59,6 @@ describe("parser", () => {
             filters: [
               {
                 type: "string",
-                quoted: true,
                 value: "hello world!",
               },
             ],
@@ -79,7 +77,6 @@ describe("parser", () => {
             filters: [
               {
                 type: "string",
-                quoted: false,
                 value: "h3llo-world$",
               },
             ],
@@ -96,31 +93,29 @@ describe("parser", () => {
       // In Splunk, this would be searching for records containing "a=1", "and", "b=2", "or", "c=3" as separate terms
       assert.equal(searchCmd.filters.length, 5);
       assert.deepEqual(searchCmd.filters[0], {
-        type: "binary-op",
+        type: "compare",
         op: "=",
-        left: { type: "string", quoted: false, value: "a" },
+        left: { type: "field-name", value: "a" },
         right: { type: "number", value: 1n },
       });
       assert.deepEqual(searchCmd.filters[1], {
         type: "string",
-        quoted: false,
         value: "and",
       });
       assert.deepEqual(searchCmd.filters[2], {
-        type: "binary-op",
+        type: "compare",
         op: "=",
-        left: { type: "string", quoted: false, value: "b" },
+        left: { type: "field-name", value: "b" },
         right: { type: "number", value: 2n },
       });
       assert.deepEqual(searchCmd.filters[3], {
         type: "string",
-        quoted: false,
         value: "or",
       });
       assert.deepEqual(searchCmd.filters[4], {
-        type: "binary-op",
+        type: "compare",
         op: "=",
-        left: { type: "string", quoted: false, value: "c" },
+        left: { type: "field-name", value: "c" },
         right: { type: "number", value: 3n },
       });
     });
@@ -130,31 +125,31 @@ describe("parser", () => {
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.equal(searchCmd.filters.length, 1);
       assert.deepEqual(searchCmd.filters[0], {
-        type: "binary-op",
+        type: "search-binary-op",
         op: "OR",
         left: {
-          type: "binary-op",
+          type: "search-binary-op",
           op: "AND",
           left: {
-            type: "binary-op",
+            type: "compare",
             op: "=",
-            left: { type: "string", quoted: false, value: "a" },
+            left: { type: "field-name", value: "a" },
             right: { type: "number", value: 1n },
           },
           right: {
-            type: "binary-op",
+            type: "compare",
             op: "=",
-            left: { type: "string", quoted: false, value: "b" },
+            left: { type: "field-name", value: "b" },
             right: { type: "number", value: 2n },
           },
         },
         right: {
-          type: "unary-op",
+          type: "search-unary-op",
           op: "NOT",
           operand: {
-            type: "binary-op",
+            type: "compare",
             op: "=",
-            left: { type: "string", quoted: false, value: "c" },
+            left: { type: "field-name", value: "c" },
             right: { type: "number", value: 3n },
           },
         },
@@ -165,12 +160,12 @@ describe("parser", () => {
       const result = parseQuery("search NOT (a=1)").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.deepEqual(searchCmd.filters[0], {
-        type: "unary-op",
+        type: "search-unary-op",
         op: "NOT",
         operand: {
-          type: "binary-op",
+          type: "compare",
           op: "=",
-          left: { type: "string", quoted: false, value: "a" },
+          left: { type: "field-name", value: "a" },
           right: { type: "number", value: 1n },
         },
       });
@@ -187,10 +182,10 @@ describe("parser", () => {
             type: "search",
             filters: [
               {
-                type: "binary-op",
+                type: "compare",
                 op: "=",
-                left: { type: "string", quoted: false, value: "a" },
-                right: { type: "string", quoted: false, value: "b" },
+                left: { type: "field-name", value: "a" },
+                right: { type: "string", value: "b" },
               },
             ],
           },
@@ -199,7 +194,7 @@ describe("parser", () => {
             expr: {
               type: "binary-op",
               op: "<",
-              left: { type: "string", quoted: false, value: "a" },
+              left: { type: "field-name", value: "a" },
               right: { type: "number", value: 2n },
             },
           },
@@ -216,19 +211,19 @@ describe("parser", () => {
             type: "search",
             filters: [
               {
-                type: "binary-op",
+                type: "search-binary-op",
                 op: "AND",
                 left: {
-                  type: "binary-op",
+                  type: "compare",
                   op: "<",
-                  left: { type: "string", quoted: false, value: "a" },
-                  right: { type: "string", quoted: false, value: "b" },
+                  left: { type: "field-name", value: "a" },
+                  right: { type: "string", value: "b" },
                 },
                 right: {
-                  type: "binary-op",
+                  type: "compare",
                   op: "=",
-                  left: { type: "string", quoted: false, value: "c" },
-                  right: { type: "string", quoted: false, value: "d" },
+                  left: { type: "field-name", value: "c" },
+                  right: { type: "string", value: "d" },
                 },
               },
             ],
@@ -246,10 +241,10 @@ describe("parser", () => {
             type: "search",
             filters: [
               {
-                type: "binary-op",
+                type: "compare",
                 op: "=",
-                left: { type: "string", quoted: false, value: "a" },
-                right: { type: "string", quoted: false, value: "b" },
+                left: { type: "field-name", value: "a" },
+                right: { type: "string", value: "b" },
               },
             ],
           },
@@ -258,7 +253,7 @@ describe("parser", () => {
             expr: {
               type: "binary-op",
               op: "<",
-              left: { type: "string", quoted: false, value: "a" },
+              left: { type: "field-name", value: "a" },
               right: { type: "number", value: 2n },
             },
           },
@@ -271,7 +266,7 @@ describe("parser", () => {
     });
 
     it("parses complex expressions in pipeline", () => {
-      const result = parseQuery("search x=1 and y=2 | where z>5 or w<10").ast;
+      const result = parseQuery("search x=1 AND y=2 | where z>5 or w<10").ast;
       assert.deepEqual(result, {
         type: "query",
         pipeline: [
@@ -279,21 +274,20 @@ describe("parser", () => {
             type: "search",
             filters: [
               {
-                type: "binary-op",
-                op: "=",
-                left: { type: "string", quoted: false, value: "x" },
-                right: { type: "number", value: 1n },
-              },
-              {
-                type: "string",
-                quoted: false,
-                value: "and",
-              },
-              {
-                type: "binary-op",
-                op: "=",
-                left: { type: "string", quoted: false, value: "y" },
-                right: { type: "number", value: 2n },
+                type: "search-binary-op",
+                op: "AND",
+                left: {
+                  type: "compare",
+                  op: "=",
+                  left: { type: "field-name", value: "x" },
+                  right: { type: "number", value: 1n },
+                },
+                right: {
+                  type: "compare",
+                  op: "=",
+                  left: { type: "field-name", value: "y" },
+                  right: { type: "number", value: 2n },
+                },
               },
             ],
           },
@@ -305,13 +299,13 @@ describe("parser", () => {
               left: {
                 type: "binary-op",
                 op: ">",
-                left: { type: "string", quoted: false, value: "z" },
+                left: { type: "field-name", value: "z" },
                 right: { type: "number", value: 5n },
               },
               right: {
                 type: "binary-op",
                 op: "<",
-                left: { type: "string", quoted: false, value: "w" },
+                left: { type: "field-name", value: "w" },
                 right: { type: "number", value: 10n },
               },
             },
@@ -327,7 +321,7 @@ describe("parser", () => {
       const whereCmd = result.pipeline[0] as WhereCommandAST;
       assert.deepEqual(whereCmd, {
         type: "where",
-        expr: { type: "string", quoted: false, value: "a" },
+        expr: { type: "field-name", value: "a" },
       });
     });
 
@@ -345,7 +339,7 @@ describe("parser", () => {
       const whereCmd = result.pipeline[0] as WhereCommandAST;
       assert.deepEqual(whereCmd, {
         type: "where",
-        expr: { type: "string", quoted: true, value: "hello" },
+        expr: { type: "string", value: "hello" },
       });
     });
   });
@@ -367,7 +361,7 @@ describe("parser", () => {
         expr: {
           type: "binary-op",
           op: ">=",
-          left: { type: "string", quoted: false, value: "a" },
+          left: { type: "field-name", value: "a" },
           right: { type: "number", value: 5n },
         },
       });
@@ -379,31 +373,31 @@ describe("parser", () => {
       const result = parseQuery("search a=1 AND b=2 OR NOT c=3").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.deepEqual(searchCmd.filters[0], {
-        type: "binary-op",
+        type: "search-binary-op",
         op: "OR",
         left: {
-          type: "binary-op",
+          type: "search-binary-op",
           op: "AND",
           left: {
-            type: "binary-op",
+            type: "compare",
             op: "=",
-            left: { type: "string", quoted: false, value: "a" },
+            left: { type: "field-name", value: "a" },
             right: { type: "number", value: 1n },
           },
           right: {
-            type: "binary-op",
+            type: "compare",
             op: "=",
-            left: { type: "string", quoted: false, value: "b" },
+            left: { type: "field-name", value: "b" },
             right: { type: "number", value: 2n },
           },
         },
         right: {
-          type: "unary-op",
+          type: "search-unary-op",
           op: "NOT",
           operand: {
-            type: "binary-op",
+            type: "compare",
             op: "=",
-            left: { type: "string", quoted: false, value: "c" },
+            left: { type: "field-name", value: "c" },
             right: { type: "number", value: 3n },
           },
         },
@@ -422,13 +416,13 @@ describe("parser", () => {
           left: {
             type: "binary-op",
             op: "=",
-            left: { type: "string", quoted: false, value: "a" },
+            left: { type: "field-name", value: "a" },
             right: { type: "number", value: 1n },
           },
           right: {
             type: "binary-op",
             op: "=",
-            left: { type: "string", quoted: false, value: "b" },
+            left: { type: "field-name", value: "b" },
             right: { type: "number", value: 2n },
           },
         },
@@ -438,7 +432,7 @@ describe("parser", () => {
           operand: {
             type: "binary-op",
             op: "=",
-            left: { type: "string", quoted: false, value: "c" },
+            left: { type: "field-name", value: "c" },
             right: { type: "number", value: 3n },
           },
         },
@@ -456,7 +450,7 @@ describe("parser", () => {
         fields: [
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "a" },
+            field: { type: "field-name", value: "a" },
             comparator: undefined,
             desc: undefined,
           },
@@ -473,7 +467,7 @@ describe("parser", () => {
         fields: [
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "a" },
+            field: { type: "field-name", value: "a" },
             comparator: undefined,
             desc: undefined,
           },
@@ -490,7 +484,7 @@ describe("parser", () => {
         fields: [
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "a" },
+            field: { type: "field-name", value: "a" },
             comparator: "str",
             desc: undefined,
           },
@@ -507,7 +501,7 @@ describe("parser", () => {
         fields: [
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "a" },
+            field: { type: "field-name", value: "a" },
             comparator: undefined,
             desc: true,
           },
@@ -524,7 +518,7 @@ describe("parser", () => {
         fields: [
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "a" },
+            field: { type: "field-name", value: "a" },
             comparator: undefined,
             desc: false,
           },
@@ -541,7 +535,7 @@ describe("parser", () => {
         fields: [
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "a" },
+            field: { type: "field-name", value: "a" },
             comparator: "str",
             desc: true,
           },
@@ -558,19 +552,19 @@ describe("parser", () => {
         fields: [
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "a" },
+            field: { type: "field-name", value: "a" },
             comparator: "str",
             desc: true,
           },
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "beta" },
+            field: { type: "field-name", value: "beta" },
             comparator: undefined,
             desc: undefined,
           },
           {
             type: "sort-field",
-            field: { type: "string", quoted: false, value: "gamma" },
+            field: { type: "field-name", value: "gamma" },
             comparator: "auto",
             desc: undefined,
           },
@@ -586,7 +580,7 @@ describe("parser", () => {
 
       assert.deepEqual(fieldsCmd, {
         type: "fields",
-        fields: [{ type: "string", quoted: false, value: "a" }],
+        fields: [{ type: "field-name", value: "a" }],
         remove: undefined,
       });
     });
@@ -598,9 +592,9 @@ describe("parser", () => {
       assert.deepEqual(fieldsCmd, {
         type: "fields",
         fields: [
-          { type: "string", quoted: false, value: "a" },
-          { type: "string", quoted: false, value: "b" },
-          { type: "string", quoted: false, value: "c" },
+          { type: "field-name", value: "a" },
+          { type: "field-name", value: "b" },
+          { type: "field-name", value: "c" },
         ],
         remove: undefined,
       });
@@ -613,9 +607,9 @@ describe("parser", () => {
       assert.deepEqual(fieldsCmd, {
         type: "fields",
         fields: [
-          { type: "string", quoted: false, value: "a" },
-          { type: "string", quoted: false, value: "b" },
-          { type: "string", quoted: false, value: "c" },
+          { type: "field-name", value: "a" },
+          { type: "field-name", value: "b" },
+          { type: "field-name", value: "c" },
         ],
         remove: true,
       });
@@ -628,9 +622,9 @@ describe("parser", () => {
       assert.deepEqual(fieldsCmd, {
         type: "fields",
         fields: [
-          { type: "string", quoted: false, value: "a" },
-          { type: "string", quoted: false, value: "b" },
-          { type: "string", quoted: false, value: "c" },
+          { type: "field-name", value: "a" },
+          { type: "field-name", value: "b" },
+          { type: "field-name", value: "c" },
         ],
         remove: false,
       });

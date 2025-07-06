@@ -1,11 +1,12 @@
 import { impossible } from "../impossible";
 import type { CommandAST, ExpressionAST, QueryAST, StringAST } from "../parser";
+import type { SearchExpressionAST } from "../parser/parseSearchExpression";
 
 const lineLength = 80;
 const indent = "  ";
 
 export function printAST(
-  ast: QueryAST | CommandAST | StringAST | ExpressionAST,
+  ast: QueryAST | CommandAST | StringAST | ExpressionAST | SearchExpressionAST,
   depth = 0,
 ): string {
   switch (ast.type) {
@@ -19,6 +20,8 @@ export function printAST(
       }
       return `${left}\n${indent.repeat(depth + 1)}${op} ${right}`;
     }
+    case "compare":
+      return `compare ${printAST(ast.left, depth)} ${ast.op} ${printAST(ast.right, depth)}`;
     case "eval": {
       const bindings = ast.bindings.map(
         ([name, value]) => `${printAST(name)} = ${printAST(value)}`,
@@ -57,6 +60,10 @@ export function printAST(
       }
       return `search\n${indent.repeat(depth + 1)}${filters.join(`\n${indent.repeat(depth + 1)}`)}`;
     }
+    case "search-binary-op":
+      return "search-binary-op not implemented";
+    case "search-unary-op":
+      return "search-unary-op not implemented";
     case "sort": {
       const sortFields = ast.fields.map((field) => {
         const direction =

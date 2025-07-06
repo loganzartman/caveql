@@ -14,7 +14,6 @@ export function parseQuery(src: string): {
   const ctx = {
     source: src,
     index: 0,
-    compareExpr: false,
     tokens: [],
   } satisfies ParseContext;
 

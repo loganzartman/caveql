@@ -6,7 +6,7 @@ import {
   parseLiteral,
   parseWs,
 } from "../parseCommon";
-import { type ExpressionAST, parseExpr } from "../parseExpr";
+import { type ExpressionAST, parseExpression } from "../parseExpression";
 
 export type EvalCommandAST = {
   type: "eval";
@@ -25,7 +25,7 @@ export function parseEvalCommand(ctx: ParseContext): EvalCommandAST {
       parseWs(ctx);
       parseLiteral(ctx, [Token.operator, "="]);
       parseWs(ctx);
-      const expr = parseExpr(ctx);
+      const expr = parseExpression(ctx);
       bindings.push([name, expr]);
 
       parseWs(ctx);

@@ -1,12 +1,12 @@
 import type { SearchCommandAST } from "../../parser";
-import { compileCompareExpression } from "../compileExpression";
+import { compileSearchExpression } from "../compileSearchExpression";
 
 export function compileSearchCommand(command: SearchCommandAST): string {
   if (command.filters.length === 0) {
     return "function* searchCommand(records) { yield* records; }";
   }
   const conditions = command.filters
-    .map((filter) => `(${compileCompareExpression(filter)})`)
+    .map((filter) => `(${compileSearchExpression(filter)})`)
     .join(" && ");
   return `
     function* searchCommand(records) {

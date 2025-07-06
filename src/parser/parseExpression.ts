@@ -19,7 +19,7 @@ export type ExpressionAST =
   | StringAST
   | FieldNameAST;
 
-export function parseExpr(ctx: ParseContext): ExpressionAST {
+export function parseExpression(ctx: ParseContext): ExpressionAST {
   return parseOrExpr(ctx);
 }
 
@@ -120,7 +120,7 @@ export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
     const op = parseLiteral(ctx, [Token.operator, "not"]);
 
     parseWs(ctx);
-    const operand = parseExpr(ctx);
+    const operand = parseExpression(ctx);
     return {
       type: "unary-op",
       op,
@@ -135,7 +135,7 @@ export function parseGroup(ctx: ParseContext): ExpressionAST {
   parseWs(ctx);
   parseLiteral(ctx, [Token.paren, "("]);
   parseWs(ctx);
-  const expr = parseExpr(ctx);
+  const expr = parseExpression(ctx);
   parseWs(ctx);
   parseLiteral(ctx, [Token.paren, ")"]);
   return expr;
