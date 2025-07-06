@@ -32,21 +32,17 @@ export function compileAggregationCollect(agg: AggregationTermAST): string {
   const k = aggKey(agg);
   switch (agg.type) {
     case "avg": {
-      const recordValue = compileExpression({
-        type: "string",
-        quoted: false,
-        value: must(agg.field, "avg() aggregation requires a field name").value,
-      });
+      const recordValue = compileExpression(
+        must(agg.field, "avg() aggregation requires a field name"),
+      );
       return `agg[${k}] += (${recordValue})`;
     }
     case "count":
       return `++agg[${k}]`;
     case "max": {
-      const recordValue = compileExpression({
-        type: "string",
-        quoted: false,
-        value: must(agg.field, "max() aggregation requires a field name").value,
-      });
+      const recordValue = compileExpression(
+        must(agg.field, "max() aggregation requires a field name"),
+      );
       return `
         agg[${k}] = agg[${k}] === undefined 
           ? (${recordValue})
@@ -54,11 +50,9 @@ export function compileAggregationCollect(agg: AggregationTermAST): string {
       `;
     }
     case "min": {
-      const recordValue = compileExpression({
-        type: "string",
-        quoted: false,
-        value: must(agg.field, "max() aggregation requires a field name").value,
-      });
+      const recordValue = compileExpression(
+        must(agg.field, "min() aggregation requires a field name"),
+      );
       return `
         agg[${k}] = agg[${k}] === undefined 
           ? (${recordValue})
@@ -66,11 +60,9 @@ export function compileAggregationCollect(agg: AggregationTermAST): string {
       `;
     }
     case "sum": {
-      const recordValue = compileExpression({
-        type: "string",
-        quoted: false,
-        value: must(agg.field, "avg() aggregation requires a field name").value,
-      });
+      const recordValue = compileExpression(
+        must(agg.field, "sum() aggregation requires a field name"),
+      );
       return `agg[${k}] += (${recordValue})`;
     }
     case "distinct":

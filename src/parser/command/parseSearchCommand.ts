@@ -1,7 +1,7 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
-import { type ExpressionAST, parseExpr } from "../parseExpr";
-import type { ParseContext } from "../types";
+import type { CompareExpressionAST } from "../parseExpr";
 
 export type SearchCommandAST = {
   type: "search";
@@ -21,7 +21,7 @@ export function parseBareSearch(ctx: ParseContext): SearchCommandAST {
     try {
       parseWs(ctx);
       ctx.compareExpr = true;
-      const filter = parseExpr(ctx);
+      const filter = parseCompareExpr(ctx);
       filters.push(filter);
     } catch {
       break;

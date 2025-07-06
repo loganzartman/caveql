@@ -1,8 +1,8 @@
 import { Token } from "../tokens";
 import { parseBareSearch } from "./command/parseSearchCommand";
+import type { ParseContext } from "./ParseContext";
 import { type CommandAST, parseCommand } from "./parseCommand";
 import { parseLiteral, parseOne, parseWs } from "./parseCommon";
-import type { ParseContext } from "./types";
 
 export function parsePipeline(ctx: ParseContext): CommandAST[] {
   const commands: CommandAST[] = [];

@@ -1,11 +1,11 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import {
+  type FieldNameAST,
+  parseFieldName,
   parseLiteral,
-  parseString,
   parseWs,
-  type StringAST,
 } from "../parseCommon";
-import type { ParseContext } from "../types";
 
 export type AggregationTermType =
   | "count"
@@ -20,7 +20,7 @@ export type AggregationTermType =
 
 export type AggregationTermAST = {
   type: AggregationTermType;
-  field?: StringAST;
+  field?: FieldNameAST;
 };
 
 export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
@@ -38,12 +38,12 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     [Token.function, "perc"],
   );
 
-  let field: StringAST | undefined;
+  let field: FieldNameAST | undefined;
   try {
     parseWs(ctx);
     parseLiteral(ctx, [Token.paren, "("]);
     parseWs(ctx);
-    field = parseString(ctx, { isField: true });
+    field = parseFieldName(ctx);
     parseWs(ctx);
     parseLiteral(ctx, [Token.paren, ")"]);
   } catch {

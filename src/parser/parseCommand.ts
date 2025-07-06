@@ -30,8 +30,8 @@ import {
   parseWhereCommand,
   type WhereCommandAST,
 } from "./command/parseWhereCommand";
+import type { ParseContext } from "./ParseContext";
 import { parseOne } from "./parseCommon";
-import type { ParseContext } from "./types";
 
 export type CommandAST =
   | EvalCommandAST

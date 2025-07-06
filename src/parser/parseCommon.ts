@@ -1,5 +1,5 @@
 import { Token } from "../tokens";
-import type { ParseContext } from "./types";
+import type { ParseContext } from "./ParseContext";
 
 function save(ctx: ParseContext): () => void {
   const index0 = ctx.index;
@@ -23,7 +23,7 @@ export function parseParam<T>(
   return parseValue(ctx);
 }
 
-export type StringAST = { type: "string"; quoted: boolean; value: string };
+export type StringAST = { type: "string"; value: string };
 
 export function parseString(
   ctx: ParseContext,
@@ -34,7 +34,6 @@ export function parseString(
     (c) =>
       ({
         type: "string",
-        quoted: true,
         value: parseRex(
           c,
           isField ? Token.field : Token.string,
@@ -45,7 +44,6 @@ export function parseString(
     (c) =>
       ({
         type: "string",
-        quoted: true,
         value: parseRex(
           c,
           isField ? Token.field : Token.string,
@@ -53,13 +51,19 @@ export function parseString(
           1,
         ),
       }) as const,
-    (c) =>
-      ({
-        type: "string",
-        quoted: false,
-        value: parseRex(c, Token.field, /[\p{L}$_][\p{L}\p{N}\-$_.]*/u),
-      }) as const,
   );
+}
+
+export type FieldNameAST = {
+  type: "field-name";
+  value: string;
+};
+
+export function parseFieldName(ctx: ParseContext): FieldNameAST {
+  return {
+    type: "field-name",
+    value: parseRex(ctx, Token.field, /[\p{L}$_][\p{L}\p{N}\-$_.]*/u),
+  };
 }
 
 export type NumericAST = { type: "number"; value: number | bigint };

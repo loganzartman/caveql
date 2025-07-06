@@ -1,7 +1,7 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
 import { type ExpressionAST, parseExpr } from "../parseExpr";
-import type { ParseContext } from "../types";
 
 export type WhereCommandAST = {
   type: "where";

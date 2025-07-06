@@ -9,10 +9,9 @@ export function compileExpression(expr: ExpressionAST): string {
         return `${expr.value}n`;
       }
       return `${expr.value}`;
+    case "field-name":
+      return compilePathGet("record", expr.value);
     case "string":
-      if (!expr.quoted) {
-        return compilePathGet("record", expr.value);
-      }
       return JSON.stringify(expr.value);
     case "binary-op":
       return compileBinaryOp(expr);
@@ -90,6 +89,15 @@ export function compileCompareExpression(
         return `${expr.value}n`;
       }
       return `${expr.value}`;
+    case "field-name":
+      if (!comparison) {
+        return `
+          Object.entries(record)
+            .flat()
+            .some((v) => looseEq(v, ${compilePathGet("record", expr.value)}))
+        `;
+      }
+      return compilePathGet("record", expr.value);
     case "string":
       if (!comparison) {
         return `
@@ -98,7 +106,7 @@ export function compileCompareExpression(
             .some((v) => looseEq(v, ${JSON.stringify(expr.value)}))
         `;
       }
-      if (lhs || !expr.quoted) {
+      if (lhs) {
         return compilePathGet("record", expr.value);
       }
       return JSON.stringify(expr.value);

@@ -1,15 +1,15 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import {
+  type FieldNameAST,
   type NumericAST,
+  parseFieldName,
   parseLiteral,
   parseNumeric,
   parseOne,
   parseOptional,
-  parseString,
   parseWs,
-  type StringAST,
 } from "../parseCommon";
-import type { ParseContext } from "../types";
 
 export type SortCommandAST = {
   type: "sort";
@@ -19,7 +19,7 @@ export type SortCommandAST = {
 
 export type SortFieldAST = {
   type: "sort-field";
-  field: StringAST;
+  field: FieldNameAST;
   comparator: "auto" | "str" | "ip" | "num" | undefined;
   desc: boolean | undefined;
 };
@@ -71,7 +71,7 @@ export function parseSortField(ctx: ParseContext): SortFieldAST {
       parseWs(c);
       parseLiteral(c, [Token.paren, "("]);
       parseWs(c);
-      const field = parseString(c, { isField: true });
+      const field = parseFieldName(c);
       parseWs(c);
       parseLiteral(c, [Token.paren, ")"]);
       return { field, comparator };
@@ -79,7 +79,7 @@ export function parseSortField(ctx: ParseContext): SortFieldAST {
     // bare field (comparator auto)
     (c) => {
       const comparator = undefined;
-      const field = parseString(c);
+      const field = parseFieldName(c);
       return { field, comparator };
     },
   );

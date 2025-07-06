@@ -1,16 +1,16 @@
 import { Token } from "../../tokens";
+import type { ParseContext } from "../ParseContext";
 import {
+  type FieldNameAST,
+  parseFieldName,
   parseLiteral,
   parseOptional,
-  parseString,
   parseWs,
-  type StringAST,
 } from "../parseCommon";
-import type { ParseContext } from "../types";
 
 export type FieldsCommandAST = {
   type: "fields";
-  fields: StringAST[];
+  fields: FieldNameAST[];
   remove?: boolean;
 };
 
@@ -30,7 +30,7 @@ export function parseFieldsCommand(ctx: ParseContext): FieldsCommandAST {
   while (true) {
     try {
       parseWs(ctx);
-      fields.push(parseString(ctx));
+      fields.push(parseFieldName(ctx));
       parseWs(ctx);
       parseLiteral(ctx, [Token.comma, ","]);
     } catch {

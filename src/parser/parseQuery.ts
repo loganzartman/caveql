@@ -1,6 +1,6 @@
+import type { ParseContext } from "./ParseContext";
 import type { CommandAST } from "./parseCommand";
 import { parsePipeline } from "./parsePipeline";
-import type { ParseContext } from "./types";
 
 export type QueryAST = {
   type: "query";
