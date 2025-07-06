@@ -20,7 +20,7 @@ export function parseTerm(ctx: ParseContext): ExpressionAST {
   return parseOne(ctx, parseGroup, parseNumeric, parseString);
 }
 
-export type BinaryOpType =
+export type BinaryOp =
   | "and"
   | "or"
   | "AND"
@@ -39,7 +39,8 @@ export type BinaryOpType =
   | "%";
 
 export type BinaryOpAST = {
-  type: BinaryOpType;
+  type: "binary-op";
+  op: BinaryOp;
   left: ExpressionAST;
   right: ExpressionAST;
 };
@@ -77,7 +78,7 @@ function parseMultiplicativeExpr(ctx: ParseContext): ExpressionAST {
 function parseBinaryLevel(
   ctx: ParseContext,
   nextLevel: (ctx: ParseContext) => ExpressionAST,
-  operators: BinaryOpType[],
+  operators: BinaryOp[],
 ): ExpressionAST {
   let left = nextLevel(ctx);
 
@@ -86,12 +87,13 @@ function parseBinaryLevel(
       parseWs(ctx);
       const op = parseLiteral(
         ctx,
-        ...operators.map((o) => [Token.operator, o] as [Token, BinaryOpType]),
+        ...operators.map((o) => [Token.operator, o] as [Token, BinaryOp]),
       );
       parseWs(ctx);
       const right = nextLevel(ctx);
       left = {
-        type: op as BinaryOpType,
+        type: "binary-op",
+        op: op as BinaryOp,
         left,
         right,
       };
@@ -103,17 +105,18 @@ function parseBinaryLevel(
   return left;
 }
 
-export type UnaryOpType = "not" | "NOT";
+export type UnaryOp = "not" | "NOT";
 
 export type UnaryOpAST = {
-  type: UnaryOpType;
+  type: "unary-op";
+  op: UnaryOp;
   operand: ExpressionAST;
 };
 
 export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
   try {
     parseWs(ctx);
-    let op: UnaryOpType;
+    let op: UnaryOp;
     if (ctx.compareExpr) {
       op = parseLiteral(ctx, [Token.operator, "NOT"]);
     } else {
@@ -123,7 +126,8 @@ export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
     parseWs(ctx);
     const operand = parseExpr(ctx);
     return {
-      type: op,
+      type: "unary-op",
+      op,
       operand,
     };
   } catch {

@@ -19,7 +19,8 @@ describe("parser", () => {
           type: "search",
           filters: [
             {
-              type: "=",
+              type: "binary-op",
+              op: "=",
               left: { type: "string", quoted: false, value: "a" },
               right: { type: "string", quoted: false, value: "b" },
             },
@@ -95,7 +96,8 @@ describe("parser", () => {
       // In Splunk, this would be searching for records containing "a=1", "and", "b=2", "or", "c=3" as separate terms
       assert.equal(searchCmd.filters.length, 5);
       assert.deepEqual(searchCmd.filters[0], {
-        type: "=",
+        type: "binary-op",
+        op: "=",
         left: { type: "string", quoted: false, value: "a" },
         right: { type: "number", value: 1n },
       });
@@ -105,7 +107,8 @@ describe("parser", () => {
         value: "and",
       });
       assert.deepEqual(searchCmd.filters[2], {
-        type: "=",
+        type: "binary-op",
+        op: "=",
         left: { type: "string", quoted: false, value: "b" },
         right: { type: "number", value: 2n },
       });
@@ -115,7 +118,8 @@ describe("parser", () => {
         value: "or",
       });
       assert.deepEqual(searchCmd.filters[4], {
-        type: "=",
+        type: "binary-op",
+        op: "=",
         left: { type: "string", quoted: false, value: "c" },
         right: { type: "number", value: 3n },
       });
@@ -126,24 +130,30 @@ describe("parser", () => {
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.equal(searchCmd.filters.length, 1);
       assert.deepEqual(searchCmd.filters[0], {
-        type: "OR",
+        type: "binary-op",
+        op: "OR",
         left: {
-          type: "AND",
+          type: "binary-op",
+          op: "AND",
           left: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "a" },
             right: { type: "number", value: 1n },
           },
           right: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "b" },
             right: { type: "number", value: 2n },
           },
         },
         right: {
-          type: "NOT",
+          type: "unary-op",
+          op: "NOT",
           operand: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "c" },
             right: { type: "number", value: 3n },
           },
@@ -155,9 +165,11 @@ describe("parser", () => {
       const result = parseQuery("search NOT (a=1)").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.deepEqual(searchCmd.filters[0], {
-        type: "NOT",
+        type: "unary-op",
+        op: "NOT",
         operand: {
-          type: "=",
+          type: "binary-op",
+          op: "=",
           left: { type: "string", quoted: false, value: "a" },
           right: { type: "number", value: 1n },
         },
@@ -175,7 +187,8 @@ describe("parser", () => {
             type: "search",
             filters: [
               {
-                type: "=",
+                type: "binary-op",
+                op: "=",
                 left: { type: "string", quoted: false, value: "a" },
                 right: { type: "string", quoted: false, value: "b" },
               },
@@ -184,7 +197,8 @@ describe("parser", () => {
           {
             type: "where",
             expr: {
-              type: "<",
+              type: "binary-op",
+              op: "<",
               left: { type: "string", quoted: false, value: "a" },
               right: { type: "number", value: 2n },
             },
@@ -202,14 +216,17 @@ describe("parser", () => {
             type: "search",
             filters: [
               {
-                type: "AND",
+                type: "binary-op",
+                op: "AND",
                 left: {
-                  type: "<",
+                  type: "binary-op",
+                  op: "<",
                   left: { type: "string", quoted: false, value: "a" },
                   right: { type: "string", quoted: false, value: "b" },
                 },
                 right: {
-                  type: "=",
+                  type: "binary-op",
+                  op: "=",
                   left: { type: "string", quoted: false, value: "c" },
                   right: { type: "string", quoted: false, value: "d" },
                 },
@@ -229,7 +246,8 @@ describe("parser", () => {
             type: "search",
             filters: [
               {
-                type: "=",
+                type: "binary-op",
+                op: "=",
                 left: { type: "string", quoted: false, value: "a" },
                 right: { type: "string", quoted: false, value: "b" },
               },
@@ -238,7 +256,8 @@ describe("parser", () => {
           {
             type: "where",
             expr: {
-              type: "<",
+              type: "binary-op",
+              op: "<",
               left: { type: "string", quoted: false, value: "a" },
               right: { type: "number", value: 2n },
             },
@@ -260,7 +279,8 @@ describe("parser", () => {
             type: "search",
             filters: [
               {
-                type: "=",
+                type: "binary-op",
+                op: "=",
                 left: { type: "string", quoted: false, value: "x" },
                 right: { type: "number", value: 1n },
               },
@@ -270,7 +290,8 @@ describe("parser", () => {
                 value: "and",
               },
               {
-                type: "=",
+                type: "binary-op",
+                op: "=",
                 left: { type: "string", quoted: false, value: "y" },
                 right: { type: "number", value: 2n },
               },
@@ -279,14 +300,17 @@ describe("parser", () => {
           {
             type: "where",
             expr: {
-              type: "or",
+              type: "binary-op",
+              op: "or",
               left: {
-                type: ">",
+                type: "binary-op",
+                op: ">",
                 left: { type: "string", quoted: false, value: "z" },
                 right: { type: "number", value: 5n },
               },
               right: {
-                type: "<",
+                type: "binary-op",
+                op: "<",
                 left: { type: "string", quoted: false, value: "w" },
                 right: { type: "number", value: 10n },
               },
@@ -341,7 +365,8 @@ describe("parser", () => {
       assert.deepEqual(whereCmd, {
         type: "where",
         expr: {
-          type: ">=",
+          type: "binary-op",
+          op: ">=",
           left: { type: "string", quoted: false, value: "a" },
           right: { type: "number", value: 5n },
         },
@@ -354,24 +379,30 @@ describe("parser", () => {
       const result = parseQuery("search a=1 AND b=2 OR NOT c=3").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.deepEqual(searchCmd.filters[0], {
-        type: "OR",
+        type: "binary-op",
+        op: "OR",
         left: {
-          type: "AND",
+          type: "binary-op",
+          op: "AND",
           left: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "a" },
             right: { type: "number", value: 1n },
           },
           right: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "b" },
             right: { type: "number", value: 2n },
           },
         },
         right: {
-          type: "NOT",
+          type: "unary-op",
+          op: "NOT",
           operand: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "c" },
             right: { type: "number", value: 3n },
           },
@@ -383,24 +414,30 @@ describe("parser", () => {
       const result = parseQuery("eval result = a=1 and b=2 or not c=3").ast;
       const evalCmd = result.pipeline[0] as EvalCommandAST;
       assert.deepEqual(evalCmd.bindings[0][1], {
-        type: "or",
+        type: "binary-op",
+        op: "or",
         left: {
-          type: "and",
+          type: "binary-op",
+          op: "and",
           left: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "a" },
             right: { type: "number", value: 1n },
           },
           right: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "b" },
             right: { type: "number", value: 2n },
           },
         },
         right: {
-          type: "not",
+          type: "unary-op",
+          op: "not",
           operand: {
-            type: "=",
+            type: "binary-op",
+            op: "=",
             left: { type: "string", quoted: false, value: "c" },
             right: { type: "number", value: 3n },
           },

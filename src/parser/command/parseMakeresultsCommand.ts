@@ -13,13 +13,14 @@ import type { ParseContext } from "../types";
 
 export type MakeresultsCommandAST = {
   type: "makeresults";
-  count: NumericAST;
 } & (
   | {
+      count?: undefined;
       format: "csv" | "json";
       data: StringAST;
     }
   | {
+      count: NumericAST;
       format?: undefined;
       data?: undefined;
     }
@@ -63,7 +64,6 @@ export function parseMakeresultsCommand(
     }
     return {
       type: "makeresults",
-      count,
       format,
       data,
     };

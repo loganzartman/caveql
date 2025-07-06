@@ -1,5 +1,5 @@
 import { impossible } from "../impossible";
-import type { ExpressionAST } from "../parser";
+import type { BinaryOpAST, ExpressionAST, UnaryOpAST } from "../parser";
 import { compilePathGet } from "./utils";
 
 export function compileExpression(expr: ExpressionAST): string {
@@ -14,11 +14,22 @@ export function compileExpression(expr: ExpressionAST): string {
         return compilePathGet("record", expr.value);
       }
       return JSON.stringify(expr.value);
+    case "binary-op":
+      return compileBinaryOp(expr);
+    case "unary-op":
+      return compileUnaryOp(expr);
+    default:
+      impossible(expr);
+  }
+}
+
+function compileBinaryOp(expr: BinaryOpAST): string {
+  switch (expr.op) {
     case "<":
     case "<=":
     case ">=":
     case ">":
-      return `(${compileExpression(expr.left)} ${expr.type} ${compileExpression(expr.right)})`;
+      return `(${compileExpression(expr.left)} ${expr.op} ${compileExpression(expr.right)})`;
     case "!=":
       return `(${compileExpression(expr.left)} !== ${compileExpression(expr.right)})`;
     case "==":
@@ -32,18 +43,25 @@ export function compileExpression(expr: ExpressionAST): string {
       return `(${compileExpression(expr.left)} || ${compileExpression(expr.right)})`;
     case "OR":
       throw new Error("Internal error: got 'OR' in expression");
-    case "not":
-      return `(!${compileExpression(expr.operand)})`;
-    case "NOT":
-      throw new Error("Internal error: got 'NOT' in expression");
     case "%":
     case "+":
     case "-":
     case "*":
     case "/":
-      return `(${compileExpression(expr.left)} ${expr.type} ${compileExpression(expr.right)})`;
+      return `(${compileExpression(expr.left)} ${expr.op} ${compileExpression(expr.right)})`;
     default:
-      impossible(expr);
+      impossible(expr.op);
+  }
+}
+
+function compileUnaryOp(expr: UnaryOpAST): string {
+  switch (expr.op) {
+    case "not":
+      return `(!${compileExpression(expr.operand)})`;
+    case "NOT":
+      throw new Error("Internal error: got 'NOT' in expression");
+    default:
+      impossible(expr.op);
   }
 }
 
@@ -84,6 +102,17 @@ export function compileCompareExpression(
         return compilePathGet("record", expr.value);
       }
       return JSON.stringify(expr.value);
+    case "binary-op":
+      return compileCompareBinaryOp(expr);
+    case "unary-op":
+      return compileCompareUnaryOp(expr);
+    default:
+      impossible(expr);
+  }
+}
+
+function compileCompareBinaryOp(expr: BinaryOpAST): string {
+  switch (expr.op) {
     case "<":
     case "<=":
     case ">=":
@@ -91,7 +120,7 @@ export function compileCompareExpression(
       return `(${compileCompareExpression(expr.left, {
         lhs: true,
         comparison: true,
-      })} ${expr.type} ${compileCompareExpression(expr.right, {
+      })} ${expr.op} ${compileCompareExpression(expr.right, {
         comparison: true,
       })})`;
     case "!=":
@@ -124,17 +153,24 @@ export function compileCompareExpression(
       })} || ${compileCompareExpression(expr.right)})`;
     case "or":
       throw new Error("Internal error: got 'or' in compare expression");
-    case "NOT":
-      return `(!${compileCompareExpression(expr.operand)})`;
-    case "not":
-      throw new Error("Internal error: got 'not' in compare expression");
     case "%":
     case "+":
     case "-":
     case "*":
     case "/":
-      return `(${compileCompareExpression(expr.left, { lhs: true })} ${expr.type} ${compileCompareExpression(expr.right)})`;
+      return `(${compileCompareExpression(expr.left, { lhs: true })} ${expr.op} ${compileCompareExpression(expr.right)})`;
     default:
-      impossible(expr);
+      impossible(expr.op);
+  }
+}
+
+function compileCompareUnaryOp(expr: UnaryOpAST): string {
+  switch (expr.op) {
+    case "NOT":
+      return `(!${compileCompareExpression(expr.operand)})`;
+    case "not":
+      throw new Error("Internal error: got 'not' in compare expression");
+    default:
+      impossible(expr.op);
   }
 }
