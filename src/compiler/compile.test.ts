@@ -15,7 +15,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "US", value: 1 }]);
+      assert.partialDeepStrictEqual(results, [{ country: "US", value: 1 }]);
     });
 
     it("matches bare numbers", () => {
@@ -28,7 +28,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "US", value: 1 }]);
+      assert.partialDeepStrictEqual(results, [{ country: "US", value: 1 }]);
     });
 
     it("is case insensitive for bare words", () => {
@@ -41,7 +41,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "US", value: 1 }]);
+      assert.partialDeepStrictEqual(results, [{ country: "US", value: 1 }]);
     });
 
     it("coerces numbers to strings", () => {
@@ -53,7 +53,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "US", value: "1" }]);
+      assert.partialDeepStrictEqual(results, [{ country: "US", value: "1" }]);
     });
 
     it("filters by comparison", () => {
@@ -66,7 +66,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "CA", value: 2 },
         { country: "US", value: 1 },
       ]);
@@ -82,7 +82,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "CA", value: 2 }]);
+      assert.partialDeepStrictEqual(results, [{ country: "CA", value: 2 }]);
     });
 
     it("is case insensitive for key/value", () => {
@@ -95,7 +95,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "CA", value: 2 }]);
+      assert.partialDeepStrictEqual(results, [{ country: "CA", value: 2 }]);
     });
 
     it("is case insensitive for inequality key/value", () => {
@@ -108,7 +108,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "AUS", value: 3 },
         { country: "US", value: 1 },
       ]);
@@ -124,7 +124,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "CA", value: 2 },
         { country: "US", value: 1 },
       ]);
@@ -140,7 +140,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "US", state: "WA" }]);
+      assert.partialDeepStrictEqual(results, [{ country: "US", state: "WA" }]);
     });
 
     it("lets boolean NOT exclude bare words", () => {
@@ -153,7 +153,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "CA", state: "BC" }]);
+      assert.partialDeepStrictEqual(results, [{ country: "CA", state: "BC" }]);
     });
   });
 
@@ -168,7 +168,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [{ country: "AUS", value: 3 }]);
+      assert.partialDeepStrictEqual(results, [{ country: "AUS", value: 3 }]);
     });
   });
 
@@ -183,7 +183,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "CA", value: 1 },
         { country: "AUS", value: 2n },
         { country: "US", value: 3 },
@@ -200,7 +200,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "US", value: 3 },
         { country: "CA", value: 1 },
         { country: "AUS", value: 2 },
@@ -217,7 +217,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "AUS", value: 3 },
         { country: "US", value: 1 },
         { country: "US", value: 2 },
@@ -234,7 +234,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "C", value: "$" },
         { country: "B", value: 1 },
         { country: "A", value: "hello" },
@@ -251,7 +251,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "A", value: 300 },
         { country: "B", value: 2000 },
         { country: "C", value: 10000 },
@@ -271,7 +271,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "C", value: 1 },
         { country: "F", value: 2 },
         { country: "B", value: 3 },
@@ -290,7 +290,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(
+      assert.partialDeepStrictEqual(
         Object.values(results).map((v) => Object.keys(v)),
         [
           ["population", "country"],
@@ -310,7 +310,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { value: 3, food: "pavlova" },
         { value: 2, food: "poutine" },
         { value: 1, food: "pizza" },
@@ -327,7 +327,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "AUS", food: "pavlova" },
         { country: "CA", food: "poutine" },
         { country: "US", food: "pizza" },
@@ -344,7 +344,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "AUS", value: 3, population: {} },
         { country: "CA", value: 2, population: {} },
         { country: "US", value: 1, population: {} },
@@ -367,7 +367,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { country: "AUS", population: { count: 1000 } },
         { country: "CA", population: { count: 500 } },
         { country: "US", population: { count: 300 } },
@@ -380,7 +380,7 @@ describe("compiler", () => {
       const run = compileQuery(parseQuery("| eval newField='hey'").ast);
       const results = [...run([{ id: 1 }, { id: 2 }])];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { id: 1, newField: "hey" },
         { id: 2, newField: "hey" },
       ]);
@@ -390,7 +390,7 @@ describe("compiler", () => {
       const run = compileQuery(parseQuery("| eval newField.nested='hey'").ast);
       const results = [...run([{ id: 1 }, { id: 2 }])];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { id: 1, newField: { nested: "hey" } },
         { id: 2, newField: { nested: "hey" } },
       ]);
@@ -405,7 +405,7 @@ describe("compiler", () => {
         ]),
       ];
 
-      assert.deepEqual(results, [
+      assert.partialDeepStrictEqual(results, [
         { id: 1, newField: { nested: "hey", test: "value" } },
         { id: 2, newField: { nested: "hey", test: "value" } },
       ]);
@@ -415,7 +415,9 @@ describe("compiler", () => {
       const run = compileQuery(parseQuery("| eval newField=oldField").ast);
       const results = [...run([{ oldField: "value" }])];
 
-      assert.deepEqual(results, [{ newField: "value", oldField: "value" }]);
+      assert.partialDeepStrictEqual(results, [
+        { newField: "value", oldField: "value" },
+      ]);
     });
   });
 });

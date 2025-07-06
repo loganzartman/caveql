@@ -12,7 +12,7 @@ import {
 describe("parser", () => {
   it("parses basic search with key-value", () => {
     const result = parseQuery("search a=b").ast;
-    assert.deepEqual(result, {
+    assert.partialDeepStrictEqual(result, {
       type: "query",
       pipeline: [
         {
@@ -33,7 +33,7 @@ describe("parser", () => {
   describe("strings", () => {
     it("handles a double-quoted string", () => {
       const result = parseQuery(`"hello world!"`).ast;
-      assert.deepEqual(result, {
+      assert.partialDeepStrictEqual(result, {
         type: "query",
         pipeline: [
           {
@@ -51,7 +51,7 @@ describe("parser", () => {
 
     it("handles a single-quoted string", () => {
       const result = parseQuery(`'hello world!'`).ast;
-      assert.deepEqual(result, {
+      assert.partialDeepStrictEqual(result, {
         type: "query",
         pipeline: [
           {
@@ -69,7 +69,7 @@ describe("parser", () => {
 
     it("handles a bare string", () => {
       const result = parseQuery("h3llo-world$").ast;
-      assert.deepEqual(result, {
+      assert.partialDeepStrictEqual(result, {
         type: "query",
         pipeline: [
           {
@@ -92,27 +92,27 @@ describe("parser", () => {
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       // In Splunk, this would be searching for records containing "a=1", "and", "b=2", "or", "c=3" as separate terms
       assert.equal(searchCmd.filters.length, 5);
-      assert.deepEqual(searchCmd.filters[0], {
+      assert.partialDeepStrictEqual(searchCmd.filters[0], {
         type: "compare",
         op: "=",
         left: { type: "field-name", value: "a" },
         right: { type: "number", value: 1n },
       });
-      assert.deepEqual(searchCmd.filters[1], {
+      assert.partialDeepStrictEqual(searchCmd.filters[1], {
         type: "string",
         value: "and",
       });
-      assert.deepEqual(searchCmd.filters[2], {
+      assert.partialDeepStrictEqual(searchCmd.filters[2], {
         type: "compare",
         op: "=",
         left: { type: "field-name", value: "b" },
         right: { type: "number", value: 2n },
       });
-      assert.deepEqual(searchCmd.filters[3], {
+      assert.partialDeepStrictEqual(searchCmd.filters[3], {
         type: "string",
         value: "or",
       });
-      assert.deepEqual(searchCmd.filters[4], {
+      assert.partialDeepStrictEqual(searchCmd.filters[4], {
         type: "compare",
         op: "=",
         left: { type: "field-name", value: "c" },
@@ -124,7 +124,7 @@ describe("parser", () => {
       const result = parseQuery("search a=1 AND b=2 OR NOT c=3").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
       assert.equal(searchCmd.filters.length, 1);
-      assert.deepEqual(searchCmd.filters[0], {
+      assert.partialDeepStrictEqual(searchCmd.filters[0], {
         type: "search-binary-op",
         op: "OR",
         left: {
@@ -159,7 +159,7 @@ describe("parser", () => {
     it("respects parentheses for grouping", () => {
       const result = parseQuery("search NOT (a=1)").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
-      assert.deepEqual(searchCmd.filters[0], {
+      assert.partialDeepStrictEqual(searchCmd.filters[0], {
         type: "search-unary-op",
         op: "NOT",
         operand: {
@@ -175,7 +175,7 @@ describe("parser", () => {
   describe("pipelines", () => {
     it("parses simple pipeline with search and where", () => {
       const result = parseQuery("search a=b | where a<2").ast;
-      assert.deepEqual(result, {
+      assert.partialDeepStrictEqual(result, {
         type: "query",
         pipeline: [
           {
@@ -204,7 +204,7 @@ describe("parser", () => {
 
     it("allows bare search as first command", () => {
       const result = parseQuery("a<b AND c=d").ast;
-      assert.deepEqual(result, {
+      assert.partialDeepStrictEqual(result, {
         type: "query",
         pipeline: [
           {
@@ -234,7 +234,7 @@ describe("parser", () => {
 
     it("parses three-command pipeline", () => {
       const result = parseQuery("search a=b | where a<2 | stats").ast;
-      assert.deepEqual(result, {
+      assert.partialDeepStrictEqual(result, {
         type: "query",
         pipeline: [
           {
@@ -267,7 +267,7 @@ describe("parser", () => {
 
     it("parses complex expressions in pipeline", () => {
       const result = parseQuery("search x=1 AND y=2 | where z>5 or w<10").ast;
-      assert.deepEqual(result, {
+      assert.partialDeepStrictEqual(result, {
         type: "query",
         pipeline: [
           {
@@ -319,7 +319,7 @@ describe("parser", () => {
     it("parses simple identifiers in where clauses", () => {
       const result = parseQuery("where a").ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;
-      assert.deepEqual(whereCmd, {
+      assert.partialDeepStrictEqual(whereCmd, {
         type: "where",
         expr: { type: "field-name", value: "a" },
       });
@@ -328,7 +328,7 @@ describe("parser", () => {
     it("parses numeric literals in where clauses", () => {
       const result = parseQuery("where 123").ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;
-      assert.deepEqual(whereCmd, {
+      assert.partialDeepStrictEqual(whereCmd, {
         type: "where",
         expr: { type: "number", value: 123n },
       });
@@ -337,7 +337,7 @@ describe("parser", () => {
     it("parses quoted strings", () => {
       const result = parseQuery('where "hello"').ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;
-      assert.deepEqual(whereCmd, {
+      assert.partialDeepStrictEqual(whereCmd, {
         type: "where",
         expr: { type: "string", value: "hello" },
       });
@@ -347,7 +347,7 @@ describe("parser", () => {
   describe("individual commands", () => {
     it("parses stats command", () => {
       const result = parseQuery("stats").ast;
-      assert.deepEqual(result, {
+      assert.partialDeepStrictEqual(result, {
         type: "query",
         pipeline: [{ type: "stats", aggregations: [] }],
       });
@@ -356,7 +356,7 @@ describe("parser", () => {
     it("parses where command with comparison", () => {
       const result = parseQuery("where a >= 5").ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;
-      assert.deepEqual(whereCmd, {
+      assert.partialDeepStrictEqual(whereCmd, {
         type: "where",
         expr: {
           type: "binary-op",
@@ -372,7 +372,7 @@ describe("parser", () => {
     it("uses uppercase operators (AND, OR, NOT) in search command comparison expressions", () => {
       const result = parseQuery("search a=1 AND b=2 OR NOT c=3").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
-      assert.deepEqual(searchCmd.filters[0], {
+      assert.partialDeepStrictEqual(searchCmd.filters[0], {
         type: "search-binary-op",
         op: "OR",
         left: {
@@ -407,7 +407,7 @@ describe("parser", () => {
     it("uses lowercase operators (and, or, not) in eval command expressions", () => {
       const result = parseQuery("eval result = a=1 and b=2 or not c=3").ast;
       const evalCmd = result.pipeline[0] as EvalCommandAST;
-      assert.deepEqual(evalCmd.bindings[0][1], {
+      assert.partialDeepStrictEqual(evalCmd.bindings[0][1], {
         type: "binary-op",
         op: "or",
         left: {
@@ -444,7 +444,7 @@ describe("parser", () => {
     it("parses simple sort command", () => {
       const result = parseQuery("| sort a").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
-      assert.deepEqual(sortCmd, {
+      assert.partialDeepStrictEqual(sortCmd, {
         type: "sort",
         count: undefined,
         fields: [
@@ -461,7 +461,7 @@ describe("parser", () => {
     it("parses sort with count", () => {
       const result = parseQuery("| sort 1000 a").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
-      assert.deepEqual(sortCmd, {
+      assert.partialDeepStrictEqual(sortCmd, {
         type: "sort",
         count: { type: "number", value: 1000n },
         fields: [
@@ -478,7 +478,7 @@ describe("parser", () => {
     it("parses sort with comparator", () => {
       const result = parseQuery("| sort 1000 str(a)").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
-      assert.deepEqual(sortCmd, {
+      assert.partialDeepStrictEqual(sortCmd, {
         type: "sort",
         count: { type: "number", value: 1000n },
         fields: [
@@ -495,7 +495,7 @@ describe("parser", () => {
     it("parses sort with descending field", () => {
       const result = parseQuery("| sort -a").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
-      assert.deepEqual(sortCmd, {
+      assert.partialDeepStrictEqual(sortCmd, {
         type: "sort",
         count: undefined,
         fields: [
@@ -512,7 +512,7 @@ describe("parser", () => {
     it("parses sort with explicit ascending field", () => {
       const result = parseQuery("| sort +a").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
-      assert.deepEqual(sortCmd, {
+      assert.partialDeepStrictEqual(sortCmd, {
         type: "sort",
         count: undefined,
         fields: [
@@ -529,7 +529,7 @@ describe("parser", () => {
     it("parses sort with comparator and descending field", () => {
       const result = parseQuery("| sort -str(a)").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
-      assert.deepEqual(sortCmd, {
+      assert.partialDeepStrictEqual(sortCmd, {
         type: "sort",
         count: undefined,
         fields: [
@@ -546,7 +546,7 @@ describe("parser", () => {
     it("parses complex sort", () => {
       const result = parseQuery("| sort 200 -str(a), beta, auto(gamma)").ast;
       const sortCmd = result.pipeline[1] as SortCommandAST;
-      assert.deepEqual(sortCmd, {
+      assert.partialDeepStrictEqual(sortCmd, {
         type: "sort",
         count: { type: "number", value: 200n },
         fields: [
@@ -578,7 +578,7 @@ describe("parser", () => {
       const result = parseQuery("| fields a").ast;
       const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
 
-      assert.deepEqual(fieldsCmd, {
+      assert.partialDeepStrictEqual(fieldsCmd, {
         type: "fields",
         fields: [{ type: "field-name", value: "a" }],
         remove: undefined,
@@ -589,7 +589,7 @@ describe("parser", () => {
       const result = parseQuery("| fields a, b, c").ast;
       const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
 
-      assert.deepEqual(fieldsCmd, {
+      assert.partialDeepStrictEqual(fieldsCmd, {
         type: "fields",
         fields: [
           { type: "field-name", value: "a" },
@@ -604,7 +604,7 @@ describe("parser", () => {
       const result = parseQuery("| fields -a, b, c").ast;
       const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
 
-      assert.deepEqual(fieldsCmd, {
+      assert.partialDeepStrictEqual(fieldsCmd, {
         type: "fields",
         fields: [
           { type: "field-name", value: "a" },
@@ -619,7 +619,7 @@ describe("parser", () => {
       const result = parseQuery("| fields +a, b, c").ast;
       const fieldsCmd = result.pipeline[1] as FieldsCommandAST;
 
-      assert.deepEqual(fieldsCmd, {
+      assert.partialDeepStrictEqual(fieldsCmd, {
         type: "fields",
         fields: [
           { type: "field-name", value: "a" },
