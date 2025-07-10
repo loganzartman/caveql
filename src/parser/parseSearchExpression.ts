@@ -12,7 +12,7 @@ import {
   parseWs,
   type StringAST,
 } from "./parseCommon";
-import { type ExpressionAST, parseExpression } from "./parseExpression";
+import type { ExpressionAST } from "./parseExpression";
 
 export type SearchExpressionAST =
   | SearchBinaryExpressionAST

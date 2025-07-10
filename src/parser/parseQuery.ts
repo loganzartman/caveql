@@ -7,10 +7,12 @@ export type QueryAST = {
   pipeline: CommandAST[];
 };
 
-export function parseQuery(src: string): {
+export type ParseQueryResult = {
   ast: QueryAST;
   context: ParseContext;
-} {
+};
+
+export function parseQuery(src: string): ParseQueryResult {
   const ctx = {
     source: src,
     index: 0,

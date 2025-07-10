@@ -22,6 +22,7 @@ import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
 import { Editor } from "./Editor";
 import type { monaco } from "./monaco";
+import { useSortQuery } from "./useSortQuery";
 
 export function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -29,10 +30,26 @@ export function App() {
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   const [source, setSource] = useState("");
+
+  const handleSourceChange = useCallback((source: string) => {
+    history.replaceState(undefined, "", `#${btoa(source)}`);
+    setSource(source);
+  }, []);
+
+  const updateSource = useCallback(
+    (source: string) => {
+      if (!editorRef) return;
+      editorRef.setValue(source);
+      handleSourceChange(source);
+    },
+    [editorRef, handleSourceChange],
+  );
+
   const [inputRecords, setInputRecords] = useState<Record<string, unknown>[]>(
     [],
   );
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
+  const [sort, setSort] = useSortQuery(source, updateSource);
 
   useEffect(() => {
     if (!editorRef) return;
@@ -44,11 +61,6 @@ export function App() {
       console.log("Failed to parse document hash");
     }
   }, [editorRef]);
-
-  const updateSource = useCallback((source: string) => {
-    history.replaceState(undefined, "", `#${btoa(source)}`);
-    setSource(source);
-  }, []);
 
   const countFormatter = useMemo(() => {
     return new Intl.NumberFormat(undefined, {});
@@ -112,7 +124,7 @@ export function App() {
         </div>
       </div>
       <div className="">
-        <Editor editorRef={setEditorRef} onChange={updateSource} />
+        <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
       </div>
       <div className="grow shrink">
         <TabGroup>
@@ -137,7 +149,12 @@ export function App() {
           <TabPanels>
             <TabPanel>
               {results && (
-                <ResultsTable results={results} scrollRef={scrollRef} />
+                <ResultsTable
+                  results={results}
+                  scrollRef={scrollRef}
+                  sort={sort}
+                  onSortChange={setSort}
+                />
               )}
             </TabPanel>
             <TabPanel>

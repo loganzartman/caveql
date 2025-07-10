@@ -1,15 +1,32 @@
-"use no memo";
+import { Button } from "@headlessui/react";
+import {
+  ChevronDownIcon,
+  ChevronUpDownIcon,
+  ChevronUpIcon,
+} from "@heroicons/react/20/solid";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
+import { impossible } from "../../src/impossible";
 import { ValView } from "./ValView";
+
+export type SortDirection = "asc" | "desc" | "none";
+export type SortMap = Record<string, SortDirection>;
+export type SortChangeHandler = (params: {
+  field: string;
+  direction: SortDirection;
+}) => void;
 
 export function ResultsTable({
   results,
   scrollRef,
+  sort,
+  onSortChange,
 }: {
   results: Record<string, unknown>[];
   scrollRef: React.RefObject<HTMLElement | null>;
+  sort?: SortMap;
+  onSortChange?: SortChangeHandler;
 }) {
   const [listRef, setListRef] = useState<HTMLDivElement | null>(null);
 
@@ -40,9 +57,21 @@ export function ResultsTable({
         }}
       >
         {cols.map((col) => (
-          <div key={col} className="flex-1 px-3 py-1">
+          <Button
+            key={col}
+            className="flex-1 px-3 py-1 gap-1 flex flex-row items-center cursor-pointer"
+            onClick={() => {
+              const currentDirection = sort?.[col] ?? "none";
+              const newDirection = nextSortDirection(currentDirection);
+              onSortChange?.({
+                field: col,
+                direction: newDirection,
+              });
+            }}
+          >
+            <SortIcon direction={sort?.[col]} />
             {col}
-          </div>
+          </Button>
         ))}
       </div>
       <div
@@ -79,4 +108,30 @@ export function ResultsTable({
       </div>
     </div>
   );
+}
+
+function SortIcon({ direction }: { direction?: SortDirection }) {
+  if (direction === "asc") {
+    return <ChevronUpIcon className="w-[1em]" />;
+  }
+  if (direction === "desc") {
+    return <ChevronDownIcon className="w-[1em]" />;
+  }
+  if (direction === "none" || direction === undefined) {
+    return <ChevronUpDownIcon className="w-[1em] opacity-50" />;
+  }
+  impossible(direction);
+}
+
+function nextSortDirection(current: SortDirection): SortDirection {
+  switch (current) {
+    case "none":
+      return "asc";
+    case "asc":
+      return "desc";
+    case "desc":
+      return "none";
+    default:
+      impossible(current);
+  }
 }

@@ -41,7 +41,7 @@ export function ResultsChart({
             cursor={{
               fill: "var(--color-stone-700)",
             }}
-            content={({ active, payload, label }) =>
+            content={({ active, payload }) =>
               active &&
               payload &&
               payload.length && (
@@ -74,7 +74,7 @@ export function ResultsChart({
             cursor={{
               fill: "var(--color-stone-700)",
             }}
-            content={({ active, payload, label }) =>
+            content={({ active, payload }) =>
               active &&
               payload &&
               payload.length && (
