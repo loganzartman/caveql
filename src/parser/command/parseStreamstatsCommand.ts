@@ -23,6 +23,12 @@ export function parseStreamstatsCommand(
       parseWs(ctx);
       const term = parseAggregationTerm(ctx);
       terms.push(term);
+
+      // commas optional
+      try {
+        parseWs(ctx);
+        parseLiteral(ctx, [Token.operator, ","]);
+      } catch {}
     } catch {
       break;
     }

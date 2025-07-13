@@ -375,6 +375,127 @@ describe("compiler", () => {
     });
   });
 
+  describe("stats", () => {
+    it("aggregates with count function", () => {
+      const run = compileQuery(parseQuery("stats count(events)").ast);
+      const results = [
+        ...run([
+          { events: 1, country: "US" },
+          { events: 2, country: "CA" },
+          { events: 3, country: "US" },
+        ]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [{ "count(events)": 3 }]);
+    });
+
+    it("aggregates with field renaming using 'as' keyword", () => {
+      const run = compileQuery(
+        parseQuery("stats count(events) as total_events").ast,
+      );
+      const results = [
+        ...run([
+          { events: 1, country: "US" },
+          { events: 2, country: "CA" },
+          { events: 3, country: "US" },
+        ]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [{ total_events: 3 }]);
+    });
+
+    it("aggregates with multiple functions and field renaming", () => {
+      const run = compileQuery(
+        parseQuery("stats count(events) as total, avg(price) as avg_price").ast,
+      );
+      const results = [
+        ...run([
+          { events: 1, price: 10, country: "US" },
+          { events: 2, price: 20, country: "CA" },
+          { events: 3, price: 30, country: "US" },
+        ]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [{ total: 3, avg_price: 20 }]);
+    });
+
+    it("handles field names with parentheses in aggregation functions", () => {
+      const run = compileQuery(
+        parseQuery("stats count(field(with)parens) as renamed").ast,
+      );
+      const results = [
+        ...run([
+          { "field(with)parens": 1 },
+          { "field(with)parens": 2 },
+          { "field(with)parens": 3 },
+        ]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [{ renamed: 3 }]);
+    });
+  });
+
+  describe("streamstats", () => {
+    it("provides running aggregation with field renaming", () => {
+      const run = compileQuery(
+        parseQuery("streamstats count(events) as running_total").ast,
+      );
+      const results = [
+        ...run([
+          { events: 1, country: "US" },
+          { events: 2, country: "CA" },
+          { events: 3, country: "US" },
+        ]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [
+        { events: 1, country: "US", running_total: 1 },
+        { events: 2, country: "CA", running_total: 2 },
+        { events: 3, country: "US", running_total: 3 },
+      ]);
+    });
+
+    it("provides running aggregation with multiple functions and field renaming", () => {
+      const run = compileQuery(
+        parseQuery(
+          "streamstats count(events) as total, avg(price) as avg_price",
+        ).ast,
+      );
+      const results = [
+        ...run([
+          { events: 1, price: 10, country: "US" },
+          { events: 2, price: 20, country: "CA" },
+          { events: 3, price: 30, country: "US" },
+        ]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [
+        { events: 1, price: 10, country: "US", total: 1, avg_price: 10 },
+        { events: 2, price: 20, country: "CA", total: 2, avg_price: 15 },
+        { events: 3, price: 30, country: "US", total: 3, avg_price: 20 },
+      ]);
+    });
+
+    it("handles field names with parentheses in running aggregation", () => {
+      const run = compileQuery(
+        parseQuery("streamstats count(field(with)parens) as running_count").ast,
+      );
+      const results = [
+        ...run([
+          { "field(with)parens": 1, id: "a" },
+          { "field(with)parens": 2, id: "b" },
+          { "field(with)parens": 3, id: "c" },
+        ]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [
+        { "field(with)parens": 1, id: "a", running_count: 1 },
+        { "field(with)parens": 2, id: "b", running_count: 2 },
+        { "field(with)parens": 3, id: "c", running_count: 3 },
+      ]);
+    });
+  });
+
   describe("eval", () => {
     it("can set a field to a literal string", () => {
       const run = compileQuery(parseQuery("| eval newField='hey'").ast);

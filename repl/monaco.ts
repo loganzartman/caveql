@@ -27,6 +27,10 @@ monaco.editor.defineTheme("caveql", {
       foreground: "#ffd230", // amber-300
     },
     {
+      token: "keyword",
+      foreground: "#a3b3ff", // indigo-300
+    },
+    {
       token: "parameter",
       foreground: "#fd9a00", // amber-500
     },

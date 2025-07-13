@@ -23,7 +23,10 @@ export function compileStreamstatsCommand(
         yield {
           ...record,
           ${command.aggregations
-            .map((agg) => [aggKey(agg), compileAggregationFinal(agg)])
+            .map((agg) => [
+              agg.asField ? JSON.stringify(agg.asField.value) : aggKey(agg),
+              compileAggregationFinal(agg),
+            ])
             .filter(([, final]) => Boolean(final))
             .map(([name, final]) => `${name}: ${final}`)
             .join(",\n")}

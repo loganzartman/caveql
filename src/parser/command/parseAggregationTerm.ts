@@ -21,6 +21,7 @@ export type AggregationTermType =
 export type AggregationTermAST = {
   type: AggregationTermType;
   field?: FieldNameAST;
+  asField?: FieldNameAST;
 };
 
 export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
@@ -38,6 +39,7 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     [Token.function, "perc"],
   );
 
+  // optional field
   let field: FieldNameAST | undefined;
   try {
     parseWs(ctx);
@@ -46,9 +48,16 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     field = parseFieldName(ctx);
     parseWs(ctx);
     parseLiteral(ctx, [Token.paren, ")"]);
-  } catch {
-    // pass
-  }
+  } catch {}
 
-  return { type, field };
+  // optional as clause
+  let asField: FieldNameAST | undefined;
+  try {
+    parseWs(ctx);
+    parseLiteral(ctx, [Token.keyword, "as"]);
+    parseWs(ctx);
+    asField = parseFieldName(ctx);
+  } catch {}
+
+  return { type, field, asField };
 }

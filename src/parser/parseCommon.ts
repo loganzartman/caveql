@@ -60,9 +60,56 @@ export type FieldNameAST = {
 };
 
 export function parseFieldName(ctx: ParseContext): FieldNameAST {
+  const re = /[\p{L}\p{N}\-$_.]/u;
+
+  let depth = 0;
+  let end = ctx.index;
+
+  while (end < ctx.source.length) {
+    const c = ctx.source[end];
+
+    if (c === "(") {
+      ++depth;
+      ++end;
+      continue;
+    }
+
+    if (c === ")") {
+      if (depth === 0) {
+        break;
+      }
+      --depth;
+      ++end;
+      continue;
+    }
+
+    if (re.test(c)) {
+      ++end;
+      continue;
+    }
+
+    break;
+  }
+
+  if (depth > 0) {
+    throw new Error("Unclosed parentheses in field name");
+  }
+
+  if (end === ctx.index) {
+    throw new Error("Expected field name");
+  }
+
+  const value = ctx.source.substring(ctx.index, end);
+  ctx.tokens.push({
+    type: Token.field,
+    start: ctx.index,
+    end,
+  });
+  ctx.index = end;
+
   return {
     type: "field-name",
-    value: parseRex(ctx, Token.field, /[\p{L}$_][\p{L}\p{N}\-$_.]*/u),
+    value,
   };
 }
 

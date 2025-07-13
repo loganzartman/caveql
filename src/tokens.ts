@@ -3,6 +3,7 @@ export enum Token {
   command,
   field,
   function,
+  keyword,
   number,
   operator,
   parameter,

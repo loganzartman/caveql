@@ -4,11 +4,12 @@ import { parseQuery } from "../parser";
 import { getSourceLocation } from "../parser/getSourceLocation";
 import { Token } from "../tokens";
 
-const tokenMapping = {
+const tokenMapping: Record<Token, string> = {
   [Token.comma]: "delimiter.comma",
   [Token.command]: "keyword.command",
   [Token.field]: "variable.other.property",
   [Token.function]: "keyword.function",
+  [Token.keyword]: "keyword",
   [Token.number]: "number",
   [Token.operator]: "operator",
   [Token.parameter]: "parameter",
