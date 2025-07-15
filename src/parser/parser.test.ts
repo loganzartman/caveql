@@ -724,8 +724,9 @@ describe("parser", () => {
       // This test verifies that unclosed parentheses are handled appropriately
       // The search parser is flexible and may parse "field" separately, which is valid behavior
       const result = parseQuery("search field(unclosed=value");
+      const searchCommand = result.ast.pipeline[0] as SearchCommandAST;
       // Should either throw an error or parse "field" as a separate term
-      assert.ok(result.ast.pipeline[0].filters.length > 0);
+      assert.ok(searchCommand.filters.length > 0);
     });
   });
 
