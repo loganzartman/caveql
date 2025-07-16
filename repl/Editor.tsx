@@ -53,6 +53,10 @@ export function Editor({
       hideCursorInOverviewRuler: true,
       overviewRulerBorder: false,
       lineNumbers: "off",
+      padding: {
+        top: 8,
+        bottom: 8,
+      },
 
       fontFamily: "Monaspace Neon Var",
       fontSize: 18,
