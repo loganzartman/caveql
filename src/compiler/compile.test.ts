@@ -573,6 +573,21 @@ describe("compiler", () => {
       ]);
     });
 
+    it("supports weird delimiters and escapes with mode=sed", () => {
+      const run = compileQuery(
+        parseQuery("| rex field=name mode=sed 's|ay\\|erry|ames|'").ast,
+      );
+      const results = [
+        ...run([{ name: "jay" }, { name: "jerry" }, { name: "jules" }]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [
+        { name: "james" },
+        { name: "james" },
+        { name: "jules" },
+      ]);
+    });
+
     it("defaults to field=_raw", () => {
       const run = compileQuery(parseQuery("| rex '(?<name>j(?:ay|ules))'").ast);
       const results = [

@@ -25,8 +25,7 @@ export function parseBareSearch(ctx: ParseContext): SearchCommandAST {
       parseWs(ctx);
       const filter = parseSearchExpression(ctx);
       filters.push(filter);
-    } catch (e) {
-      console.log(e);
+    } catch {
       break;
     }
   }
