@@ -8,7 +8,7 @@ export type HostMessage =
     }
   | {
       type: "getRecords";
-      timesliceMs: number;
+      max: number;
     };
 
 // TODO: support streaming data in worker

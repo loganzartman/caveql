@@ -40,16 +40,15 @@ function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
 
   let done = false;
   const records: Record<string, unknown>[] = [];
-  const t0 = performance.now();
 
-  do {
+  for (let i = 0; i < data.max; ++i) {
     const result = generator.next();
     if (result.done) {
       done = true;
       break;
     }
     records.push(result.value);
-  } while (performance.now() - t0 < data.timesliceMs);
+  }
 
   globalThis.postMessage({ type: "sendRecords", records, done });
 }

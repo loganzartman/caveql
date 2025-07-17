@@ -23,7 +23,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
   // TODO: compile in a worker? most queries probably are not large.
   const source = compileQueryRaw(ast);
 
-  const timesliceMs = 10;
+  const max = 1000;
   const activeQueries = new Set<AsyncQueryHandle>();
 
   const query = (input: WorkerRecordsInput) => {
@@ -40,7 +40,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
     const records = (async function* () {
       while (!done) {
         if (!bufferedRecords.length) {
-          worker.postMessage(hostMessage({ type: "getRecords", timesliceMs }));
+          worker.postMessage(hostMessage({ type: "getRecords", max }));
           await newRecords.wait();
         }
         while (bufferedRecords.length) {
