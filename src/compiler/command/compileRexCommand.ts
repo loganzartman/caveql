@@ -12,7 +12,7 @@ export function compileRexCommand(command: RexCommandAST): string {
     const sedParsed = sedRegex.exec(command.regex.value);
     if (!sedParsed?.groups) {
       throw new Error(
-        `Invalid sed regex in rex command: ${command.regex.value}`,
+        `Invalid sed expression in rex command: ${command.regex.value}`,
       );
     }
 
