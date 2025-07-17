@@ -1,33 +1,33 @@
-import TinyQueue from "tinyqueue";
-import type { CommandAST, QueryAST } from "../parser";
-import {
-  compareFieldAuto,
-  compareFieldNumber,
-  compareFieldString,
-} from "./command/compileSortCommand";
+import type { QueryAST } from "../parser";
 import { compileCommand } from "./compileCommand";
+import { createDeps, type InjectedDeps } from "./deps";
 
 export type QueryFunction = ((
   records: Iterable<unknown>,
-) => Generator<Record<string, unknown>>) & { source: string };
+) => Generator<Record<string, unknown>>) & { source: QuerySource };
 
-// runtime dependencies required by the compiled function, which should be
-// injected as a parameter rather than compiled into the function itself.
-type InjectedDeps = {
-  compareFieldAuto: typeof compareFieldAuto;
-  compareFieldNumber: typeof compareFieldNumber;
-  compareFieldString: typeof compareFieldString;
-  looseEq: typeof looseEq;
-  TinyQueue: typeof TinyQueue;
-};
+const querySourceTag: unique symbol = Symbol();
+export type QuerySource = string & { [querySourceTag]?: true };
 
 const GeneratorFunction = function* () {}.constructor as {
   new (...args: string[]): GeneratorFunction;
 };
 
+/**
+ * Compile a query AST into a generator function that processes records.
+ * This is a simple way to execute a query in the current thread.
+ */
 export function compileQuery(query: QueryAST): QueryFunction {
-  const source = compilePipeline(query.pipeline);
+  return bindCompiledQuery(compileQueryRaw(query));
+}
 
+/**
+ * Convert a query source string into a generator function that processes
+ * records. Bind necessary dependencies to the function.
+ *
+ * You probably want compileQuery, which does this in one step.
+ */
+export function bindCompiledQuery(source: QuerySource): QueryFunction {
   const compiledFn = new GeneratorFunction(
     "deps",
     "records",
@@ -37,23 +37,22 @@ export function compileQuery(query: QueryAST): QueryFunction {
     records: Iterable<unknown>,
   ) => Generator<Record<string, unknown>>;
 
-  const deps = {
-    compareFieldAuto,
-    compareFieldNumber,
-    compareFieldString,
-    looseEq,
-    TinyQueue,
-  };
-
+  const deps = createDeps();
   const injectedFn = (records: Iterable<unknown>) => compiledFn(deps, records);
   injectedFn.source = source;
 
   return injectedFn;
 }
 
-function compilePipeline(pipeline: CommandAST[]): string {
+/**
+ * Compile a query AST into a JS function source string.
+ *
+ * You probably want compileQuery, which produces a callable function tagged
+ * with a `source` string.
+ */
+export function compileQueryRaw(query: QueryAST): QuerySource {
   let result = "records";
-  for (const command of pipeline) {
+  for (const command of query.pipeline) {
     result = `
       (
         ${compileCommand(command)}
@@ -74,12 +73,5 @@ function compilePipeline(pipeline: CommandAST[]): string {
     yield* (
       ${result}
     );
-  `;
-}
-
-function looseEq(a: unknown, b: unknown): boolean {
-  if (typeof a === "string") a = a.toLowerCase();
-  if (typeof b === "string") b = b.toLowerCase();
-  // biome-ignore lint/suspicious/noDoubleEquals: coerce it!
-  return a == b;
+  ` as QuerySource;
 }

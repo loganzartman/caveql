@@ -7,7 +7,14 @@ import {
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { compileQuery, formatJS, formatTree, parseQuery } from "../src";
+import {
+  type AsyncQueryHandle,
+  compileQuery,
+  createQueryWorker,
+  formatJS,
+  formatTree,
+  parseQuery,
+} from "../src";
 import type { QueryAST } from "../src/parser";
 import { printAST } from "../src/printer/printAST";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
@@ -84,23 +91,53 @@ export function App() {
     })().catch((e) => console.error(e));
   }, []);
 
-  const { error, tree, treeString, code, results } = useMemo(() => {
-    let tree: QueryAST | null = null;
-    let error: string | null = null;
-    let treeString: string | null = null;
-    let code: string | null = null;
-    let results: Record<string, unknown>[] | null;
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tree, setTree] = useState<QueryAST | null>(null);
+  const [treeString, setTreeString] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, unknown>[] | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let handle: AsyncQueryHandle | null = null;
+
     try {
-      tree = parseQuery(source).ast;
-      treeString = formatTree(tree);
-      const run = compileQuery(tree);
-      code = formatJS(run.source);
-      results = [...run(inputRecords)];
+      const tree = parseQuery(source).ast;
+      setTree(tree);
+      setTreeString(formatTree(tree));
+
+      const queryWorker = createQueryWorker(tree);
+      handle = queryWorker.query({
+        type: "iterable",
+        value: inputRecords,
+      });
+
+      setCode(formatJS(queryWorker.source));
     } catch (e) {
-      error = `Error: ${e instanceof Error ? e.message : String(e)}`;
-      results = null;
+      setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      setResults(null);
     }
-    return { error, tree, treeString, code, results };
+
+    (async () => {
+      try {
+        if (!handle) {
+          return;
+        }
+        setResultsLoading(true);
+        setResults(await Array.fromAsync(handle.records));
+        setResultsLoading(false);
+      } catch (e) {
+        setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
+        setResults(null);
+        setResultsLoading(false);
+      }
+    })();
+
+    return () => {
+      handle?.cancel();
+    };
   }, [inputRecords, source]);
 
   return (
@@ -155,6 +192,11 @@ export function App() {
                   sort={sort}
                   onSortChange={setSort}
                 />
+              )}
+              {resultsLoading && (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <span>Loading results...</span>
+                </div>
               )}
             </TabPanel>
             <TabPanel>
