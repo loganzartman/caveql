@@ -3,6 +3,7 @@ import type { CommandAST } from "../parser/parseCommand";
 import { compileEvalCommand } from "./command/compileEvalCommand";
 import { compileFieldsCommand } from "./command/compileFieldsCommand";
 import { compileMakeresultsCommand } from "./command/compileMakeresultsCommand";
+import { compileRexCommand } from "./command/compileRexCommand";
 import { compileSearchCommand } from "./command/compileSearchCommand";
 import { compileSortCommand } from "./command/compileSortCommand";
 import { compileStatsCommand } from "./command/compileStatsCommand";
@@ -19,14 +20,16 @@ export function compileCommand(command: CommandAST): string {
       return compileFieldsCommand(command);
     case "makeresults":
       return compileMakeresultsCommand(command);
-    case "where":
-      return compileWhereCommand(command);
+    case "rex":
+      return compileRexCommand(command);
     case "sort":
       return compileSortCommand(command);
     case "stats":
       return compileStatsCommand(command);
     case "streamstats":
       return compileStreamstatsCommand(command);
+    case "where":
+      return compileWhereCommand(command);
     default:
       impossible(command);
   }

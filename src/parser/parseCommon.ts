@@ -27,29 +27,19 @@ export type StringAST = { type: "string"; value: string };
 
 export function parseString(
   ctx: ParseContext,
-  { isField = false }: { isField?: boolean } = {},
+  { token = Token.string }: { token?: Token } = {},
 ): StringAST {
   return parseOne(
     ctx,
     (c) =>
       ({
         type: "string",
-        value: parseRex(
-          c,
-          isField ? Token.field : Token.string,
-          /"((?:[^\\"]|\\.)*)"/,
-          1,
-        ),
+        value: parseRex(c, token, /"((?:[^\\"]|\\.)*)"/, 1),
       }) as const,
     (c) =>
       ({
         type: "string",
-        value: parseRex(
-          c,
-          isField ? Token.field : Token.string,
-          /'((?:[^\\']|\\.)*)'/,
-          1,
-        ),
+        value: parseRex(c, token, /'((?:[^\\']|\\.)*)'/, 1),
       }) as const,
   );
 }
@@ -60,6 +50,20 @@ export type FieldNameAST = {
 };
 
 export function parseFieldName(ctx: ParseContext): FieldNameAST {
+  return parseOne(
+    ctx,
+    (c) => {
+      const str = parseString(c, { token: Token.field });
+      return {
+        type: "field-name",
+        value: str.value,
+      } as const;
+    },
+    parseBareFieldName,
+  );
+}
+
+export function parseBareFieldName(ctx: ParseContext): FieldNameAST {
   const re = /[\p{L}\p{N}\-$_.]/u;
 
   let depth = 0;

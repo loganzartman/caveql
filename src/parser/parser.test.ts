@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { FieldsCommandAST } from "./command/parseFieldsCommand";
+import type { RexCommandAST } from "./command/parseRexCommand";
 import type { SortCommandAST } from "./command/parseSortCommand";
 import {
   type EvalCommandAST,
@@ -784,6 +785,88 @@ describe("parser", () => {
           { type: "field-name", value: "c" },
         ],
         remove: false,
+      });
+    });
+  });
+
+  describe("rex command", () => {
+    it("parses a basic rex command", () => {
+      const result = parseQuery('| rex "abc"').ast;
+      const rexCmd = result.pipeline[1] as RexCommandAST;
+
+      assert.partialDeepStrictEqual(rexCmd, {
+        type: "rex",
+        field: undefined,
+        regex: {
+          type: "string",
+          value: "abc",
+        },
+      });
+    });
+
+    it("parses a rex command with field extraction", () => {
+      const result = parseQuery('| rex "(?<alpha>abc)"').ast;
+      const rexCmd = result.pipeline[1] as RexCommandAST;
+
+      assert.partialDeepStrictEqual(rexCmd, {
+        type: "rex",
+        field: undefined,
+        regex: {
+          type: "string",
+          value: "(?<alpha>abc)",
+        },
+      });
+    });
+
+    it("parses a rex command with field", () => {
+      const result = parseQuery('| rex field=_raw "(?<alpha>abc)"').ast;
+      const rexCmd = result.pipeline[1] as RexCommandAST;
+
+      assert.partialDeepStrictEqual(rexCmd, {
+        type: "rex",
+        field: {
+          type: "field-name",
+          value: "_raw",
+        },
+        regex: {
+          type: "string",
+          value: "(?<alpha>abc)",
+        },
+      });
+    });
+
+    it("parses a rex command with mode", () => {
+      const result = parseQuery('| rex mode=sed "(?<alpha>abc)"').ast;
+      const rexCmd = result.pipeline[1] as RexCommandAST;
+
+      assert.partialDeepStrictEqual(rexCmd, {
+        type: "rex",
+        mode: "sed",
+        field: undefined,
+        regex: {
+          type: "string",
+          value: "(?<alpha>abc)",
+        },
+      });
+    });
+
+    it("parses a rex command with field and mode", () => {
+      const result = parseQuery(
+        '| rex field=name mode=sed "(?<name>j(?:ay|ules))"',
+      ).ast;
+      const rexCmd = result.pipeline[1] as RexCommandAST;
+
+      assert.partialDeepStrictEqual(rexCmd, {
+        type: "rex",
+        mode: "sed",
+        field: {
+          type: "field-name",
+          value: "name",
+        },
+        regex: {
+          type: "string",
+          value: "(?<name>j(?:ay|ules))",
+        },
       });
     });
   });

@@ -16,6 +16,7 @@ const tokenMapping: Record<Token, string> = {
   [Token.paren]: "delimiter.parenthesis",
   [Token.pipe]: "operator.pipe",
   [Token.string]: "string",
+  [Token.regex]: "regexp",
   [Token.whitespace]: "whitespace",
 } as const;
 

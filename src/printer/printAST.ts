@@ -49,6 +49,8 @@ export function printAST(
       return ast.value.toString();
     case "query":
       return ast.pipeline.map((command) => printAST(command)).join("\n| ");
+    case "rex":
+      return `rex ${ast.field ? `field=${printAST(ast.field)}` : ""} ${ast.mode ? `mode=${ast.mode}` : ""} regex=${printAST(ast.regex)}`;
     case "search": {
       const filters = ast.filters.map((filter) => printAST(filter, depth));
       const oneLine = filters.join(" ");
