@@ -9,6 +9,7 @@ export enum Token {
   parameter,
   paren,
   pipe,
+  regex,
   string,
   whitespace,
 }

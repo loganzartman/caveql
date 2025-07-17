@@ -10,6 +10,7 @@ import {
   type MakeresultsCommandAST,
   parseMakeresultsCommand,
 } from "./command/parseMakeresultsCommand";
+import { parseRexCommand, type RexCommandAST } from "./command/parseRexCommand";
 import {
   parseSearchCommand,
   type SearchCommandAST,
@@ -37,6 +38,7 @@ export type CommandAST =
   | EvalCommandAST
   | FieldsCommandAST
   | MakeresultsCommandAST
+  | RexCommandAST
   | SearchCommandAST
   | SortCommandAST
   | StatsCommandAST
@@ -49,6 +51,7 @@ export function parseCommand(ctx: ParseContext): CommandAST {
     parseEvalCommand,
     parseFieldsCommand,
     parseMakeresultsCommand,
+    parseRexCommand,
     parseSearchCommand,
     parseSortCommand,
     parseStatsCommand,

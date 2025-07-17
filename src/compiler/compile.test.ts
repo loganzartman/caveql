@@ -541,4 +541,64 @@ describe("compiler", () => {
       ]);
     });
   });
+
+  describe("rex", () => {
+    it("can extract a field with regex", () => {
+      const run = compileQuery(
+        parseQuery("| rex field=name '(?<name2>j(?:ay|ules))'").ast,
+      );
+      const results = [
+        ...run([{ name: "jay" }, { name: "jerry" }, { name: "jules" }]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [
+        { name: "jay", name2: "jay" },
+        { name: "jerry" },
+        { name: "jules", name2: "jules" },
+      ]);
+    });
+
+    it("can replace a needle with mode=sed", () => {
+      const run = compileQuery(
+        parseQuery("| rex field=name mode=sed 's/ay/ames/'").ast,
+      );
+      const results = [
+        ...run([{ name: "jay" }, { name: "jerry" }, { name: "jules" }]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [
+        { name: "james" },
+        { name: "jerry" },
+        { name: "jules" },
+      ]);
+    });
+
+    it("supports weird delimiters and escapes with mode=sed", () => {
+      const run = compileQuery(
+        parseQuery("| rex field=name mode=sed 's|ay\\|erry|ames|'").ast,
+      );
+      const results = [
+        ...run([{ name: "jay" }, { name: "jerry" }, { name: "jules" }]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [
+        { name: "james" },
+        { name: "james" },
+        { name: "jules" },
+      ]);
+    });
+
+    it("defaults to field=_raw", () => {
+      const run = compileQuery(parseQuery("| rex '(?<name>j(?:ay|ules))'").ast);
+      const results = [
+        ...run([{ _raw: "jay" }, { _raw: "jerry" }, { _raw: "jules" }]),
+      ];
+
+      assert.partialDeepStrictEqual(results, [
+        { _raw: "jay", name: "jay" },
+        { _raw: "jerry" },
+        { _raw: "jules", name: "jules" },
+      ]);
+    });
+  });
 });

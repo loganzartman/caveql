@@ -47,6 +47,10 @@ monaco.editor.defineTheme("caveql", {
       foreground: "#f6339a", // pink-500
     },
     {
+      token: "regexp",
+      foreground: "#f6339a", // pink-500
+    },
+    {
       token: "variable.other.property",
       foreground: "#ffa2a2", // red-300
     },
