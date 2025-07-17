@@ -63,7 +63,6 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
     worker.addEventListener(
       "message",
       ({ data }: MessageEvent<WorkerMessage>) => {
-        console.log("worker message", data);
         switch (data.type) {
           case "sendRecords":
             Array.prototype.push.apply(bufferedRecords, data.records);

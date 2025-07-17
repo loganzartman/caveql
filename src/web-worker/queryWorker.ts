@@ -4,10 +4,7 @@ import type { HostMessage } from "./message";
 
 let generator: Generator<Record<string, unknown>> | undefined;
 
-console.log("queryWorker created");
-
 globalThis.onmessage = ({ data }: MessageEvent<HostMessage>) => {
-  console.log("host message", data);
   switch (data.type) {
     case "startQuery":
       startQuery(data);
