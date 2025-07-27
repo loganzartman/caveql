@@ -1,5 +1,5 @@
 export type * from "./compiler";
-export { bindCompiledQuery, compileQuery, compileQueryRaw } from "./compiler";
+export * from "./compiler";
 export { formatJS } from "./formatJS";
 export { formatTree } from "./formatTree";
 export { createDocumentSemanticTokensProvider } from "./monaco/language";

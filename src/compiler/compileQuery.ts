@@ -1,9 +1,11 @@
 import type { QueryAST } from "../parser";
 import { compileCommand } from "./compileCommand";
+import { compileInstrumentInput } from "./compileInstrumentInput";
 import { createDeps, type InjectedDeps } from "./deps";
 
 export type QueryFunction = ((
   records: Iterable<unknown>,
+  context?: ExecutionContext,
 ) => Generator<Record<string, unknown>>) & { source: QuerySource };
 
 const querySourceTag: unique symbol = Symbol();
@@ -31,14 +33,17 @@ export function bindCompiledQuery(source: QuerySource): QueryFunction {
   const compiledFn = new GeneratorFunction(
     "deps",
     "records",
+    "context",
     source,
   ) as unknown as (
     deps: InjectedDeps,
     records: Iterable<unknown>,
+    context: ExecutionContext,
   ) => Generator<Record<string, unknown>>;
 
   const deps = createDeps();
-  const injectedFn = (records: Iterable<unknown>) => compiledFn(deps, records);
+  const injectedFn = (records: Iterable<unknown>, context?: ExecutionContext) =>
+    compiledFn(deps, records, context ?? createExecutionContext());
   injectedFn.source = source;
 
   return injectedFn;
@@ -52,12 +57,14 @@ export function bindCompiledQuery(source: QuerySource): QueryFunction {
  */
 export function compileQueryRaw(query: QueryAST): QuerySource {
   let result = "records";
+  result = `(${compileInstrumentInput()})(${result}, context)`;
   for (const command of query.pipeline) {
     result = `
       (
         ${compileCommand(command)}
       )(
-        ${result}
+        ${result},
+        context,
       )
     `;
   }
@@ -74,4 +81,14 @@ export function compileQueryRaw(query: QueryAST): QuerySource {
       ${result}
     );
   ` as QuerySource;
+}
+
+export type ExecutionContext = {
+  recordsRead: number;
+};
+
+export function createExecutionContext(): ExecutionContext {
+  return {
+    recordsRead: 0,
+  };
 }

@@ -1,5 +1,9 @@
 import { AsyncEmitter } from "../AsyncEmitter";
-import { compileQueryRaw } from "../compiler";
+import {
+  compileQueryRaw,
+  createExecutionContext,
+  type ExecutionContext,
+} from "../compiler";
 import { impossible } from "../impossible";
 import type { QueryAST } from "../parser";
 import {
@@ -9,13 +13,20 @@ import {
 } from "./message";
 
 export type QueryWorker = {
-  query(input: WorkerRecordsInput): AsyncQueryHandle;
+  query(
+    input: WorkerRecordsInput,
+    context?: ExecutionContext,
+  ): AsyncQueryHandle;
   readonly activeQueries: Set<AsyncQueryHandle>;
   readonly source: string;
 };
 
+export type ContextHandler = (params: { context: ExecutionContext }) => void;
+export type Off = () => void;
+
 export type AsyncQueryHandle = {
   records: AsyncIterable<Record<string, unknown>>;
+  onContext(callback: ContextHandler): Off;
   cancel(): void;
 };
 
@@ -26,7 +37,10 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
   const max = 1000;
   const activeQueries = new Set<AsyncQueryHandle>();
 
-  const query = (input: WorkerRecordsInput) => {
+  const query = (
+    input: WorkerRecordsInput,
+    context: ExecutionContext = createExecutionContext(),
+  ) => {
     const worker = new Worker(new URL("./queryWorker.ts", import.meta.url), {
       type: "module",
     });
@@ -35,7 +49,15 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
     const newRecords = new AsyncEmitter<void>();
     let done = false;
 
-    const handle = {} as AsyncQueryHandle;
+    const contextHandlers = new Set<ContextHandler>();
+    const handle = {
+      onContext(callback) {
+        contextHandlers.add(callback);
+        return () => {
+          contextHandlers.delete(callback);
+        };
+      },
+    } as AsyncQueryHandle;
 
     const records = (async function* () {
       while (!done) {
@@ -66,6 +88,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
         switch (data.type) {
           case "sendRecords":
             Array.prototype.push.apply(bufferedRecords, data.records);
+            contextHandlers.forEach((cb) => cb({ context: data.context }));
             done = data.done;
             newRecords.emit();
             break;
@@ -80,6 +103,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
         type: "startQuery",
         source,
         input,
+        context,
       }),
     );
 

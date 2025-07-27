@@ -1,6 +1,5 @@
 import CaveqlSvg from "jsx:./caveql.svg";
 import {
-  ArrowLeftIcon,
   ArrowRightIcon,
   ChartBarIcon,
   CodeBracketIcon,
@@ -9,10 +8,12 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type AsyncQueryHandle,
-  compileQuery,
+  createExecutionContext,
   createQueryWorker,
+  type ExecutionContext,
   formatJS,
   formatTree,
+  type Off,
   parseQuery,
 } from "../src";
 import type { QueryAST } from "../src/parser";
@@ -99,19 +100,31 @@ export function App() {
   const [results, setResults] = useState<Record<string, unknown>[] | null>(
     null,
   );
+  const [executionContext, setExecutionContext] = useState<ExecutionContext>(
+    createExecutionContext(),
+  );
 
   useEffect(() => {
-    let handle: AsyncQueryHandle | null = null;
+    let handle: AsyncQueryHandle | undefined;
+    let cleanupOnContext: Off | undefined;
 
     try {
       const tree = parseQuery(source).ast;
       setTree(tree);
       setTreeString(formatTree(tree));
 
+      const context = createExecutionContext();
+
       const queryWorker = createQueryWorker(tree);
-      handle = queryWorker.query({
-        type: "iterable",
-        value: inputRecords,
+      handle = queryWorker.query(
+        {
+          type: "iterable",
+          value: inputRecords,
+        },
+        context,
+      );
+      cleanupOnContext = handle.onContext(({ context }) => {
+        setExecutionContext(context);
       });
 
       setCode(formatJS(queryWorker.source));
@@ -137,6 +150,7 @@ export function App() {
 
     return () => {
       handle?.cancel();
+      cleanupOnContext?.();
     };
   }, [inputRecords, source]);
 
@@ -151,13 +165,6 @@ export function App() {
           <Highlight enabled={inputRecords.length === 0 && !results?.length}>
             <UploadButton label="add data" onChange={handleUpload} />
           </Highlight>
-          <div className="flex flex-row gap-1 items-center">
-            <ArrowRightIcon className="w-[1em]" />
-            <span className="font-black">
-              {countFormatter.format(inputRecords.length)}
-            </span>{" "}
-            records in
-          </div>
         </div>
       </div>
       <div className="">
@@ -175,7 +182,11 @@ export function App() {
             </TabList>
             {results && (
               <div className="shrink-0 flex flex-row gap-1 items-center">
-                <ArrowLeftIcon className="w-[1em]" />
+                <span className="font-black">
+                  {countFormatter.format(executionContext.recordsRead)}
+                </span>{" "}
+                records scanned
+                <ArrowRightIcon className="w-[1em]" />
                 <span className="font-black">
                   {countFormatter.format(results.length)}
                 </span>{" "}

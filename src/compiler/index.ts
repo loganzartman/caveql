@@ -11,5 +11,6 @@ export {
   bindCompiledQuery,
   compileQuery,
   compileQueryRaw,
+  createExecutionContext,
 } from "./compileQuery";
 export type * from "./utils";

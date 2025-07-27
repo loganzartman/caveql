@@ -1,10 +1,11 @@
-import type { QuerySource } from "../compiler";
+import type { ExecutionContext, QuerySource } from "../compiler";
 
 export type HostMessage =
   | {
       type: "startQuery";
       source: QuerySource;
       input: WorkerRecordsInput;
+      context: ExecutionContext;
     }
   | {
       type: "getRecords";
@@ -20,6 +21,7 @@ export type WorkerRecordsInput = {
 export type WorkerMessage = {
   type: "sendRecords";
   records: Record<string, unknown>[];
+  context: ExecutionContext;
   done: boolean;
 };
 
