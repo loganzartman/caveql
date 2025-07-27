@@ -21,6 +21,7 @@ import { printAST } from "../src/printer/printAST";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
+import { LoadingStrip } from "./components/LoadingStrip";
 import { ResultsTable } from "./components/ResultsTable";
 import { Tab } from "./components/Tab";
 import { TabGroup } from "./components/TabGroup";
@@ -167,8 +168,9 @@ export function App() {
           </Highlight>
         </div>
       </div>
-      <div className="">
+      <div className="flex flex-col">
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
+        <LoadingStrip isLoading={resultsLoading} />
       </div>
       <div className="grow shrink">
         <TabGroup>
