@@ -29,6 +29,7 @@ import { TabList } from "./components/TabList";
 import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
+import { debounce } from "./debounce";
 import { Editor } from "./Editor";
 import type { monaco } from "./monaco";
 import { useSortQuery } from "./useSortQuery";
@@ -40,10 +41,17 @@ export function App() {
 
   const [source, setSource] = useState("");
 
-  const handleSourceChange = useCallback((source: string) => {
-    history.replaceState(undefined, "", `#${btoa(source)}`);
-    setSource(source);
-  }, []);
+  const handleSourceChange = useMemo(
+    () =>
+      debounce(
+        (source: string) => {
+          history.replaceState(undefined, "", `#${btoa(source)}`);
+          setSource(source);
+        },
+        { intervalMs: 500, leading: false },
+      ),
+    [],
+  );
 
   const updateSource = useCallback(
     (source: string) => {
@@ -124,9 +132,14 @@ export function App() {
         },
         context,
       );
-      cleanupOnContext = handle.onContext(({ context }) => {
-        setExecutionContext(context);
-      });
+      cleanupOnContext = handle.onContext(
+        debounce(
+          ({ context }) => {
+            setExecutionContext(context);
+          },
+          { intervalMs: 100 },
+        ),
+      );
 
       setCode(formatJS(queryWorker.source));
     } catch (e) {
