@@ -18,7 +18,6 @@ import {
 } from "../src";
 import type { QueryAST } from "../src/parser";
 import { printAST } from "../src/printer/printAST";
-import { ChunkedAsyncIterable, ChunkedAsyncIterator } from "./ChunkedIterator";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
@@ -153,17 +152,8 @@ export function App() {
         if (!handle) {
           return;
         }
-
         setResultsLoading(true);
-        setResults([]);
-
-        const it = new ChunkedAsyncIterable(handle.records, {
-          chunkSize: 10000,
-        });
-        for await (const chunk of it) {
-          setResults((results) => (results ? results.concat(chunk) : results));
-        }
-
+        setResults(await Array.fromAsync(handle.records));
         setResultsLoading(false);
       } catch (e) {
         setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
