@@ -30,17 +30,22 @@ export function compileMakeresultsCommand(
     });
 
     return `
-      function* makeresultsCommand(records) {
+      function* makeresultsCommand(records, context) {
         yield* records;
-        yield* ${JSON.stringify(items)};
+        const items = ${JSON.stringify(items)};
+        for (const item of items) {
+          context.recordsRead += 1;
+          yield item;
+        }
       }
     `;
   }
 
   return `
-    function* makeresultsCommand(records) {
+    function* makeresultsCommand(records, context) {
       yield* records;
       for (let i = 0; i < ${command.count.value}; ++i) {
+        context.recordsRead += 1;
         yield { _time: new Date().toISOString() };
       }
     }

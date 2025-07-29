@@ -7,5 +7,10 @@ export type * from "./command/compileWhereCommand";
 export type * from "./compileAggregation";
 export type * from "./compileExpression";
 export type * from "./compileQuery";
-export { compileQuery } from "./compileQuery";
+export {
+  bindCompiledQuery,
+  compileQuery,
+  compileQueryRaw,
+  createExecutionContext,
+} from "./compileQuery";
 export type * from "./utils";

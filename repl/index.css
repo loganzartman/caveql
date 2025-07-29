@@ -73,6 +73,34 @@
   );
 }
 
+@property --gradient-start {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+@keyframes translate-linear {
+  from {
+    --gradient-start: 0%;
+  }
+  to {
+    --gradient-start: 100%;
+  }
+}
+
+.loading-strip-bg {
+  @apply motion-safe:duration-[1s];
+  animation: translate-linear var(--tw-duration) linear infinite;
+  background-image: repeating-linear-gradient(
+    90deg in oklab,
+    var(--color-amber-200) calc(var(--gradient-start) + 0%),
+    var(--color-amber-600) calc(var(--gradient-start) + 20%),
+    var(--color-amber-700) calc(var(--gradient-start) + 50%),
+    var(--color-amber-600) calc(var(--gradient-start) + 70%),
+    var(--color-amber-200) calc(var(--gradient-start) + 100%)
+  );
+}
+
 @theme {
   --color-fg: var(--color-stone-900);
   --color-bg: var(--color-stone-100);

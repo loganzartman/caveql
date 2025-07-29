@@ -1,18 +1,27 @@
 import CaveqlSvg from "jsx:./caveql.svg";
 import {
-  ArrowLeftIcon,
   ArrowRightIcon,
   ChartBarIcon,
   CodeBracketIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { compileQuery, formatJS, formatTree, parseQuery } from "../src";
+import {
+  type AsyncQueryHandle,
+  createExecutionContext,
+  createQueryWorker,
+  type ExecutionContext,
+  formatJS,
+  formatTree,
+  type Off,
+  parseQuery,
+} from "../src";
 import type { QueryAST } from "../src/parser";
 import { printAST } from "../src/printer/printAST";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
+import { LoadingStrip } from "./components/LoadingStrip";
 import { ResultsTable } from "./components/ResultsTable";
 import { Tab } from "./components/Tab";
 import { TabGroup } from "./components/TabGroup";
@@ -20,6 +29,7 @@ import { TabList } from "./components/TabList";
 import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
+import { debounce } from "./debounce";
 import { Editor } from "./Editor";
 import type { monaco } from "./monaco";
 import { useSortQuery } from "./useSortQuery";
@@ -31,10 +41,17 @@ export function App() {
 
   const [source, setSource] = useState("");
 
-  const handleSourceChange = useCallback((source: string) => {
-    history.replaceState(undefined, "", `#${btoa(source)}`);
-    setSource(source);
-  }, []);
+  const handleSourceChange = useMemo(
+    () =>
+      debounce(
+        (source: string) => {
+          history.replaceState(undefined, "", `#${btoa(source)}`);
+          setSource(source);
+        },
+        { intervalMs: 500, leading: false },
+      ),
+    [],
+  );
 
   const updateSource = useCallback(
     (source: string) => {
@@ -84,23 +101,71 @@ export function App() {
     })().catch((e) => console.error(e));
   }, []);
 
-  const { error, tree, treeString, code, results } = useMemo(() => {
-    let tree: QueryAST | null = null;
-    let error: string | null = null;
-    let treeString: string | null = null;
-    let code: string | null = null;
-    let results: Record<string, unknown>[] | null;
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tree, setTree] = useState<QueryAST | null>(null);
+  const [treeString, setTreeString] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, unknown>[] | null>(
+    null,
+  );
+  const [executionContext, setExecutionContext] = useState<ExecutionContext>(
+    createExecutionContext(),
+  );
+
+  useEffect(() => {
+    let handle: AsyncQueryHandle | undefined;
+    let cleanupOnContext: Off | undefined;
+
     try {
-      tree = parseQuery(source).ast;
-      treeString = formatTree(tree);
-      const run = compileQuery(tree);
-      code = formatJS(run.source);
-      results = [...run(inputRecords)];
+      const tree = parseQuery(source).ast;
+      setTree(tree);
+      setTreeString(formatTree(tree));
+
+      const context = createExecutionContext();
+
+      const queryWorker = createQueryWorker(tree);
+      handle = queryWorker.query(
+        {
+          type: "iterable",
+          value: inputRecords,
+        },
+        context,
+      );
+      cleanupOnContext = handle.onContext(
+        debounce(
+          ({ context }) => {
+            setExecutionContext(context);
+          },
+          { intervalMs: 100 },
+        ),
+      );
+
+      setCode(formatJS(queryWorker.source));
     } catch (e) {
-      error = `Error: ${e instanceof Error ? e.message : String(e)}`;
-      results = null;
+      setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      setResults(null);
     }
-    return { error, tree, treeString, code, results };
+
+    (async () => {
+      try {
+        if (!handle) {
+          return;
+        }
+        setResultsLoading(true);
+        setResults(await Array.fromAsync(handle.records));
+        setResultsLoading(false);
+      } catch (e) {
+        setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
+        setResults(null);
+        setResultsLoading(false);
+      }
+    })();
+
+    return () => {
+      handle?.cancel();
+      cleanupOnContext?.();
+    };
   }, [inputRecords, source]);
 
   return (
@@ -114,17 +179,11 @@ export function App() {
           <Highlight enabled={inputRecords.length === 0 && !results?.length}>
             <UploadButton label="add data" onChange={handleUpload} />
           </Highlight>
-          <div className="flex flex-row gap-1 items-center">
-            <ArrowRightIcon className="w-[1em]" />
-            <span className="font-black">
-              {countFormatter.format(inputRecords.length)}
-            </span>{" "}
-            records in
-          </div>
         </div>
       </div>
-      <div className="">
+      <div className="flex flex-col">
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
+        <LoadingStrip isLoading={resultsLoading} />
       </div>
       <div className="grow shrink">
         <TabGroup>
@@ -138,7 +197,11 @@ export function App() {
             </TabList>
             {results && (
               <div className="shrink-0 flex flex-row gap-1 items-center">
-                <ArrowLeftIcon className="w-[1em]" />
+                <span className="font-black">
+                  {countFormatter.format(executionContext.recordsRead)}
+                </span>{" "}
+                records scanned
+                <ArrowRightIcon className="w-[1em]" />
                 <span className="font-black">
                   {countFormatter.format(results.length)}
                 </span>{" "}
@@ -155,6 +218,11 @@ export function App() {
                   sort={sort}
                   onSortChange={setSort}
                 />
+              )}
+              {resultsLoading && (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <span>Loading results...</span>
+                </div>
               )}
             </TabPanel>
             <TabPanel>
