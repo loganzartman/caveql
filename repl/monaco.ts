@@ -1,10 +1,15 @@
 import * as monaco from "monaco-editor";
 import { createDocumentSemanticTokensProvider } from "../src";
+import { createCompletionItemProvider } from "../src/monaco/language";
 
 monaco.languages.register({ id: "caveql" });
 monaco.languages.registerDocumentSemanticTokensProvider(
   "caveql",
   createDocumentSemanticTokensProvider(),
+);
+monaco.languages.registerCompletionItemProvider(
+  "caveql",
+  createCompletionItemProvider(),
 );
 
 // monaco does some janky color math in RGB space, so it only accepts RGB hex colors.

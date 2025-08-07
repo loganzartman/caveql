@@ -1,7 +1,7 @@
 import type * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import { hasOwn } from "../hasOwn";
 import { parseQuery } from "../parser";
-import { getSourceLocation } from "../parser/getSourceLocation";
+import { getSourceIndex, getSourcePosition } from "../parser/sourcePosition";
 import { Token } from "../tokens";
 
 const tokenMapping: Record<Token, string> = {
@@ -56,17 +56,17 @@ export function createDocumentSemanticTokensProvider(): monaco.languages.Documen
       const result = parseQuery(source);
       const tokens = result.context.tokens;
 
-      let lastLine = 0;
-      let lastChar = 0;
+      let lastLine = 1;
+      let lastCol = 1;
       const data = [];
       for (const token of tokens) {
         if (token.type === Token.whitespace) {
           continue;
         }
 
-        const loc = getSourceLocation({ source, offset: token.start });
+        const loc = getSourcePosition({ source, index: token.start });
         const deltaLine = loc.line - lastLine;
-        const deltaCol = deltaLine > 0 ? loc.column : loc.column - lastChar;
+        const deltaCol = deltaLine > 0 ? loc.column - 1 : loc.column - lastCol;
         const length = token.end - token.start;
 
         data.push(
@@ -78,10 +78,60 @@ export function createDocumentSemanticTokensProvider(): monaco.languages.Documen
         );
 
         lastLine = loc.line;
-        lastChar = loc.column;
+        lastCol = loc.column;
       }
       return { data: new Uint32Array(data) };
     },
     releaseDocumentSemanticTokens() {},
+  };
+}
+
+export function createCompletionItemProvider(): monaco.languages.CompletionItemProvider {
+  return {
+    provideCompletionItems(model, position, context, token) {
+      const source = model.getValue();
+      const result = parseQuery(source, {
+        collectCompletionsAtIndex: getSourceIndex({
+          source,
+          line: position.lineNumber,
+          column: position.column,
+        }),
+      });
+
+      const suggested = new Set<string>();
+      const suggestions: monaco.languages.CompletionItem[] =
+        result.context.completions
+          .map((completion) => {
+            const key = `${completion.label}:${completion.kind}`;
+            if (suggested.has(key)) {
+              return null;
+            }
+            suggested.add(key);
+
+            const locStart = getSourcePosition({
+              source,
+              index: completion.start,
+            });
+
+            const locEnd = completion.end
+              ? getSourcePosition({ source, index: completion.end })
+              : locStart;
+
+            return {
+              ...completion,
+              range: {
+                startColumn: locStart.column,
+                startLineNumber: locStart.line,
+                endColumn: locEnd.column,
+                endLineNumber: locEnd.line,
+              },
+            };
+          })
+          .filter((x) => !!x);
+
+      return {
+        suggestions,
+      };
+    },
   };
 }

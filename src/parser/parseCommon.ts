@@ -1,5 +1,9 @@
 import { Token } from "../tokens";
-import type { ParseContext } from "./ParseContext";
+import {
+  type ParseContext,
+  tokenToCompletionItemKind,
+  tokenToDetail,
+} from "./ParseContext";
 
 function save(ctx: ParseContext): () => void {
   const index0 = ctx.index;
@@ -54,6 +58,12 @@ export function parseFieldName(ctx: ParseContext): FieldNameAST {
     ctx,
     (c) => {
       const str = parseString(c, { token: Token.field });
+
+      collectionFieldNameCompletions(ctx, str.value);
+      if (ctx.collectCompletionsAtIndex !== undefined) {
+        ctx.definedFieldNames.add(str.value);
+      }
+
       return {
         type: "field-name",
         value: str.value,
@@ -95,6 +105,9 @@ export function parseBareFieldName(ctx: ParseContext): FieldNameAST {
     break;
   }
 
+  const value = ctx.source.substring(ctx.index, end);
+  collectionFieldNameCompletions(ctx, value);
+
   if (depth > 0) {
     throw new Error("Unclosed parentheses in field name");
   }
@@ -103,7 +116,6 @@ export function parseBareFieldName(ctx: ParseContext): FieldNameAST {
     throw new Error("Expected field name");
   }
 
-  const value = ctx.source.substring(ctx.index, end);
   ctx.tokens.push({
     type: Token.field,
     start: ctx.index,
@@ -111,10 +123,46 @@ export function parseBareFieldName(ctx: ParseContext): FieldNameAST {
   });
   ctx.index = end;
 
+  if (ctx.collectCompletionsAtIndex !== undefined) {
+    ctx.definedFieldNames.add(value);
+  }
+
   return {
     type: "field-name",
     value,
   };
+}
+
+function collectionFieldNameCompletions(
+  ctx: ParseContext,
+  prefix: string,
+): void {
+  if (ctx.collectCompletionsAtIndex === undefined) {
+    return;
+  }
+
+  if (ctx.collectCompletionsAtIndex < ctx.index) {
+    return;
+  }
+
+  for (const fieldName of ctx.definedFieldNames) {
+    if (ctx.collectCompletionsAtIndex > ctx.index + fieldName.length) {
+      continue;
+    }
+
+    if (!fieldName.startsWith(prefix)) {
+      continue;
+    }
+
+    ctx.completions.push({
+      label: fieldName,
+      detail: tokenToDetail(Token.field),
+      insertText: fieldName,
+      start: ctx.index,
+      end: ctx.collectCompletionsAtIndex,
+      kind: tokenToCompletionItemKind(Token.field),
+    });
+  }
 }
 
 export type NumericAST = { type: "number"; value: number | bigint };
@@ -192,6 +240,8 @@ export function parseLiteral<const T extends [Token, string][]>(
   ctx: ParseContext,
   ...match: T
 ): T[number][1] {
+  collectLiteralCompletions(ctx, match);
+
   const remaining = ctx.source.substring(ctx.index);
   for (const [token, m] of match) {
     if (remaining.startsWith(m)) {
@@ -207,4 +257,38 @@ export function parseLiteral<const T extends [Token, string][]>(
     }
   }
   throw new Error(`Expected ${match}`);
+}
+
+function collectLiteralCompletions(
+  ctx: ParseContext,
+  match: [Token, string][],
+) {
+  if (ctx.collectCompletionsAtIndex === undefined) {
+    return;
+  }
+
+  if (ctx.collectCompletionsAtIndex < ctx.index) {
+    return;
+  }
+
+  const prefix = ctx.source.substring(ctx.index, ctx.collectCompletionsAtIndex);
+
+  for (const [token, m] of match) {
+    if (ctx.collectCompletionsAtIndex > ctx.index + m.length) {
+      continue;
+    }
+
+    if (!m.startsWith(prefix)) {
+      continue;
+    }
+
+    ctx.completions.push({
+      label: m,
+      detail: tokenToDetail(token),
+      insertText: m,
+      start: ctx.index,
+      end: ctx.collectCompletionsAtIndex,
+      kind: tokenToCompletionItemKind(token),
+    });
+  }
 }

@@ -12,11 +12,19 @@ export type ParseQueryResult = {
   context: ParseContext;
 };
 
-export function parseQuery(src: string): ParseQueryResult {
+export function parseQuery(
+  src: string,
+  context?: Partial<Omit<ParseContext, "source">>,
+): ParseQueryResult {
   const ctx = {
     source: src,
     index: 0,
     tokens: [],
+
+    completions: [],
+    definedFieldNames: new Set(),
+
+    ...context,
   } satisfies ParseContext;
 
   return {
