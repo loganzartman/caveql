@@ -266,7 +266,6 @@ function collectLiteralCompletions(
   if (ctx.collectCompletionsAtIndex === undefined) {
     return;
   }
-  console.log("collectLiteralCompletions", ctx);
 
   if (ctx.collectCompletionsAtIndex < ctx.index) {
     return;

@@ -89,7 +89,6 @@ export function createDocumentSemanticTokensProvider(): monaco.languages.Documen
 export function createCompletionItemProvider(): monaco.languages.CompletionItemProvider {
   return {
     provideCompletionItems(model, position, context, token) {
-      console.log("provideCompletionItems", position);
       const source = model.getValue();
       const result = parseQuery(source, {
         collectCompletionsAtIndex: getSourceIndex({
@@ -103,10 +102,11 @@ export function createCompletionItemProvider(): monaco.languages.CompletionItemP
       const suggestions: monaco.languages.CompletionItem[] =
         result.context.completions
           .map((completion) => {
-            if (suggested.has(completion.label)) {
+            const key = `${completion.label}:${completion.kind}`;
+            if (suggested.has(key)) {
               return null;
             }
-            suggested.add(completion.label);
+            suggested.add(key);
 
             const locStart = getSourcePosition({
               source,
