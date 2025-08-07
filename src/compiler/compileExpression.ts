@@ -1,5 +1,10 @@
 import { impossible } from "../impossible";
-import type { BinaryOpAST, ExpressionAST, UnaryOpAST } from "../parser";
+import type {
+  BinaryOpAST,
+  ExpressionAST,
+  FunctionCallAST,
+  UnaryOpAST,
+} from "../parser";
 import { compilePathGet } from "./utils";
 
 export function compileExpression(expr: ExpressionAST): string {
@@ -17,6 +22,8 @@ export function compileExpression(expr: ExpressionAST): string {
       return compileBinaryOp(expr);
     case "unary-op":
       return compileUnaryOp(expr);
+    case "function-call":
+      return compileFunctionCall(expr);
     default:
       impossible(expr);
   }
@@ -63,3 +70,34 @@ function compileUnaryOp(expr: UnaryOpAST): string {
       impossible(expr.op);
   }
 }
+
+function compileFunctionCall(expr: FunctionCallAST): string {
+  return builtinFuncs[expr.name](expr.args);
+}
+
+export const builtinFuncs = {
+  case: (args) => {
+    if (args.length % 2 > 0) {
+      throw new Error("Invalid number of arguments for 'case'");
+    }
+
+    const cases: string[] = [];
+
+    for (let i = 0; i < args.length; i += 2) {
+      const condition = compileExpression(args[i]);
+      const value = compileExpression(args[i + 1]);
+      cases.push(`if (${condition}) { return (${value}); }`);
+    }
+
+    return `(function caseFn(){
+      ${cases.join("\n")}
+    })()`;
+  },
+
+  if: (args) =>
+    `${compileExpression(args[0])} ? ${compileExpression(args[1])} : ${compileExpression(args[2])}`,
+
+  random: () => `randomInt()`,
+} satisfies Record<string, (args: ExpressionAST[]) => string>;
+
+export type BuiltinFuncName = keyof typeof builtinFuncs;

@@ -6,6 +6,7 @@ export type * from "./command/compileStreamstatsCommand";
 export type * from "./command/compileWhereCommand";
 export type * from "./compileAggregation";
 export type * from "./compileExpression";
+export { builtinFuncs } from "./compileExpression";
 export type * from "./compileQuery";
 export {
   bindCompiledQuery,
