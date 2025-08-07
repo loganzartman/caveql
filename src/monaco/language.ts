@@ -99,27 +99,38 @@ export function createCompletionItemProvider(): monaco.languages.CompletionItemP
         }),
       });
 
+      const suggested = new Set<string>();
+      const suggestions: monaco.languages.CompletionItem[] =
+        result.context.completions
+          .map((completion) => {
+            if (suggested.has(completion.label)) {
+              return null;
+            }
+            suggested.add(completion.label);
+
+            const locStart = getSourcePosition({
+              source,
+              index: completion.start,
+            });
+
+            const locEnd = completion.end
+              ? getSourcePosition({ source, index: completion.end })
+              : locStart;
+
+            return {
+              ...completion,
+              range: {
+                startColumn: locStart.column,
+                startLineNumber: locStart.line,
+                endColumn: locEnd.column,
+                endLineNumber: locEnd.line,
+              },
+            };
+          })
+          .filter((x) => !!x);
+
       return {
-        suggestions: result.context.completions.map((completion) => {
-          const locStart = getSourcePosition({
-            source,
-            index: completion.start,
-          });
-
-          const locEnd = completion.end
-            ? getSourcePosition({ source, index: completion.end })
-            : locStart;
-
-          return {
-            ...completion,
-            range: {
-              startColumn: locStart.column,
-              startLineNumber: locStart.line,
-              endColumn: locEnd.column,
-              endLineNumber: locEnd.line,
-            },
-          };
-        }),
+        suggestions,
       };
     },
   };

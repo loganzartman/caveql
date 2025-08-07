@@ -1,5 +1,9 @@
 import { Token } from "../tokens";
-import { type ParseContext, tokenToCompletionItemKind } from "./ParseContext";
+import {
+  type ParseContext,
+  tokenToCompletionItemKind,
+  tokenToDetail,
+} from "./ParseContext";
 
 function save(ctx: ParseContext): () => void {
   const index0 = ctx.index;
@@ -57,7 +61,7 @@ export function parseFieldName(ctx: ParseContext): FieldNameAST {
 
       collectionFieldNameCompletions(ctx, str.value);
       if (ctx.collectCompletionsAtIndex !== undefined) {
-        ctx.definedFieldNames.push(str.value);
+        ctx.definedFieldNames.add(str.value);
       }
 
       return {
@@ -120,7 +124,7 @@ export function parseBareFieldName(ctx: ParseContext): FieldNameAST {
   ctx.index = end;
 
   if (ctx.collectCompletionsAtIndex !== undefined) {
-    ctx.definedFieldNames.push(value);
+    ctx.definedFieldNames.add(value);
   }
 
   return {
@@ -152,6 +156,7 @@ function collectionFieldNameCompletions(
 
     ctx.completions.push({
       label: fieldName,
+      detail: tokenToDetail(Token.field),
       insertText: fieldName,
       start: ctx.index,
       end: ctx.collectCompletionsAtIndex,
@@ -280,6 +285,7 @@ function collectLiteralCompletions(
 
     ctx.completions.push({
       label: m,
+      detail: tokenToDetail(token),
       insertText: m,
       start: ctx.index,
       end: ctx.collectCompletionsAtIndex,

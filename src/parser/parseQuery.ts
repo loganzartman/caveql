@@ -22,7 +22,7 @@ export function parseQuery(
     tokens: [],
 
     completions: [],
-    definedFieldNames: [],
+    definedFieldNames: new Set(),
 
     ...context,
   } satisfies ParseContext;

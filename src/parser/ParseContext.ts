@@ -8,11 +8,12 @@ export type ParseContext = {
   // completions
   collectCompletionsAtIndex?: number;
   completions: Completion[];
-  definedFieldNames: string[];
+  definedFieldNames: Set<string>;
 };
 
 export type Completion = {
   label: string;
+  detail?: string;
   kind: CompletionItemKind;
   insertText: string;
   start: number;
@@ -74,5 +75,34 @@ export function tokenToCompletionItemKind(token: Token): CompletionItemKind {
       return CompletionItemKind.Text;
     default:
       return CompletionItemKind.Text;
+  }
+}
+
+export function tokenToDetail(token: Token): string | undefined {
+  switch (token) {
+    case Token.command:
+      return "Command";
+    case Token.function:
+      return "Function";
+    case Token.field:
+      return "Field";
+    case Token.keyword:
+      return "Keyword";
+    case Token.number:
+      return "Number";
+    case Token.parameter:
+      return "Parameter";
+    case Token.operator:
+      return "Operator";
+    case Token.paren:
+      return undefined;
+    case Token.pipe:
+      return undefined;
+    case Token.string:
+      return "String";
+    case Token.regex:
+      return "Regex";
+    default:
+      return "";
   }
 }
