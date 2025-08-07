@@ -20,7 +20,10 @@ export function parseQuery(
     source: src,
     index: 0,
     tokens: [],
+
     completions: [],
+    definedFieldNames: [],
+
     ...context,
   } satisfies ParseContext;
 

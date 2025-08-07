@@ -4,8 +4,11 @@ export type ParseContext = {
   source: string;
   index: number;
   tokens: TokenAST[];
+
+  // completions
   collectCompletionsAtIndex?: number;
   completions: Completion[];
+  definedFieldNames: string[];
 };
 
 export type Completion = {

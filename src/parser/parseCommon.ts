@@ -54,6 +54,12 @@ export function parseFieldName(ctx: ParseContext): FieldNameAST {
     ctx,
     (c) => {
       const str = parseString(c, { token: Token.field });
+
+      collectionFieldNameCompletions(ctx, str.value);
+      if (ctx.collectCompletionsAtIndex !== undefined) {
+        ctx.definedFieldNames.push(str.value);
+      }
+
       return {
         type: "field-name",
         value: str.value,
@@ -95,6 +101,9 @@ export function parseBareFieldName(ctx: ParseContext): FieldNameAST {
     break;
   }
 
+  const value = ctx.source.substring(ctx.index, end);
+  collectionFieldNameCompletions(ctx, value);
+
   if (depth > 0) {
     throw new Error("Unclosed parentheses in field name");
   }
@@ -103,7 +112,6 @@ export function parseBareFieldName(ctx: ParseContext): FieldNameAST {
     throw new Error("Expected field name");
   }
 
-  const value = ctx.source.substring(ctx.index, end);
   ctx.tokens.push({
     type: Token.field,
     start: ctx.index,
@@ -111,10 +119,45 @@ export function parseBareFieldName(ctx: ParseContext): FieldNameAST {
   });
   ctx.index = end;
 
+  if (ctx.collectCompletionsAtIndex !== undefined) {
+    ctx.definedFieldNames.push(value);
+  }
+
   return {
     type: "field-name",
     value,
   };
+}
+
+function collectionFieldNameCompletions(
+  ctx: ParseContext,
+  prefix: string,
+): void {
+  if (ctx.collectCompletionsAtIndex === undefined) {
+    return;
+  }
+
+  if (ctx.collectCompletionsAtIndex < ctx.index) {
+    return;
+  }
+
+  for (const fieldName of ctx.definedFieldNames) {
+    if (ctx.collectCompletionsAtIndex > ctx.index + fieldName.length) {
+      continue;
+    }
+
+    if (!fieldName.startsWith(prefix)) {
+      continue;
+    }
+
+    ctx.completions.push({
+      label: fieldName,
+      insertText: fieldName,
+      start: ctx.index,
+      end: ctx.collectCompletionsAtIndex,
+      kind: tokenToCompletionItemKind(Token.field),
+    });
+  }
 }
 
 export type NumericAST = { type: "number"; value: number | bigint };
