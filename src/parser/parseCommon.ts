@@ -1,5 +1,5 @@
 import { Token } from "../tokens";
-import type { ParseContext } from "./ParseContext";
+import { type ParseContext, tokenToCompletionItemKind } from "./ParseContext";
 
 function save(ctx: ParseContext): () => void {
   const index0 = ctx.index;
@@ -192,6 +192,8 @@ export function parseLiteral<const T extends [Token, string][]>(
   ctx: ParseContext,
   ...match: T
 ): T[number][1] {
+  collectLiteralCompletions(ctx, match);
+
   const remaining = ctx.source.substring(ctx.index);
   for (const [token, m] of match) {
     if (remaining.startsWith(m)) {
@@ -207,4 +209,38 @@ export function parseLiteral<const T extends [Token, string][]>(
     }
   }
   throw new Error(`Expected ${match}`);
+}
+
+function collectLiteralCompletions(
+  ctx: ParseContext,
+  match: [Token, string][],
+) {
+  if (ctx.collectCompletionsAtIndex === undefined) {
+    return;
+  }
+  console.log("collectLiteralCompletions", ctx);
+
+  if (ctx.collectCompletionsAtIndex < ctx.index) {
+    return;
+  }
+
+  const prefix = ctx.source.substring(ctx.index, ctx.collectCompletionsAtIndex);
+
+  for (const [token, m] of match) {
+    if (ctx.collectCompletionsAtIndex > ctx.index + m.length) {
+      continue;
+    }
+
+    if (!m.startsWith(prefix)) {
+      continue;
+    }
+
+    ctx.completions.push({
+      label: m,
+      insertText: m,
+      start: ctx.index,
+      end: ctx.collectCompletionsAtIndex,
+      kind: tokenToCompletionItemKind(token),
+    });
+  }
 }
