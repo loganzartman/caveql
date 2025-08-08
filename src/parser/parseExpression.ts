@@ -158,7 +158,6 @@ export type FunctionCallAST = {
 };
 
 export function parseFunctionCall(ctx: ParseContext): ExpressionAST {
-  console.log("parseFunctionCall", ctx.source.substring(ctx.index));
   parseWs(ctx);
   const fnName = parseLiteral(
     ctx,
@@ -166,7 +165,7 @@ export function parseFunctionCall(ctx: ParseContext): ExpressionAST {
       (name) => [Token.function, name] as [Token, BuiltinFuncName],
     ),
   );
-  console.log("fnName", fnName);
+
   parseWs(ctx);
   parseLiteral(ctx, [Token.paren, "("]);
   parseWs(ctx);
