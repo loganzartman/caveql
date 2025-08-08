@@ -94,10 +94,38 @@ export const builtinFuncs = {
     })()`;
   },
 
+  coalesce: (args) => {
+    const values = args.map((arg) => `(${compileExpression(arg)})`);
+    return `(${values.join(" ?? ")})`;
+  },
+
+  false: () => `false`,
+
   if: (args) =>
     `${compileExpression(args[0])} ? ${compileExpression(args[1])} : ${compileExpression(args[2])}`,
 
+  isnull: (args) => `((${compileExpression(args[0])}) == null)`,
+
+  isnum: (args) => {
+    const value = compileExpression(args[0]);
+    return `(typeof (${value}) === 'bigint' || (typeof (${value}) === 'number' && Number.isFinite(${value})))`;
+  },
+
+  len: (args) => `String(${compileExpression(args[0])}).length`,
+
+  match: (args) =>
+    `new RegExp(${compileExpression(args[1])}, 'gu').test(${compileExpression(args[0])})`,
+
+  null: () => `null`,
+
   random: () => `randomInt()`,
+
+  replace: (args) =>
+    `String(${compileExpression(args[0])}).replace(new RegExp(${compileExpression(args[1])}, 'gu'), ${compileExpression(args[2])})`,
+
+  round: (args) => `Math.round(${compileExpression(args[0])})`,
+
+  true: () => `true`,
 } satisfies Record<string, (args: ExpressionAST[]) => string>;
 
 export type BuiltinFuncName = keyof typeof builtinFuncs;

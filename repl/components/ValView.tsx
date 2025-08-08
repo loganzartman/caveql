@@ -17,6 +17,9 @@ export function ValView({ val }: { val: unknown }) {
   if (typeof val === "number" || typeof val === "bigint") {
     return <span className="text-purple-300">{formatter.format(val)}</span>;
   }
+  if (typeof val === "boolean") {
+    return <span className="text-red-300">{String(val)}</span>;
+  }
   if (typeof val !== "object") {
     throw new Error(`Unsupported type: ${typeof val}`);
   }
