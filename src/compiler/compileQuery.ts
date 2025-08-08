@@ -74,6 +74,7 @@ export function compileQueryRaw(query: QueryAST): QuerySource {
       compareFieldNumber,
       compareFieldString,
       looseEq,
+      randomInt,
       TinyQueue,
     } = deps;
 

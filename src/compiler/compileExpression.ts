@@ -1,5 +1,10 @@
 import { impossible } from "../impossible";
-import type { BinaryOpAST, ExpressionAST, UnaryOpAST } from "../parser";
+import type {
+  BinaryOpAST,
+  ExpressionAST,
+  FunctionCallAST,
+  UnaryOpAST,
+} from "../parser";
 import { compilePathGet } from "./utils";
 
 export function compileExpression(expr: ExpressionAST): string {
@@ -17,6 +22,8 @@ export function compileExpression(expr: ExpressionAST): string {
       return compileBinaryOp(expr);
     case "unary-op":
       return compileUnaryOp(expr);
+    case "function-call":
+      return compileFunctionCall(expr);
     default:
       impossible(expr);
   }
@@ -63,3 +70,62 @@ function compileUnaryOp(expr: UnaryOpAST): string {
       impossible(expr.op);
   }
 }
+
+function compileFunctionCall(expr: FunctionCallAST): string {
+  return builtinFuncs[expr.name](expr.args);
+}
+
+export const builtinFuncs = {
+  case: (args) => {
+    if (args.length % 2 > 0) {
+      throw new Error("Invalid number of arguments for 'case'");
+    }
+
+    const cases: string[] = [];
+
+    for (let i = 0; i < args.length; i += 2) {
+      const condition = compileExpression(args[i]);
+      const value = compileExpression(args[i + 1]);
+      cases.push(`if (${condition}) { return (${value}); }`);
+    }
+
+    return `(function caseFn(){
+      ${cases.join("\n")}
+    })()`;
+  },
+
+  coalesce: (args) => {
+    const values = args.map((arg) => `(${compileExpression(arg)})`);
+    return `(${values.join(" ?? ")})`;
+  },
+
+  false: () => `false`,
+
+  if: (args) =>
+    `${compileExpression(args[0])} ? ${compileExpression(args[1])} : ${compileExpression(args[2])}`,
+
+  isnull: (args) => `((${compileExpression(args[0])}) == null)`,
+
+  isnum: (args) => {
+    const value = compileExpression(args[0]);
+    return `(typeof (${value}) === 'bigint' || (typeof (${value}) === 'number' && Number.isFinite(${value})))`;
+  },
+
+  len: (args) => `String(${compileExpression(args[0])}).length`,
+
+  match: (args) =>
+    `new RegExp(${compileExpression(args[1])}, 'gu').test(${compileExpression(args[0])})`,
+
+  null: () => `null`,
+
+  random: () => `randomInt()`,
+
+  replace: (args) =>
+    `String(${compileExpression(args[0])}).replace(new RegExp(${compileExpression(args[1])}, 'gu'), ${compileExpression(args[2])})`,
+
+  round: (args) => `Math.round(${compileExpression(args[0])})`,
+
+  true: () => `true`,
+} satisfies Record<string, (args: ExpressionAST[]) => string>;
+
+export type BuiltinFuncName = keyof typeof builtinFuncs;

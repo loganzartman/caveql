@@ -1,3 +1,4 @@
+import { type BuiltinFuncName, builtinFuncs } from "../compiler";
 import { Token } from "../tokens";
 import type { ParseContext } from "./ParseContext";
 import {
@@ -7,6 +8,7 @@ import {
   parseLiteral,
   parseNumeric,
   parseOne,
+  parseOptional,
   parseString,
   parseWs,
   type StringAST,
@@ -15,6 +17,7 @@ import {
 export type ExpressionAST =
   | UnaryOpAST
   | BinaryOpAST
+  | FunctionCallAST
   | NumericAST
   | StringAST
   | FieldNameAST;
@@ -24,7 +27,14 @@ export function parseExpression(ctx: ParseContext): ExpressionAST {
 }
 
 export function parseTerm(ctx: ParseContext): ExpressionAST {
-  return parseOne(ctx, parseGroup, parseNumeric, parseString, parseFieldName);
+  return parseOne(
+    ctx,
+    parseFunctionCall,
+    parseGroup,
+    parseNumeric,
+    parseString,
+    parseFieldName,
+  );
 }
 
 export type BinaryOp =
@@ -139,4 +149,47 @@ export function parseGroup(ctx: ParseContext): ExpressionAST {
   parseWs(ctx);
   parseLiteral(ctx, [Token.paren, ")"]);
   return expr;
+}
+
+export type FunctionCallAST = {
+  type: "function-call";
+  name: BuiltinFuncName;
+  args: ExpressionAST[];
+};
+
+export function parseFunctionCall(ctx: ParseContext): ExpressionAST {
+  parseWs(ctx);
+  const fnName = parseLiteral(
+    ctx,
+    ...Object.keys(builtinFuncs).map(
+      (name) => [Token.function, name] as [Token, BuiltinFuncName],
+    ),
+  );
+
+  parseWs(ctx);
+  parseLiteral(ctx, [Token.paren, "("]);
+  parseWs(ctx);
+
+  const args: ExpressionAST[] = [];
+  while (true) {
+    try {
+      parseWs(ctx);
+      args.push(parseExpression(ctx));
+    } catch {
+      break;
+    }
+
+    parseWs(ctx);
+    const next = parseOptional(ctx, (c) => parseLiteral(c, [Token.comma, ","]));
+    if (!next) break;
+  }
+
+  parseWs(ctx);
+  parseLiteral(ctx, [Token.paren, ")"]);
+
+  return {
+    type: "function-call",
+    name: fnName,
+    args,
+  };
 }

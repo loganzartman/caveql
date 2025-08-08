@@ -39,6 +39,14 @@ export function printAST(
       }
       return `fields\n${indent}${fields.join(`,\n${indent}`)}`;
     }
+    case "function-call": {
+      const args = ast.args.map((arg) => printAST(arg, depth + 1));
+      const oneLine = `${ast.name}(${args.join(", ")})`;
+      if (oneLine.length <= lineLength) {
+        return oneLine;
+      }
+      return `${ast.name}(\n${indent.repeat(depth + 1)}${args.join(`,\n${indent.repeat(depth + 1)}`)})`;
+    }
     case "makeresults": {
       if (ast.count) {
         return `makeresults count=${printAST(ast.count)}`;

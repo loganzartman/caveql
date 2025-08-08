@@ -12,6 +12,7 @@ export type InjectedDeps = {
   compareFieldNumber: typeof compareFieldNumber;
   compareFieldString: typeof compareFieldString;
   looseEq: typeof looseEq;
+  randomInt: typeof randomInt;
   TinyQueue: typeof TinyQueue;
 };
 
@@ -21,6 +22,7 @@ export function createDeps(): InjectedDeps {
     compareFieldNumber,
     compareFieldString,
     looseEq,
+    randomInt,
     TinyQueue,
   };
 }
@@ -30,4 +32,8 @@ function looseEq(a: unknown, b: unknown): boolean {
   if (typeof b === "string") b = b.toLowerCase();
   // biome-ignore lint/suspicious/noDoubleEquals: coerce it!
   return a == b;
+}
+
+function randomInt(): number {
+  return Math.floor(Math.random() * 2 ** 31);
 }

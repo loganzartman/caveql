@@ -540,6 +540,121 @@ describe("compiler", () => {
         { newField: "value", oldField: "value" },
       ]);
     });
+
+    it("can use case() to select values", () => {
+      const run = compileQuery(
+        parseQuery("| eval out=case(a=1, 'one', a=2, 'two')").ast,
+      );
+      const results = [...run([{ a: 1n }, { a: 2n }, { a: 3n }])];
+      assert.partialDeepStrictEqual(results, [
+        { a: 1n, out: "one" },
+        { a: 2n, out: "two" },
+        { a: 3n },
+      ]);
+    });
+
+    it("can use coalesce() to pick first non-null", () => {
+      const run = compileQuery(parseQuery("| eval out=coalesce(a,b,3)").ast);
+      const results = [
+        ...run([
+          { a: null, b: 2 },
+          { a: 1, b: null },
+          { a: null, b: null },
+        ]),
+      ];
+      assert.partialDeepStrictEqual(results, [
+        { a: null, b: 2, out: 2 },
+        { a: 1, b: null, out: 1 },
+        { a: null, b: null, out: 3n },
+      ]);
+    });
+
+    it("can use false() and true()", () => {
+      const run = compileQuery(
+        parseQuery("| eval f=false() | eval t=true()").ast,
+      );
+      const results = [...run([{}, {}, {}])];
+      assert(results.every((r) => r.f === false && r.t === true));
+    });
+
+    it("can use if() for conditional logic", () => {
+      const run = compileQuery(
+        parseQuery("| eval out=if(a>1,'big','small')").ast,
+      );
+      const results = [...run([{ a: 2 }, { a: 1 }])];
+      assert.partialDeepStrictEqual(results, [
+        { a: 2, out: "big" },
+        { a: 1, out: "small" },
+      ]);
+    });
+
+    it("can use isnull() to check null/undefined", () => {
+      const run = compileQuery(parseQuery("| eval out=isnull(a)").ast);
+      const results = [...run([{ a: null }, { a: undefined }, { a: 1 }])];
+      assert.deepEqual(
+        results.map((r) => r.out),
+        [true, true, false],
+      );
+    });
+
+    it("can use isnum() to check for numbers", () => {
+      const run = compileQuery(parseQuery("| eval out=isnum(a)").ast);
+      const results = [...run([{ a: 1 }, { a: 1n }, { a: "x" }, { a: NaN }])];
+      assert.deepEqual(
+        results.map((r) => r.out),
+        [true, true, false, false],
+      );
+    });
+
+    it("can use len() to get string length", () => {
+      const run = compileQuery(parseQuery("| eval out=len(a)").ast);
+      const results = [...run([{ a: "hi" }, { a: 1234 }])];
+      assert.deepEqual(
+        results.map((r) => r.out),
+        [2, 4],
+      );
+    });
+
+    it("can use match() for regex", () => {
+      const run = compileQuery(parseQuery("| eval out=match(a,'^h.*o$')").ast);
+      const results = [...run([{ a: "hello" }, { a: "world" }])];
+      assert.deepEqual(
+        results.map((r) => r.out),
+        [true, false],
+      );
+    });
+
+    it("can use null() to set null", () => {
+      const run = compileQuery(parseQuery("| eval out=null()").ast);
+      const results = [...run([{}])];
+      assert.strictEqual(results[0].out, null);
+    });
+
+    it("can use random() to generate a value", () => {
+      const run = compileQuery(parseQuery("| eval out=random()").ast);
+      const results = [...run([{}, {}, {}])];
+      assert(results.every((r) => typeof r.out === "number"));
+    });
+
+    it("can use replace() to substitute text", () => {
+      const run = compileQuery(
+        parseQuery("| eval out=replace(a,'l+','x')").ast,
+      );
+      const results = [...run([{ a: "hello" }, { a: "ball" }])];
+      assert.deepEqual(
+        results.map((r) => r.out),
+        ["hexo", "bax"],
+      );
+    });
+
+    it("can use round() to round numbers", () => {
+      const run = compileQuery(parseQuery("| eval out=round(a)").ast);
+      const results = [...run([{ a: 1.2 }, { a: 2.7 }])];
+      assert.deepEqual(
+        results.map((r) => r.out),
+        [1, 3],
+      );
+    });
   });
 
   describe("rex", () => {
