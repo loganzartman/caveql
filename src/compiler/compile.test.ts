@@ -655,6 +655,53 @@ describe("compiler", () => {
         [1, 3],
       );
     });
+
+    for (const op of ["+", "-", "*", "/", "%"]) {
+      it(`operates on bigints with ${op}`, () => {
+        const run = compileQuery(parseQuery(`| eval out = a ${op} b`).ast);
+        const record = { a: 1n, b: 2n };
+        const results = [...run([record])];
+        // biome-ignore lint/security/noGlobalEval: testing
+        assert.deepEqual(results[0].out, eval(`record.a ${op} record.b`));
+      });
+
+      it(`operates on float numbers with ${op}`, () => {
+        const run = compileQuery(parseQuery(`| eval out = a ${op} b`).ast);
+        const record = { a: 1.2, b: 2.3 };
+        const results = [...run([record])];
+        // biome-ignore lint/security/noGlobalEval: testing
+        assert.deepEqual(results[0].out, eval(`record.a ${op} record.b`));
+      });
+
+      it(`coerces bigint to number with ${op}`, () => {
+        const run = compileQuery(parseQuery(`| eval out = a ${op} b`).ast);
+        const record = { a: 1, b: 2n };
+        const results = [...run([record])];
+        assert.deepEqual(
+          results[0].out,
+          // biome-ignore lint/security/noGlobalEval: testing
+          eval(`record.a ${op} Number(record.b)`),
+        );
+      });
+    }
+
+    it("concatenates strings with +", () => {
+      const run = compileQuery(parseQuery("| eval out = a + b").ast);
+      const results = [...run([{ a: "hello", b: "world" }])];
+      assert.deepEqual(results[0].out, "helloworld");
+    });
+
+    it("concatenates strings with .", () => {
+      const run = compileQuery(parseQuery("| eval out = a . b").ast);
+      const results = [...run([{ a: "hello", b: "world" }])];
+      assert.deepEqual(results[0].out, "helloworld");
+    });
+
+    it("coerces numbers to strings with .", () => {
+      const run = compileQuery(parseQuery("| eval out = a . b").ast);
+      const results = [...run([{ a: 1, b: 2 }])];
+      assert.deepEqual(results[0].out, "12");
+    });
   });
 
   describe("rex", () => {

@@ -50,11 +50,17 @@ function compileBinaryOp(expr: BinaryOpAST): string {
     case "OR":
       throw new Error("Internal error: got 'OR' in expression");
     case "%":
+      return `mod(${compileExpression(expr.left)}, ${compileExpression(expr.right)})`;
     case "+":
+      return `add(${compileExpression(expr.left)}, ${compileExpression(expr.right)})`;
     case "-":
+      return `sub(${compileExpression(expr.left)}, ${compileExpression(expr.right)})`;
     case "*":
+      return `mul(${compileExpression(expr.left)}, ${compileExpression(expr.right)})`;
     case "/":
-      return `(${compileExpression(expr.left)} ${expr.op} ${compileExpression(expr.right)})`;
+      return `div(${compileExpression(expr.left)}, ${compileExpression(expr.right)})`;
+    case ".":
+      return `concat(${compileExpression(expr.left)}, ${compileExpression(expr.right)})`;
     default:
       impossible(expr.op);
   }
@@ -76,6 +82,13 @@ function compileFunctionCall(expr: FunctionCallAST): string {
 }
 
 export const builtinFuncs = {
+  $lit: (args) => {
+    if (args[0].type !== "string") {
+      throw new Error("Invalid argument for $lit function");
+    }
+    return `(${args[0].value})`;
+  },
+
   case: (args) => {
     if (args.length % 2 > 0) {
       throw new Error("Invalid number of arguments for 'case'");

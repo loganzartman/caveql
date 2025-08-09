@@ -53,7 +53,8 @@ export type BinaryOp =
   | "-"
   | "*"
   | "/"
-  | "%";
+  | "%"
+  | ".";
 
 export type BinaryOpAST = {
   type: "binary-op";
@@ -79,7 +80,7 @@ function parseComparisonExpr(ctx: ParseContext): ExpressionAST {
 }
 
 function parseAdditiveExpr(ctx: ParseContext): ExpressionAST {
-  return parseBinaryLevel(ctx, parseMultiplicativeExpr, ["+", "-"]);
+  return parseBinaryLevel(ctx, parseMultiplicativeExpr, ["+", "-", "."]);
 }
 
 function parseMultiplicativeExpr(ctx: ParseContext): ExpressionAST {
