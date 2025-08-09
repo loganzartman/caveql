@@ -1,7 +1,7 @@
 import type { QueryAST } from "../parser";
 import { compileCommand } from "./compileCommand";
 import { compileInstrumentInput } from "./compileInstrumentInput";
-import { createDeps, type InjectedDeps } from "./deps";
+import { getRuntimeDeps, type InjectedDeps } from "./runtime";
 
 export type QueryFunction = ((
   records: Iterable<unknown>,
@@ -41,7 +41,7 @@ export function bindCompiledQuery(source: QuerySource): QueryFunction {
     context: ExecutionContext,
   ) => Generator<Record<string, unknown>>;
 
-  const deps = createDeps();
+  const deps = getRuntimeDeps();
   const injectedFn = (records: Iterable<unknown>, context?: ExecutionContext) =>
     compiledFn(deps, records, context ?? createExecutionContext());
   injectedFn.source = source;
@@ -70,12 +70,7 @@ export function compileQueryRaw(query: QueryAST): QuerySource {
   }
   return `
     const {
-      compareFieldAuto,
-      compareFieldNumber,
-      compareFieldString,
-      looseEq,
-      randomInt,
-      TinyQueue,
+      ${Object.keys(getRuntimeDeps()).join(", ")}
     } = deps;
 
     yield* (
