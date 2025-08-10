@@ -88,7 +88,7 @@ export function createDocumentSemanticTokensProvider(): monaco.languages.Documen
 
 export function createCompletionItemProvider(): monaco.languages.CompletionItemProvider {
   return {
-    provideCompletionItems(model, position, context, token) {
+    provideCompletionItems(model, position) {
       const source = model.getValue();
       const result = parseQuery(source, {
         collectCompletionsAtIndex: getSourceIndex({

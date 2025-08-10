@@ -47,6 +47,10 @@ importers:
       tinyqueue:
         specifier: ^3.0.0
         version: 3.0.0
+    devDependencies:
+      monaco-editor:
+        specifier: ^0.52.2
+        version: 0.52.2
 
   webui:
     dependencies:
