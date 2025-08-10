@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "description": "",
   "source": "src/index.html",
+  "type": "module",
+  "browserslist": "> 0.5%, not dead",
   "scripts": {
     "dev": "parcel",
     "build": "parcel build"

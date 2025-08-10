@@ -14,7 +14,7 @@
     "check": "biome check",
     "check:fix": "biome check --write",
     "types": "tsc --noEmit",
-    "bench": "node --import tsx benchmarks/parser.bench.ts",
+    "bench": "node --import tsx lib/benchmarks/parser.bench.ts",
     "ci": "pnpm build && pnpm test && pnpm types && pnpm check && pnpm bench"
   },
   "devDependencies": {

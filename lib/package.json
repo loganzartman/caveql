@@ -2,9 +2,13 @@
   "name": "caveql",
   "version": "0.1.0",
   "description": "",
+  "type": "module",
   "source": "src/index.ts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">= 18.0.0"
+  },
   "scripts": {
     "dev": "parcel watch --port 1235",
     "build": "parcel build"
