@@ -5,7 +5,7 @@ import {
   CodeBracketIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { QueryAST } from "caveql";
 import {
   type AsyncQueryHandle,
   createExecutionContext,
@@ -15,9 +15,9 @@ import {
   formatTree,
   type Off,
   parseQuery,
-} from "../src";
-import type { QueryAST } from "../src/parser";
-import { printAST } from "../src/printer/printAST";
+  printAST,
+} from "caveql";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";

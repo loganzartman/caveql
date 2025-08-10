@@ -10,8 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { impossible } from "../../../src/impossible";
 import { colorScale } from "../../colorScale";
+import { impossible } from "../../impossible";
 import { ValView } from "../ValView";
 
 export type ResultsChartType = "bar" | "line";
