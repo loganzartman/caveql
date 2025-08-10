@@ -29,7 +29,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - uses: pnpm/action-setup@v4
       - run: pnpm install
-      - run: pnpm ci
+      - run: pnpm run ci
       - uses: actions/upload-pages-artifact@v3
         id: deployment
         with:
