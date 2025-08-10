@@ -1,62 +1,33 @@
 {
-  "name": "caveql-ts",
-  "version": "1.0.0",
+  "name": "caveql-project",
+  "version": "0.0.1",
   "description": "",
   "keywords": [],
   "author": "Logan Zartman",
-  "license": "MIT",
+  "license": "MPL-2.0",
   "type": "module",
   "packageManager": "pnpm@10.12.1",
-  "source": "src/index.ts",
-  "types": "dist/index.d.ts",
-  "targets": {
-    "main": {
-      "source": "src/index.ts",
-      "distDir": "dist",
-      "isLibrary": true,
-      "includeNodeModules": false
-    },
-    "repl": {
-      "source": "repl/index.html",
-      "distDir": "dist/repl",
-      "publicUrl": "."
-    }
-  },
   "scripts": {
-    "dev": "parcel",
-    "build": "parcel build",
-    "repl": "parcel repl/index.html",
+    "dev": "pnpm run --recursive --parallel dev",
+    "build": "pnpm run --recursive build",
     "test": "node --import tsx --test **/*.test.ts",
     "check": "biome check",
     "check:fix": "biome check --write",
     "types": "tsc --noEmit",
-    "bench": "node --import tsx benchmarks/parser.bench.ts"
+    "bench": "node --import tsx lib/benchmarks/parser.bench.ts",
+    "ci": "pnpm build && pnpm test && pnpm types && pnpm check && pnpm bench"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.6",
     "@parcel/config-default": "^2.15.4",
+    "@parcel/packager-ts": "2.15.4",
     "@parcel/transformer-svg-jsx": "^2.15.4",
-    "@tailwindcss/postcss": "^4.1.11",
+    "@parcel/transformer-typescript-types": "2.15.4",
     "@types/node": "^24.0.6",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
     "buffer": "^6.0.3",
     "mitata": "^1.0.34",
     "parcel": "^2.15.4",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.11",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@headlessui/react": "^2.2.4",
-    "@heroicons/react": "^2.2.0",
-    "@tanstack/react-virtual": "^3.13.12",
-    "clsx": "^2.1.1",
-    "monaco-editor": "^0.52.2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "recharts": "^3.0.2",
-    "tinyqueue": "^3.0.0"
   }
 }

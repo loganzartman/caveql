@@ -7,7 +7,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { impossible } from "../../src/impossible";
+import { impossible } from "../impossible";
 import { ValView } from "./ValView";
 
 export type SortDirection = "asc" | "desc" | "none";

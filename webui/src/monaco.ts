@@ -1,6 +1,8 @@
+import {
+  createCompletionItemProvider,
+  createDocumentSemanticTokensProvider,
+} from "caveql";
 import * as monaco from "monaco-editor";
-import { createDocumentSemanticTokensProvider } from "../src";
-import { createCompletionItemProvider } from "../src/monaco/language";
 
 monaco.languages.register({ id: "caveql" });
 monaco.languages.registerDocumentSemanticTokensProvider(

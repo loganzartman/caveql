@@ -7,6 +7,52 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^2.0.6
+        version: 2.0.6
+      '@parcel/config-default':
+        specifier: ^2.15.4
+        version: 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)
+      '@parcel/packager-ts':
+        specifier: 2.15.4
+        version: 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))
+      '@parcel/transformer-svg-jsx':
+        specifier: ^2.15.4
+        version: 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))
+      '@parcel/transformer-typescript-types':
+        specifier: 2.15.4
+        version: 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))(typescript@5.8.3)
+      '@types/node':
+        specifier: ^24.0.6
+        version: 24.0.6
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
+      mitata:
+        specifier: ^1.0.34
+        version: 1.0.34
+      parcel:
+        specifier: ^2.15.4
+        version: 2.15.4(@swc/helpers@0.5.17)
+      tsx:
+        specifier: ^4.20.3
+        version: 4.20.3
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
+  lib:
+    dependencies:
+      tinyqueue:
+        specifier: ^3.0.0
+        version: 3.0.0
+    devDependencies:
+      monaco-editor:
+        specifier: ^0.52.2
+        version: 0.52.2
+
+  webui:
     dependencies:
       '@headlessui/react':
         specifier: ^2.2.4
@@ -17,6 +63,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.13.12
         version: 3.13.12(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      caveql:
+        specifier: workspace:*
+        version: link:../lib
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -32,52 +81,22 @@ importers:
       recharts:
         specifier: ^3.0.2
         version: 3.0.2(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react-is@19.1.0)(react@19.1.0)(redux@5.0.1)
-      tinyqueue:
-        specifier: ^3.0.0
-        version: 3.0.0
     devDependencies:
-      '@biomejs/biome':
-        specifier: ^2.0.6
-        version: 2.0.6
-      '@parcel/config-default':
-        specifier: ^2.15.4
-        version: 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)
-      '@parcel/transformer-svg-jsx':
-        specifier: ^2.15.4
-        version: 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))
       '@tailwindcss/postcss':
         specifier: ^4.1.11
         version: 4.1.11
-      '@types/node':
-        specifier: ^24.0.6
-        version: 24.0.6
       '@types/react':
         specifier: ^19.1.8
         version: 19.1.8
       '@types/react-dom':
         specifier: ^19.1.6
         version: 19.1.6(@types/react@19.1.8)
-      buffer:
-        specifier: ^6.0.3
-        version: 6.0.3
-      mitata:
-        specifier: ^1.0.34
-        version: 1.0.34
-      parcel:
-        specifier: ^2.15.4
-        version: 2.15.4(@swc/helpers@0.5.17)
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
       tailwindcss:
         specifier: ^4.1.11
         version: 4.1.11
-      tsx:
-        specifier: ^4.20.3
-        version: 4.20.3
-      typescript:
-        specifier: ^5.8.3
-        version: 5.8.3
 
 packages:
 
@@ -534,6 +553,10 @@ packages:
     resolution: {integrity: sha512-qHsyOgnzoA2XGMLIYUnX79XAaV327VTWQvIzju/OmOjcff4o3uiEcNL8w9k3p2w2oPXOLoQ0THMiivoUQSM8GQ==}
     engines: {node: '>= 16.0.0', parcel: ^2.15.4}
 
+  '@parcel/packager-ts@2.15.4':
+    resolution: {integrity: sha512-DJphu6a16gbYOA2ttmZf17hvvKkNqcR/0rDZCF2e8tCdK4jqA29RcXeSGpAnZazdihYAPk4W2XO7/RSUeiGLBw==}
+    engines: {node: '>= 16.0.0', parcel: ^2.15.4}
+
   '@parcel/packager-wasm@2.15.4':
     resolution: {integrity: sha512-YPVij7zrBchtXr/y29P4uh3C/+19PMhhLibYF/8oMJKkFkeU3Uv00/XLm915vdBPrIPjgw0YuIfLzUKip1uGtg==}
     engines: {node: '>=16.0.0', parcel: ^2.15.4}
@@ -694,6 +717,18 @@ packages:
   '@parcel/transformer-svg@2.15.4':
     resolution: {integrity: sha512-Q22e0VRbx62VXFlvJWIlc8ihlLaPQgtnAZz5E1/+ojiNb+k0PmIRjNJclVWPF6IdCsLO5tnGfUOaXe2OnZz28Q==}
     engines: {node: '>= 16.0.0', parcel: ^2.15.4}
+
+  '@parcel/transformer-typescript-types@2.15.4':
+    resolution: {integrity: sha512-fvc9X2NR36rSalhLAY0nhawPHODTJw7vgoWmNUt63HEUjtYluf5FSz7mASoLVVy/5CKKUg3FdXFWpCYetxOCXQ==}
+    engines: {node: '>= 16.0.0', parcel: ^2.15.4}
+    peerDependencies:
+      typescript: '>=3.0.0'
+
+  '@parcel/ts-utils@2.15.4':
+    resolution: {integrity: sha512-7RLG2ULdcQ8lL/VTXh8kIP+TEqs3fYihLAi3+qOdyCrPfOfhHMyFLbPnAMvsMhpOXKZT0jq43I4e/zFJZSXJAw==}
+    engines: {node: '>= 16.0.0'}
+    peerDependencies:
+      typescript: '>=3.0.0'
 
   '@parcel/types-internal@2.15.4':
     resolution: {integrity: sha512-kl5QEZ8PTWRvMkwmk7IG3VpP/5/MSGwt9Nrj9ctXLdZkDdXZpK7IbXAthLQ4zrByMaqZULL2IyDuBqBgfuAqlQ==}
@@ -2072,6 +2107,13 @@ snapshots:
       - '@parcel/core'
       - napi-wasm
 
+  '@parcel/packager-ts@2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))':
+    dependencies:
+      '@parcel/plugin': 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))
+    transitivePeerDependencies:
+      - '@parcel/core'
+      - napi-wasm
+
   '@parcel/packager-wasm@2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))':
     dependencies:
       '@parcel/plugin': 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))
@@ -2343,6 +2385,24 @@ snapshots:
     transitivePeerDependencies:
       - '@parcel/core'
       - napi-wasm
+
+  '@parcel/transformer-typescript-types@2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))(typescript@5.8.3)':
+    dependencies:
+      '@parcel/diagnostic': 2.15.4
+      '@parcel/plugin': 2.15.4(@parcel/core@2.15.4(@swc/helpers@0.5.17))
+      '@parcel/source-map': 2.1.1
+      '@parcel/ts-utils': 2.15.4(typescript@5.8.3)
+      '@parcel/utils': 2.15.4
+      nullthrows: 1.1.1
+      typescript: 5.8.3
+    transitivePeerDependencies:
+      - '@parcel/core'
+      - napi-wasm
+
+  '@parcel/ts-utils@2.15.4(typescript@5.8.3)':
+    dependencies:
+      nullthrows: 1.1.1
+      typescript: 5.8.3
 
   '@parcel/types-internal@2.15.4':
     dependencies:

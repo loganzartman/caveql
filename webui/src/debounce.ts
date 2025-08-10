@@ -1,3 +1,4 @@
+// biome-ignore lint/suspicious/noExplicitAny: type param
 export function debounce<TFunc extends (...args: any[]) => void>(
   fn: TFunc,
   { intervalMs, leading = false }: { intervalMs: number; leading?: boolean },

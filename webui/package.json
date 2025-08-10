@@ -1,0 +1,33 @@
+{
+  "name": "@caveql/webui",
+  "version": "0.1.0",
+  "description": "",
+  "source": "src/index.html",
+  "type": "module",
+  "browserslist": "> 0.5%, not dead",
+  "scripts": {
+    "dev": "parcel",
+    "build": "parcel build"
+  },
+  "author": "Logan Zartman",
+  "license": "MPL-2.0",
+  "packageManager": "pnpm@10.12.1",
+  "devDependencies": {
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.2.4",
+    "@heroicons/react": "^2.2.0",
+    "@tanstack/react-virtual": "^3.13.12",
+    "caveql": "workspace:*",
+    "clsx": "^2.1.1",
+    "monaco-editor": "^0.52.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^3.0.2"
+  }
+}

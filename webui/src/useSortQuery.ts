@@ -1,8 +1,6 @@
+import type { ParseQueryResult, QueryAST, SortCommandAST } from "caveql";
+import { parseQuery, printAST } from "caveql";
 import { useCallback, useEffect, useState } from "react";
-import { parseQuery } from "../src";
-import type { ParseQueryResult, QueryAST } from "../src/parser";
-import type { SortCommandAST } from "../src/parser/command/parseSortCommand";
-import { printAST } from "../src/printer/printAST";
 import type { SortChangeHandler, SortMap } from "./components/ResultsTable";
 
 export function useSortQuery(
