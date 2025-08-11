@@ -34,7 +34,7 @@ npx caveql "| makeresults count=10 | streamstats count as x | eval y=x*x"
 
 ### library
 
-```
+```bash
 pnpm add caveql
 ```
 
