@@ -47,6 +47,9 @@ importers:
 
   lib:
     dependencies:
+      '@stricli/core':
+        specifier: ^1.2.0
+        version: 1.2.0
       tinyqueue:
         specifier: ^3.0.0
         version: 3.0.0
@@ -961,6 +964,9 @@ packages:
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
+
+  '@stricli/core@1.2.0':
+    resolution: {integrity: sha512-5b+npntDY0TAB7wAw0daGlh3/R2sf0TDLyrB1By2jCNH+C+lmcSqMtJXOMLVtEGSkIOvqAgIWpLMSs1PXqzt3w==}
 
   '@swc/core-darwin-arm64@1.12.7':
     resolution: {integrity: sha512-w6BBT0hBRS56yS+LbReVym0h+iB7/PpCddqrn1ha94ra4rZ4R/A91A/rkv+LnQlPqU/+fhqdlXtCJU9mrhCBtA==}
@@ -3067,6 +3073,8 @@ snapshots:
   '@standard-schema/spec@1.0.0': {}
 
   '@standard-schema/utils@0.3.0': {}
+
+  '@stricli/core@1.2.0': {}
 
   '@swc/core-darwin-arm64@1.12.7':
     optional: true

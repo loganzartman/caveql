@@ -5,8 +5,21 @@
   "description": "",
   "type": "module",
   "source": "src/index.ts",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/main/index.js",
+  "types": "dist/main/index.d.ts",
+  "bin": "dist/cli/cli.js",
+  "targets": {
+    "main": {
+      "isLibrary": true,
+      "source": "src/index.ts",
+      "outputFormat": "esmodule"
+    },
+    "bin": {
+      "isLibrary": true,
+      "source": "src/cli/cli.ts",
+      "outputFormat": "esmodule"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -15,7 +28,9 @@
   },
   "scripts": {
     "dev": "parcel watch --port 1235",
-    "build": "parcel build"
+    "build": "parcel build && chmod +x dist/cli/cli.js",
+    "clean": "rm -rf dist .parcel-cache",
+    "cli": "node dist/cli/cli.js"
   },
   "author": "Logan Zartman",
   "license": "MPL-2.0",
@@ -24,6 +39,7 @@
     "monaco-editor": "^0.52.2"
   },
   "dependencies": {
+    "@stricli/core": "^1.2.0",
     "tinyqueue": "^3.0.0"
   }
 }
