@@ -19,7 +19,7 @@ export const execCommand = buildCommand({
       throw new Error("Only JSON arrays are supported");
     }
 
-    const inputRecords = Array.prototype.concat(inputsJSON);
+    const inputRecords = inputsJSON.flat();
     const parsed = parseQuery(query);
     const run = compileQuery(parsed.ast);
 
