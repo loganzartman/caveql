@@ -1,6 +1,7 @@
 {
   "name": "caveql",
   "version": "0.1.0",
+  "private": false,
   "description": "",
   "type": "module",
   "source": "src/index.ts",
