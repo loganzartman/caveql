@@ -1,7 +1,66 @@
-# caveql-ts
+# caveql
 
-a toy splunk search parser with a REPL
+parses and executes a tiny subset of splunk SPL on in-memory data.
 
-long term I want to run splunk-like queries on in-memory data, just for fun
+usable via browser UI, CLI, and library import.
 
-[example query (WIP)](https://loganzartman.github.io/caveql-ts/#c2VhcmNoCnwgbWFrZXJlc3VsdHMgZm9ybWF0PWpzb24gZGF0YT0nW3sidiI6IDF9LCB7InYiOiAyfSwgeyJ2IjogNH0sIHsidiI6IDh9XScKfCBzZWFyY2ggdj4y)
+this is a toy project for fun
+
+## usage
+
+### web
+
+[try it!](https://caveql.loga.nz/)
+
+### CLI
+
+```bash
+npx caveql --help
+```
+
+run a query on a file:
+
+```bash
+npx caveql -i ./sample/population.json "usa | stats max(value)"
+```
+
+run a query not on a file:
+
+```bash
+npx caveql "| makeresults count=10 | streamstats count as x | eval y=x*x"
+```
+
+### library
+
+```
+pnpm add caveql
+```
+
+```ts
+import { parseQuery, compileQuery } from "caveql";
+
+const parsed = parseQuery("usa | stats max(value)");
+const run = compileQuery(parsed.ast);
+
+const result = run([
+  { country: "usa", value: 100 },
+  { country: "can", value: 200 },
+]);
+
+for (const record of result) {
+  console.log(record);
+}
+```
+
+## development
+
+setup:
+
+1. install nvm
+1. switch node version: `nvm install`
+1. enable corepack: `corepack enable`
+1. install dependencies: `pnpm i`
+
+build: `pnpm build`
+
+dev server: `pnpm dev`
