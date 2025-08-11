@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "description": "",
-  "source": "src/index.html",
   "type": "module",
-  "browserslist": "> 0.5%, not dead",
+  "source": "src/index.html",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "dev": "parcel",
-    "build": "parcel build"
+    "build": "parcel build --public-url ."
   },
   "author": "Logan Zartman",
   "license": "MPL-2.0",
