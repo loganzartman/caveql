@@ -1,6 +1,7 @@
 {
   "name": "@caveql/webui",
   "version": "0.1.0",
+  "private": true,
   "description": "",
   "source": "src/index.html",
   "type": "module",
