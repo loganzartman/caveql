@@ -16,7 +16,8 @@
     "check:fix": "biome check --write",
     "types": "tsc --noEmit",
     "bench": "node --import tsx lib/benchmarks/parser.bench.ts",
-    "ci": "pnpm build && pnpm test && pnpm types && pnpm check && pnpm bench"
+    "ci": "pnpm build && pnpm test && pnpm types && pnpm check && pnpm bench",
+    "ci:publish": "pnpm publish -r --access public"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.6",
