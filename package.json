@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "pnpm run --recursive --parallel dev",
     "build": "pnpm run --recursive build",
+    "clean": "pnpm run --recursive clean",
     "test": "node --import tsx --test **/*.test.ts",
     "check": "biome check",
     "check:fix": "biome check --write",

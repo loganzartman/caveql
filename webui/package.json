@@ -8,7 +8,8 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "dev": "parcel",
-    "build": "parcel build --public-url ."
+    "build": "parcel build --public-url .",
+    "clean": "rm -rf dist .parcel-cache"
   },
   "author": "Logan Zartman",
   "license": "MPL-2.0",
