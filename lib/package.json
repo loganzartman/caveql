@@ -14,6 +14,11 @@
       "source": "src/index.ts",
       "outputFormat": "esmodule"
     },
+    "types": {
+      "isLibrary": true,
+      "source": "src/index.ts",
+      "outputFormat": "esmodule"
+    },
     "bin": {
       "isLibrary": true,
       "source": "src/cli/cli.ts",
