@@ -10,5 +10,6 @@ export type * from "./parseCommon";
 export type * from "./parseExpression";
 export type * from "./parsePipeline";
 export type * from "./parseQuery";
+export type * from "./command/parseFieldsCommand";
 
 export { parseQuery } from "./parseQuery";

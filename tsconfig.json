@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["ESNext", "DOM", "DOM.AsyncIterable"],
+    "lib": ["ESNext", "DOM", "DOM.AsyncIterable", "DOM.Iterable"],
     "module": "ES2022",
     "moduleResolution": "Bundler",
     "jsx": "preserve",

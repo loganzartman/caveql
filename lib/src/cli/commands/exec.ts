@@ -1,6 +1,7 @@
-import { readFile } from "node:fs/promises";
 import { buildCommand } from "@stricli/core";
+import { z } from "zod";
 import { compileQuery } from "../../compiler";
+import { type DataSource, readDataSource } from "../../data/dataSource";
 import { parseQuery } from "../../parser";
 
 type Flags = {
@@ -12,18 +13,14 @@ export const execCommand = buildCommand({
     const inputFiles = flags.inputFile ?? [];
 
     const inputs = await Promise.all(
-      inputFiles.map((f) => readFile(f, { encoding: "utf-8" })),
+      inputFiles.map(parseInputFile).map(readDataSource),
     );
-    const inputsJSON = inputs.map((input) => JSON.parse(input));
-    if (inputsJSON.some((input) => !Array.isArray(input))) {
-      throw new Error("Only JSON arrays are supported");
-    }
 
-    const inputRecords = inputsJSON.flat();
     const parsed = parseQuery(query);
     const run = compileQuery(parsed.ast);
+    console.log(run.source);
 
-    for (const record of run(inputRecords)) {
+    for await (const record of run(inputs[0])) {
       console.log(JSON.stringify(record));
     }
   },
@@ -57,3 +54,33 @@ export const execCommand = buildCommand({
     brief: "Execute a query on a file",
   },
 });
+
+const fileFormatSchema = z.union([z.literal("json"), z.literal("csv")]);
+type FileFormat = z.infer<typeof fileFormatSchema>;
+
+function parseInputFile(uri: string): DataSource {
+  const parts = uri.split("?");
+  const path = parts[0];
+  const query = parts[1]
+    ? new URLSearchParams(parts[1])
+    : new URLSearchParams();
+
+  const format = query.has("format")
+    ? fileFormatSchema.parse(query.get("format"))
+    : guessFormat(path);
+
+  return {
+    type: "file",
+    file: new File([path], path),
+    format: {
+      type: format,
+    },
+  } satisfies DataSource;
+}
+
+function guessFormat(path: string): FileFormat {
+  const extension = path.split(".").at(-1);
+  if (extension === "json") return "json";
+  if (extension === "csv") return "csv";
+  return "csv";
+}

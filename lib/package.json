@@ -41,10 +41,17 @@
   "license": "MPL-2.0",
   "packageManager": "pnpm@10.12.1",
   "devDependencies": {
+    "@types/stream-chain": "^2.1.0",
+    "@types/stream-csv-as-json": "^1.0.4",
+    "@types/stream-json": "^1.7.8",
     "monaco-editor": "^0.52.2"
   },
   "dependencies": {
     "@stricli/core": "^1.2.0",
-    "tinyqueue": "^3.0.0"
+    "stream-chain": "^3.4.0",
+    "stream-csv-as-json": "^1.0.5",
+    "stream-json": "^1.9.1",
+    "tinyqueue": "^3.0.0",
+    "zod": "^4.0.17"
   }
 }

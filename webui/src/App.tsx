@@ -2,6 +2,7 @@ import CaveqlSvg from "jsx:./caveql.svg";
 import {
   ArrowRightIcon,
   ChartBarIcon,
+  CircleStackIcon,
   CodeBracketIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
@@ -189,6 +190,7 @@ export function App() {
         <TabGroup>
           <div className="flex flex-row justify-between">
             <TabList>
+              <Tab icon={<CircleStackIcon />}>data</Tab>
               <Tab icon={<TableCellsIcon />}>table</Tab>
               <Tab icon={<ChartBarIcon />}>chart</Tab>
               <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
@@ -210,6 +212,7 @@ export function App() {
             )}
           </div>
           <TabPanels>
+            <TabPanel>hey</TabPanel>
             <TabPanel>
               {results && (
                 <ResultsTable
