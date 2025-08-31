@@ -15,10 +15,10 @@ export function compileSortCommand(command: SortCommandAST): string {
   // this should be fast compared to O(N log N) for sorting all items if N is big.
   // it's likely slower than native sort for small N or big M.
   return `
-    function* sortCommand(records) {
+    async function* sortCommand(records) {
       const q = new TinyQueue([], (${compileSortComparator(fields)})); 
       
-      for (const record of records) {
+      for await (const record of records) {
         q.push(record);
         if (q.length > ${countValue}) {
           q.pop();

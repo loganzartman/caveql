@@ -1,8 +1,9 @@
 import { bindCompiledQuery, type ExecutionContext } from "../compiler";
 import { impossible } from "../impossible";
+import { asyncIter } from "../iter";
 import type { HostMessage } from "./message";
 
-let generator: Generator<Record<string, unknown>> | undefined;
+let generator: AsyncIterable<Record<string, unknown>> | undefined;
 let context: ExecutionContext | undefined;
 
 globalThis.onmessage = ({ data }: MessageEvent<HostMessage>) => {
@@ -11,7 +12,7 @@ globalThis.onmessage = ({ data }: MessageEvent<HostMessage>) => {
       startQuery(data);
       break;
     case "getRecords":
-      getRecords(data);
+      getRecords(data).catch(console.error);
       break;
     default:
       impossible(data);
@@ -27,29 +28,36 @@ function startQuery(data: Extract<HostMessage, { type: "startQuery" }>) {
   context = data.context;
 
   switch (data.input.type) {
-    case "iterable":
-      generator = run(data.input.value, context);
+    case "iterable": {
+      const iterator = asyncIter(data.input.value);
+      const asyncIterable = {
+        [Symbol.asyncIterator]() {
+          return iterator;
+        },
+      };
+      generator = run(asyncIterable, context);
       break;
+    }
     default:
       impossible(data.input.type);
   }
 }
 
-function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
+async function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
   if (!generator || !context) {
     throw new Error("Internal error: query not started");
   }
 
-  let done = false;
+  let done = true;
   const records: Record<string, unknown>[] = [];
 
-  for (let i = 0; i < data.max; ++i) {
-    const result = generator.next();
-    if (result.done) {
-      done = true;
+  const i = 0;
+  for await (const result of generator) {
+    if (i > data.max) {
+      done = false;
       break;
     }
-    records.push(result.value);
+    records.push(result);
   }
 
   globalThis.postMessage({ type: "sendRecords", records, context, done });

@@ -8,13 +8,13 @@ import {
 
 export function compileStatsCommand(command: StatsCommandAST): string {
   return `
-    function* statsCommand(records) {
+    async function* statsCommand(records) {
       const agg = {
         ${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
       };
 
       let n = 0;
-      for (const record of records) {
+      for await (const record of records) {
         ++n;
         ${command.aggregations.map(compileAggregationCollect).join(";\n")};
       };

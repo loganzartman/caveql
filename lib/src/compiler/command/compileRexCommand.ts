@@ -22,11 +22,11 @@ export function compileRexCommand(command: RexCommandAST): string {
 
     if (op === "s") {
       return `
-        function* rexCommand(records) {
+        async function* rexCommand(records) {
           const needle = new RegExp(${JSON.stringify(a)}, ${JSON.stringify(flags)});
           const replacement = ${JSON.stringify(b)};
 
-          for (const record of records) {
+          for await (const record of records) {
             const value = ${compilePathGet("record", field)};
             if (typeof value !== "string") {
               yield record;
@@ -47,9 +47,9 @@ export function compileRexCommand(command: RexCommandAST): string {
   }
 
   return `
-    function* rexCommand(records) {
+    async function* rexCommand(records) {
       const regex = new RegExp(${JSON.stringify(command.regex.value)});
-      for (const record of records) {
+      for await (const record of records) {
         const value = ${compilePathGet("record", field)};
         if (typeof value !== "string") {
           continue;

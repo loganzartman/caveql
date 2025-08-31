@@ -10,13 +10,13 @@ export function compileStreamstatsCommand(
   command: StreamstatsCommandAST,
 ): string {
   return `
-    function* streamstatsCommand(records) {
+    async function* streamstatsCommand(records) {
       const agg = {
         ${command.aggregations.map((agg) => `${aggKey(agg)}: ${compileAggregationInit(agg)}`).join(",\n")}
       };
 
       let n = 0;
-      for (const record of records) {
+      for await (const record of records) {
         ++n;
         ${command.aggregations.map(compileAggregationCollect).join(";\n")};
 
