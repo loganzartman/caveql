@@ -3,8 +3,10 @@ import { compileCommand } from "./compileCommand";
 import { compileInstrumentInput } from "./compileInstrumentInput";
 import { getRuntimeDeps, type InjectedDeps } from "./runtime";
 
+type InputIterable = Iterable<unknown> | AsyncIterable<unknown>;
+
 export type QueryFunction = ((
-  records: AsyncIterable<unknown>,
+  records: InputIterable,
   context?: ExecutionContext,
 ) => AsyncGenerator<Record<string, unknown>>) & { source: QuerySource };
 
@@ -38,15 +40,13 @@ export function bindCompiledQuery(source: QuerySource): QueryFunction {
     source,
   ) as unknown as (
     deps: InjectedDeps,
-    records: AsyncIterable<unknown>,
+    records: InputIterable,
     context: ExecutionContext,
   ) => AsyncGenerator<Record<string, unknown>>;
 
   const deps = getRuntimeDeps();
-  const injectedFn = (
-    records: AsyncIterable<unknown>,
-    context?: ExecutionContext,
-  ) => compiledFn(deps, records, context ?? createExecutionContext());
+  const injectedFn = (records: InputIterable, context?: ExecutionContext) =>
+    compiledFn(deps, records, context ?? createExecutionContext());
   injectedFn.source = source;
 
   return injectedFn;
