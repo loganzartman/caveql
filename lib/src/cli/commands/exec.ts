@@ -1,40 +1,40 @@
-import { readFile } from "node:fs/promises";
 import { buildCommand } from "@stricli/core";
 import { compileQuery } from "../../compiler";
+import { parseInputPath } from "../../data/inputPath";
+import { readRecords } from "../../data/readRecords";
 import { parseQuery } from "../../parser";
 
 type Flags = {
-  inputFile: string[] | undefined;
+  inputPath: string[] | undefined;
 };
 
 export const execCommand = buildCommand({
   func: async (flags: Flags, query: string) => {
-    const inputFiles = flags.inputFile ?? [];
+    const inputPaths = flags.inputPath ?? [];
+    const dataSources = inputPaths.map(parseInputPath);
+    const inputs = dataSources.map((source) => readRecords(source));
 
-    const inputs = await Promise.all(
-      inputFiles.map((f) => readFile(f, { encoding: "utf-8" })),
-    );
-    const inputsJSON = inputs.map((input) => JSON.parse(input));
-    if (inputsJSON.some((input) => !Array.isArray(input))) {
-      throw new Error("Only JSON arrays are supported");
-    }
+    const combinedInput = (async function* () {
+      for (const input of inputs) {
+        yield* input;
+      }
+    })();
 
-    const inputRecords = inputsJSON.flat();
     const parsed = parseQuery(query);
     const run = compileQuery(parsed.ast);
 
-    for (const record of run(inputRecords)) {
+    for await (const record of run(combinedInput)) {
       console.log(JSON.stringify(record));
     }
   },
 
   parameters: {
     aliases: {
-      i: "inputFile",
+      i: "inputPath",
     },
     flags: {
-      inputFile: {
-        brief: "Input file",
+      inputPath: {
+        brief: "Input file path",
         kind: "parsed",
         optional: true,
         variadic: true,
