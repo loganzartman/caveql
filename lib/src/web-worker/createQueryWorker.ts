@@ -105,6 +105,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
         input,
         context,
       }),
+      input.type === "stream" ? [input.stream] : [],
     );
 
     activeQueries.add(handle);

@@ -1,5 +1,6 @@
 import StreamChain from "stream-chain";
 import StreamCSV from "stream-csv-as-json";
+import CSVAsObjects from "stream-csv-as-json/AsObjects.js";
 import StreamJSON from "stream-json";
 import StreamArray from "stream-json/streamers/StreamArray.js";
 import StreamValues from "stream-json/streamers/StreamValues.js";
@@ -10,6 +11,7 @@ const { parser: jsonParser } = StreamJSON;
 const { parser: csvParser } = StreamCSV;
 const { streamValues } = StreamValues;
 const { streamArray } = StreamArray;
+const { asObjects } = CSVAsObjects;
 
 export type SourceFormat = JSONFormat | CSVFormat | TextFormat;
 export type JSONFormat = { type: "json"; streaming: boolean };
@@ -18,14 +20,14 @@ export type TextFormat = { type: "text" };
 
 export type DataSource<TFormat extends SourceFormat = SourceFormat> = {
   format: TFormat;
-  read: () => ReadableStream<Uint8Array<ArrayBufferLike>>;
+  stream: ReadableStream<Uint8Array<ArrayBufferLike>>;
 };
 
 export function readRecords(
   source: DataSource<SourceFormat>,
 ): AsyncIterable<unknown> {
   const pipeline = chain([
-    source.read(),
+    source.stream,
     ...getParsePipeline(source.format),
     (d: { value: unknown }) => d.value,
   ]);
@@ -44,9 +46,9 @@ function getParsePipeline(format: SourceFormat) {
       return [jsonParser({ jsonStreaming: false }), streamArray()];
     }
     case "csv":
-      return [csvParser(), streamValues()];
+      return [csvParser(), asObjects(), streamValues()];
     case "text":
-      return [csvParser(), streamValues()];
+      throw new Error("not implemented");
     default:
       impossible(format);
   }

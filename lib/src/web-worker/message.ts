@@ -1,4 +1,5 @@
 import type { ExecutionContext, QuerySource } from "../compiler";
+import type { SourceFormat } from "../data/readRecords";
 
 export type HostMessage =
   | {
@@ -12,11 +13,18 @@ export type HostMessage =
       max: number;
     };
 
-// TODO: support streaming data in worker
-export type WorkerRecordsInput = {
-  type: "iterable";
-  value: Iterable<Record<string, unknown>>;
-};
+export type WorkerRecordsInput =
+  | {
+      type: "iterable";
+      value:
+        | Iterable<Record<string, unknown>>
+        | AsyncIterable<Record<string, unknown>>;
+    }
+  | {
+      type: "stream";
+      stream: ReadableStream<Uint8Array>;
+      format: SourceFormat;
+    };
 
 export type WorkerMessage = {
   type: "sendRecords";
@@ -26,9 +34,11 @@ export type WorkerMessage = {
 };
 
 export function hostMessage(payload: HostMessage): HostMessage {
+  console.log("to worker", payload);
   return payload;
 }
 
 export function workerMessage(payload: WorkerMessage): WorkerMessage {
+  console.log("from worker", payload);
   return payload;
 }

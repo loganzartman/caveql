@@ -1,5 +1,9 @@
 export type * from "./compiler";
 export * from "./compiler";
+export * from "./data/format";
+export * from "./data/parseInputPath";
+export type * from "./data/readRecords";
+export * from "./data/readRecords";
 export { formatJS } from "./formatJS";
 export { formatTree } from "./formatTree";
 export * from "./monaco/language";

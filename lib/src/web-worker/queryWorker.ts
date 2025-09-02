@@ -1,6 +1,6 @@
 import { bindCompiledQuery, type ExecutionContext } from "../compiler";
+import { readRecords } from "../data/readRecords";
 import { impossible } from "../impossible";
-import { asyncIter } from "../iter";
 import type { HostMessage } from "./message";
 
 let generator: AsyncIterable<Record<string, unknown>> | undefined;
@@ -27,19 +27,18 @@ function startQuery(data: Extract<HostMessage, { type: "startQuery" }>) {
   const run = bindCompiledQuery(data.source);
   context = data.context;
 
-  switch (data.input.type) {
+  const input = data.input;
+  switch (input.type) {
     case "iterable": {
-      const iterator = asyncIter(data.input.value);
-      const asyncIterable = {
-        [Symbol.asyncIterator]() {
-          return iterator;
-        },
-      };
-      generator = run(asyncIterable, context);
+      generator = run(input.value, context);
+      break;
+    }
+    case "stream": {
+      generator = run(readRecords(input), context);
       break;
     }
     default:
-      impossible(data.input.type);
+      impossible(input);
   }
 }
 
@@ -50,14 +49,14 @@ async function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
 
   let done = true;
   const records: Record<string, unknown>[] = [];
-
-  const i = 0;
+  let i = 0;
   for await (const result of generator) {
-    if (i > data.max) {
+    records.push(result);
+    i++;
+    if (i >= data.max) {
       done = false;
       break;
     }
-    records.push(result);
   }
 
   globalThis.postMessage({ type: "sendRecords", records, context, done });

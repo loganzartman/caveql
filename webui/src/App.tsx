@@ -11,6 +11,7 @@ import {
   createExecutionContext,
   createQueryWorker,
   type ExecutionContext,
+  formatFromExtension,
   formatJS,
   formatTree,
   type Off,
@@ -62,9 +63,7 @@ export function App() {
     [editorRef, handleSourceChange],
   );
 
-  const [inputRecords, setInputRecords] = useState<Record<string, unknown>[]>(
-    [],
-  );
+  const [fileInput, setFileInput] = useState<File[] | null>(null);
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
   const [sort, setSort] = useSortQuery(source, updateSource);
 
@@ -84,21 +83,7 @@ export function App() {
   }, []);
 
   const handleUpload = useCallback(({ files }: { files: FileList }) => {
-    (async () => {
-      const file = files[0];
-      if (!file) {
-        throw new Error("Expected exactly one file upload");
-      }
-      if (file.type !== "application/json") {
-        throw new Error("Expected JSON");
-      }
-      const text = await file.text();
-      const json = JSON.parse(text);
-      if (!Array.isArray(json)) {
-        throw new Error("Expected JSON array");
-      }
-      setInputRecords(json);
-    })().catch((e) => console.error(e));
+    setFileInput(Array.from(files));
   }, []);
 
   const [resultsLoading, setResultsLoading] = useState(false);
@@ -116,46 +101,66 @@ export function App() {
   useEffect(() => {
     let handle: AsyncQueryHandle | undefined;
     let cleanupOnContext: Off | undefined;
-
-    try {
-      const tree = parseQuery(source).ast;
-      setTree(tree);
-      setTreeString(formatTree(tree));
-
-      const context = createExecutionContext();
-
-      const queryWorker = createQueryWorker(tree);
-      handle = queryWorker.query(
-        {
-          type: "iterable",
-          value: inputRecords,
-        },
-        context,
-      );
-      cleanupOnContext = handle.onContext(
-        debounce(
-          ({ context }) => {
-            setExecutionContext(context);
-          },
-          { intervalMs: 100 },
-        ),
-      );
-
-      setCode(formatJS(queryWorker.source));
-    } catch (e) {
-      setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
-      setResults(null);
-    }
+    let cancelled = false;
+    let flushTimer: number | undefined;
 
     (async () => {
       try {
-        if (!handle) {
+        const tree = parseQuery(source).ast;
+        setTree(tree);
+        setTreeString(formatTree(tree));
+
+        const context = createExecutionContext();
+        const queryWorker = createQueryWorker(tree);
+        setCode(formatJS(queryWorker.source));
+
+        // TODO: multi-file input
+        const file = fileInput?.[0];
+        if (!file) {
           return;
         }
+
+        handle = queryWorker.query(
+          {
+            type: "stream",
+            stream: file.stream(),
+            // TODO: customize parser settings
+            format: formatFromExtension(file.name),
+          },
+          context,
+        );
+
+        cleanupOnContext = handle.onContext(
+          debounce(
+            ({ context }) => {
+              setExecutionContext(context);
+            },
+            { intervalMs: 100 },
+          ),
+        );
+
+        setResults([]);
         setResultsLoading(true);
-        setResults(await Array.fromAsync(handle.records));
+
+        let buffer: Record<string, unknown>[] = [];
+        const flush = () => {
+          if (!buffer.length) {
+            return;
+          }
+          setResults((prev) => (prev ? [...prev, ...buffer] : [...buffer]));
+          buffer = [];
+        };
+        flushTimer = window.setInterval(flush, 100);
+
+        for await (const record of handle.records) {
+          if (cancelled) break;
+          buffer.push(record);
+          if (buffer.length >= 250) flush();
+        }
+        flush();
         setResultsLoading(false);
       } catch (e) {
+        console.error(e);
         setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
         setResults(null);
         setResultsLoading(false);
@@ -163,10 +168,12 @@ export function App() {
     })();
 
     return () => {
+      cancelled = true;
+      if (flushTimer) window.clearInterval(flushTimer);
       handle?.cancel();
       cleanupOnContext?.();
     };
-  }, [inputRecords, source]);
+  }, [fileInput, source]);
 
   return (
     <div
@@ -176,7 +183,7 @@ export function App() {
       <div className="flex flex-row justify-between">
         <CaveqlSvg />
         <div className="flex flex-row gap-4">
-          <Highlight enabled={inputRecords.length === 0 && !results?.length}>
+          <Highlight enabled={!fileInput && !results?.length}>
             <UploadButton label="add data" onChange={handleUpload} />
           </Highlight>
         </div>
