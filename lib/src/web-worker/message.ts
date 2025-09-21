@@ -34,11 +34,9 @@ export type WorkerMessage = {
 };
 
 export function hostMessage(payload: HostMessage): HostMessage {
-  console.log("to worker", payload);
   return payload;
 }
 
 export function workerMessage(payload: WorkerMessage): WorkerMessage {
-  console.log("from worker", payload);
   return payload;
 }

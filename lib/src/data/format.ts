@@ -7,6 +7,19 @@ export const formatTypeSchema = z.union([
   z.literal("text"),
 ]);
 
+export function formatFromPath(uri: string): SourceFormat {
+  const parts = uri.split("?");
+  const path = parts[0];
+  const query = parts[1]
+    ? new URLSearchParams(parts[1])
+    : new URLSearchParams();
+
+  if (query.has("type")) {
+    return formatFromQuery(query);
+  }
+  return formatFromExtension(path);
+}
+
 export function formatFromQuery(query: URLSearchParams): SourceFormat {
   const type = formatTypeSchema.parse(query.get("type"));
 

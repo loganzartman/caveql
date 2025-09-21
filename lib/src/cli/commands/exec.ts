@@ -1,7 +1,9 @@
+import { createReadStream } from "node:fs";
+import { Readable } from "node:stream";
 import { buildCommand } from "@stricli/core";
 import { compileQuery } from "../../compiler";
-import { parseInputPath } from "../../data/parseInputPath";
-import { readRecords } from "../../data/readRecords";
+import { formatFromPath } from "../../data/format";
+import { type DataSource, readRecords } from "../../data/readRecords";
 import { parseQuery } from "../../parser";
 
 type Flags = {
@@ -15,7 +17,19 @@ export const execCommand = buildCommand({
     }
 
     const inputPaths = flags.inputPath ?? [];
-    const dataSources = inputPaths.map(parseInputPath);
+
+    const dataSources = await Promise.all(
+      inputPaths.map(async (path) => {
+        const format = formatFromPath(path);
+        const readable = createReadStream(path);
+        const stream = Readable.toWeb(readable) as ReadableStream<Uint8Array>;
+        return {
+          format,
+          stream,
+        } satisfies DataSource;
+      }),
+    );
+
     const inputs = dataSources.map((source) => readRecords(source));
 
     const combinedInput = (async function* () {
