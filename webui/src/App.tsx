@@ -38,7 +38,6 @@ export function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [editorRef, setEditorRef] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const queryHandleRef = useRef<AsyncQueryHandle | null>(null);
 
   const [source, setSource] = useState<string>("");
   const [fileInput, setFileInput] = useState<File[] | null>(null);
@@ -79,93 +78,86 @@ export function App() {
     }
   }, [compiled]);
 
-  const updateQuery = useCallback(
-    (source: string, fileInput: File[] | null) => {
-      if (queryHandleRef.current) {
-        queryHandleRef.current.cancel();
-        queryHandleRef.current = null;
+  useEffect(() => {
+    const context = createExecutionContext();
+    setResults([]);
+    setError(null);
+    setResultsLoading(true);
+    setAST(null);
+    setCompiled(null);
+    setExecutionContext(context);
+
+    let handle: AsyncQueryHandle | undefined;
+    let stop = false;
+    let intv: NodeJS.Timeout | undefined;
+
+    try {
+      const { ast } = parseQuery(source);
+      const worker = createQueryWorker(ast);
+
+      setAST(ast);
+      setCompiled(worker.source);
+
+      // TODO: multi-file
+      const file = fileInput?.[0];
+      if (file) {
+        handle = worker.query({
+          type: "stream",
+          format: formatFromExtension(file.name),
+          stream: file.stream(),
+        });
+      } else {
+        handle = worker.query({
+          type: "iterable",
+          value: [],
+        });
       }
 
-      const context = createExecutionContext();
-      setResults([]);
-      setError(null);
-      setResultsLoading(true);
-      setAST(null);
-      setCompiled(null);
-      setExecutionContext(context);
+      handle.onContext(({ context }) => setExecutionContext(context));
 
-      let stop = false;
-      let intv: NodeJS.Timeout | undefined;
+      (async () => {
+        let buffer: Array<Record<string, unknown>> = [];
 
-      try {
-        const { ast } = parseQuery(source);
-        const worker = createQueryWorker(ast);
+        const flush = () => {
+          const b = buffer;
+          setResults((prev) => (prev ? [...prev, ...b] : [...b]));
+          buffer = [];
+        };
 
-        setAST(ast);
-        setCompiled(worker.source);
-
-        // TODO: multi-file
-        const file = fileInput?.[0];
-        let handle: AsyncQueryHandle;
-        if (file) {
-          handle = worker.query({
-            type: "stream",
-            format: formatFromExtension(file.name),
-            stream: file.stream(),
-          });
-        } else {
-          handle = worker.query({
-            type: "iterable",
-            value: [],
-          });
-        }
-        queryHandleRef.current = handle;
-
-        handle.onContext(({ context }) => setExecutionContext(context));
-
-        (async () => {
-          let buffer: Array<Record<string, unknown>> = [];
-
-          const flush = () => {
-            const b = buffer;
-            setResults((prev) => (prev ? [...prev, ...b] : [...b]));
-            buffer = [];
-          };
-
-          intv = setInterval(() => {
-            if (buffer.length > 0) {
-              flush();
-            }
-          }, 250);
-
-          for await (const record of handle.records) {
-            if (stop) {
-              break;
-            }
-            buffer.push(record);
-            if (buffer.length >= 100) {
-              flush();
-            }
+        intv = setInterval(() => {
+          if (buffer.length > 0) {
+            flush();
           }
-          setResultsLoading(false);
-        })().catch((error) => {
-          console.error(error);
-          setError(error instanceof Error ? error.message : String(error));
-        });
-      } catch (error) {
+        }, 250);
+
+        for await (const record of handle.records) {
+          if (stop) {
+            break;
+          }
+          buffer.push(record);
+          if (buffer.length >= 100) {
+            flush();
+          }
+        }
+        flush();
+        setResultsLoading(false);
+      })().catch((error) => {
         console.error(error);
         setError(error instanceof Error ? error.message : String(error));
-      }
+      });
+    } catch (error) {
+      console.error(error);
+      setError(error instanceof Error ? error.message : String(error));
+    }
 
-      return () => {
-        stop = true;
-        if (intv) {
-          clearInterval(intv);
-        }
-      };
-    },
-    [],
-  );
+    return () => {
+      handle?.cancel();
+      stop = true;
+      if (intv) {
+        clearInterval(intv);
+      }
+    };
+  }, [source, fileInput]);
 
   const updateHash = useMemo(
     () =>
@@ -188,21 +180,16 @@ export function App() {
 
   const [sort, setSort] = useSortQuery(source, updateSource);
 
-  const handleUpload = useCallback(
-    ({ files }: { files: FileList }) => {
-      const filesArray = Array.from(files);
-      setFileInput(filesArray);
-      updateQuery(source, filesArray);
-    },
-    [source, updateQuery],
-  );
+  const handleUpload = useCallback(({ files }: { files: FileList }) => {
+    const filesArray = Array.from(files);
+    setFileInput(filesArray);
+  }, []);
 
   const handleSourceChange = useCallback(
     (source: string) => {
       updateSource(source);
-      updateQuery(source, fileInput);
     },
-    [updateSource, fileInput, updateQuery],
+    [updateSource],
   );
 
   useEffect(() => {
