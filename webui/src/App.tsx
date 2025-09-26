@@ -5,6 +5,7 @@ import {
   CodeBracketIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
+import { PlayIcon } from "@heroicons/react/24/outline";
 import type { QueryAST } from "caveql";
 import {
   type AsyncQueryHandle,
@@ -14,10 +15,12 @@ import {
   formatFromExtension,
   formatJS,
   formatTree,
+  iter,
   parseQuery,
   printAST,
 } from "caveql";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "./components/Button";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
@@ -34,6 +37,8 @@ import { Editor } from "./Editor";
 import type { monaco } from "./monaco";
 import { useSortQuery } from "./useSortQuery";
 import { VirtualArray } from "./VirtualArray";
+
+const DEFAULT_RESULTS_LIMIT = 100_000;
 
 export function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -54,6 +59,16 @@ export function App() {
   const [results, setResults] = useState<VirtualArray<Record<string, unknown>>>(
     new VirtualArray(),
   );
+  const resultsRef = useRef(results);
+  resultsRef.current = results;
+  const [resultsLimit, setResultsLimit] = useState<number>(
+    DEFAULT_RESULTS_LIMIT,
+  );
+  const [resultsLimited, setResultsLimited] = useState(false);
+
+  const [queryIterator, setQueryIterator] = useState<AsyncIterator<
+    Record<string, unknown>
+  > | null>(null);
 
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
@@ -87,11 +102,10 @@ export function App() {
     setAST(null);
     setCompiled(null);
     setExecutionContext(context);
+    setResultsLimit(DEFAULT_RESULTS_LIMIT);
+    setResultsLimited(false);
 
     let handle: AsyncQueryHandle | undefined;
-    let stop = false;
-    let timeout: NodeJS.Timeout | undefined;
-    let intv: NodeJS.Timeout | undefined;
 
     try {
       const { ast } = parseQuery(source);
@@ -116,41 +130,7 @@ export function App() {
       }
 
       handle.onContext(({ context }) => setExecutionContext(context));
-
-      (async () => {
-        let buffer: Array<Record<string, unknown>> = [];
-
-        const flush = () => {
-          const b = buffer;
-          buffer = [];
-          setResults((r) => r.concat(b));
-        };
-
-        // initial fast flush
-        timeout = setTimeout(() => {
-          flush();
-        }, 100);
-
-        // regular intervaled flush
-        intv = setInterval(() => {
-          if (buffer.length > 0) {
-            flush();
-          }
-        }, 500);
-
-        for await (const record of handle.records) {
-          if (stop) {
-            break;
-          }
-          buffer.push(record);
-        }
-        flush();
-
-        setResultsLoading(false);
-      })().catch((error) => {
-        console.error(error);
-        setError(error instanceof Error ? error.message : String(error));
-      });
+      setQueryIterator(iter(handle.records));
     } catch (error) {
       console.error(error);
       setError(error instanceof Error ? error.message : String(error));
@@ -158,6 +138,62 @@ export function App() {
 
     return () => {
       handle?.cancel();
+    };
+  }, [source, fileInput]);
+
+  useEffect(() => {
+    if (!queryIterator) {
+      return;
+    }
+
+    let stop = false;
+    let timeout: NodeJS.Timeout | undefined;
+    let intv: NodeJS.Timeout | undefined;
+
+    (async () => {
+      let buffer: Array<Record<string, unknown>> = [];
+
+      const flush = () => {
+        if (buffer.length === 0) {
+          return;
+        }
+        const b = buffer;
+        buffer = [];
+        setResults((r) => r.concat(b));
+      };
+
+      // initial fast flush
+      timeout = setTimeout(() => {
+        flush();
+      }, 100);
+
+      // regular intervaled flush
+      intv = setInterval(() => {
+        flush();
+      }, 500);
+
+      while (!stop) {
+        const result = await queryIterator.next();
+        if (result.done) {
+          break;
+        }
+
+        buffer.push(result.value);
+
+        if (resultsRef.current.length + buffer.length >= resultsLimit) {
+          setResultsLimited(true);
+          break;
+        }
+      }
+      flush();
+
+      setResultsLoading(false);
+    })().catch((error) => {
+      console.error(error);
+      setError(error instanceof Error ? error.message : String(error));
+    });
+
+    return () => {
       stop = true;
       if (timeout) {
         clearTimeout(timeout);
@@ -166,7 +202,7 @@ export function App() {
         clearInterval(intv);
       }
     };
-  }, [source, fileInput]);
+  }, [queryIterator, resultsLimit]);
 
   const updateHash = useMemo(
     () =>
@@ -231,7 +267,7 @@ export function App() {
       </div>
       <div className="grow shrink">
         <TabGroup>
-          <div className="flex flex-row justify-between">
+          <div className="flex flex-row gap-4 items-stretch justify-between">
             <TabList>
               <Tab icon={<TableCellsIcon />}>table</Tab>
               <Tab icon={<ChartBarIcon />}>chart</Tab>
@@ -239,6 +275,21 @@ export function App() {
               <Tab icon={<CodeBracketIcon />}>generated</Tab>
               <Tab icon={<CodeBracketIcon />}>formatted</Tab>
             </TabList>
+            {resultsLimited && (
+              <Button
+                variant="quiet"
+                className="shrink-0"
+                onClick={() => {
+                  setResultsLimit(
+                    (resultsLimit) => resultsLimit + DEFAULT_RESULTS_LIMIT,
+                  );
+                  setResultsLimited(false);
+                }}
+                icon={<PlayIcon />}
+              >
+                load more
+              </Button>
+            )}
             {results && (
               <div className="shrink-0 flex flex-row gap-1 items-center">
                 <span className="font-black">
