@@ -56,6 +56,9 @@ importers:
       tinyqueue:
         specifier: ^3.0.0
         version: 3.0.0
+      udsv:
+        specifier: ^0.7.3
+        version: 0.7.3
       zod:
         specifier: ^4.0.17
         version: 4.0.17
@@ -69,9 +72,6 @@ importers:
       monaco-editor:
         specifier: ^0.52.2
         version: 0.52.2
-      udsv:
-        specifier: ^0.7.3
-        version: 0.7.3
 
   webui:
     dependencies:
