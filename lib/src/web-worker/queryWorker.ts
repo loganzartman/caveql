@@ -48,6 +48,7 @@ async function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
     throw new Error("Internal error: query not started");
   }
 
+  const startTime = Date.now();
   const records: Record<string, unknown>[] = [];
 
   let done = false;
@@ -61,7 +62,7 @@ async function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
     }
 
     records.push(result.value);
-    if (++i >= data.max) {
+    if (++i >= data.maxCount || Date.now() - startTime >= data.maxTimeMs) {
       break;
     }
   }

@@ -10,7 +10,8 @@ export type HostMessage =
     }
   | {
       type: "getRecords";
-      max: number;
+      maxCount: number;
+      maxTimeMs: number;
     };
 
 export type WorkerRecordsInput =
