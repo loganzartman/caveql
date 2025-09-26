@@ -1,9 +1,10 @@
 import { bindCompiledQuery, type ExecutionContext } from "../compiler";
 import { readRecords } from "../data/readRecords";
 import { impossible } from "../impossible";
+import { iter } from "../iter";
 import { type HostMessage, workerMessage } from "./message";
 
-let generator: AsyncIterable<Record<string, unknown>> | undefined;
+let iterator: AsyncIterator<Record<string, unknown>> | undefined;
 let context: ExecutionContext | undefined;
 
 globalThis.onmessage = ({ data }: MessageEvent<HostMessage>) => {
@@ -20,7 +21,7 @@ globalThis.onmessage = ({ data }: MessageEvent<HostMessage>) => {
 };
 
 function startQuery(data: Extract<HostMessage, { type: "startQuery" }>) {
-  if (generator) {
+  if (iterator) {
     throw new Error("Internal error: query already started");
   }
 
@@ -30,11 +31,11 @@ function startQuery(data: Extract<HostMessage, { type: "startQuery" }>) {
   const input = data.input;
   switch (input.type) {
     case "iterable": {
-      generator = run(input.value, context);
+      iterator = iter(run(input.value, context));
       break;
     }
     case "stream": {
-      generator = run(readRecords(input), context);
+      iterator = iter(run(readRecords(input), context));
       break;
     }
     default:
@@ -43,23 +44,27 @@ function startQuery(data: Extract<HostMessage, { type: "startQuery" }>) {
 }
 
 async function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
-  if (!generator || !context) {
+  if (!iterator || !context) {
     throw new Error("Internal error: query not started");
   }
 
   const records: Record<string, unknown>[] = [];
 
-  const it = generator[Symbol.asyncIterator]();
-  let result = await it.next();
+  let done = false;
   let i = 0;
 
-  while (!result.done && i < data.max) {
-    records.push(result.value);
-    result = await it.next();
-    i++;
-  }
+  while (true) {
+    const result = await iterator.next();
+    if (result.done) {
+      done = true;
+      break;
+    }
 
-  const done = Boolean(result.done);
+    records.push(result.value);
+    if (++i >= data.max) {
+      break;
+    }
+  }
 
   globalThis.postMessage(
     workerMessage({ type: "sendRecords", records, context, done }),
