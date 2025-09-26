@@ -292,15 +292,15 @@ export function App() {
             )}
             {results && (
               <div className="shrink-0 flex flex-row gap-1 items-center">
-                <span className="font-black">
+                <span className="font-black tabular-nums">
                   {countFormatter.format(executionContext.recordsRead)}
                 </span>{" "}
-                records scanned
+                in
                 <ArrowRightIcon className="w-[1em]" />
-                <span className="font-black">
+                <span className="font-black tabular-nums">
                   {countFormatter.format(results.length)}
                 </span>{" "}
-                results out
+                out
               </div>
             )}
           </div>
