@@ -1,8 +1,10 @@
 import { bindCompiledQuery, type ExecutionContext } from "../compiler";
+import { readRecords } from "../data/readRecords";
 import { impossible } from "../impossible";
-import type { HostMessage } from "./message";
+import { iter } from "../iter";
+import { type HostMessage, workerMessage } from "./message";
 
-let generator: Generator<Record<string, unknown>> | undefined;
+let iterator: AsyncIterator<Record<string, unknown>> | undefined;
 let context: ExecutionContext | undefined;
 
 globalThis.onmessage = ({ data }: MessageEvent<HostMessage>) => {
@@ -11,7 +13,7 @@ globalThis.onmessage = ({ data }: MessageEvent<HostMessage>) => {
       startQuery(data);
       break;
     case "getRecords":
-      getRecords(data);
+      getRecords(data).catch(console.error);
       break;
     default:
       impossible(data);
@@ -19,38 +21,53 @@ globalThis.onmessage = ({ data }: MessageEvent<HostMessage>) => {
 };
 
 function startQuery(data: Extract<HostMessage, { type: "startQuery" }>) {
-  if (generator) {
+  if (iterator) {
     throw new Error("Internal error: query already started");
   }
 
   const run = bindCompiledQuery(data.source);
   context = data.context;
 
-  switch (data.input.type) {
-    case "iterable":
-      generator = run(data.input.value, context);
+  const input = data.input;
+  switch (input.type) {
+    case "iterable": {
+      iterator = iter(run(input.value, context));
       break;
+    }
+    case "stream": {
+      iterator = iter(run(readRecords(input), context));
+      break;
+    }
     default:
-      impossible(data.input.type);
+      impossible(input);
   }
 }
 
-function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
-  if (!generator || !context) {
+async function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
+  if (!iterator || !context) {
     throw new Error("Internal error: query not started");
   }
 
-  let done = false;
+  const startTime = Date.now();
   const records: Record<string, unknown>[] = [];
 
-  for (let i = 0; i < data.max; ++i) {
-    const result = generator.next();
+  let done = false;
+  let i = 0;
+
+  while (true) {
+    const result = await iterator.next();
     if (result.done) {
       done = true;
       break;
     }
+
     records.push(result.value);
+    if (++i >= data.maxCount || Date.now() - startTime >= data.maxTimeMs) {
+      break;
+    }
   }
 
-  globalThis.postMessage({ type: "sendRecords", records, context, done });
+  globalThis.postMessage(
+    workerMessage({ type: "sendRecords", records, context, done }),
+  );
 }

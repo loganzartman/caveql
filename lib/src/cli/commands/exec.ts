@@ -1,40 +1,58 @@
-import { readFile } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { Readable } from "node:stream";
 import { buildCommand } from "@stricli/core";
 import { compileQuery } from "../../compiler";
+import { formatFromPath } from "../../data/format";
+import { type DataSource, readRecords } from "../../data/readRecords";
 import { parseQuery } from "../../parser";
 
 type Flags = {
-  inputFile: string[] | undefined;
+  inputPath: string[] | undefined;
 };
 
 export const execCommand = buildCommand({
   func: async (flags: Flags, query: string) => {
-    const inputFiles = flags.inputFile ?? [];
-
-    const inputs = await Promise.all(
-      inputFiles.map((f) => readFile(f, { encoding: "utf-8" })),
-    );
-    const inputsJSON = inputs.map((input) => JSON.parse(input));
-    if (inputsJSON.some((input) => !Array.isArray(input))) {
-      throw new Error("Only JSON arrays are supported");
+    if (!flags.inputPath && !query) {
+      console.error("[warn] no query or inputs specified.");
     }
 
-    const inputRecords = inputsJSON.flat();
+    const inputPaths = flags.inputPath ?? [];
+
+    const dataSources = await Promise.all(
+      inputPaths.map(async (path) => {
+        const format = formatFromPath(path);
+        const readable = createReadStream(path);
+        const stream = Readable.toWeb(readable) as ReadableStream<Uint8Array>;
+        return {
+          format,
+          stream,
+        } satisfies DataSource;
+      }),
+    );
+
+    const inputs = dataSources.map((source) => readRecords(source));
+
+    const combinedInput = (async function* () {
+      for (const input of inputs) {
+        yield* input;
+      }
+    })();
+
     const parsed = parseQuery(query);
     const run = compileQuery(parsed.ast);
 
-    for (const record of run(inputRecords)) {
+    for await (const record of run(combinedInput)) {
       console.log(JSON.stringify(record));
     }
   },
 
   parameters: {
     aliases: {
-      i: "inputFile",
+      i: "inputPath",
     },
     flags: {
-      inputFile: {
-        brief: "Input file",
+      inputPath: {
+        brief: "Input file path with optional format query",
         kind: "parsed",
         optional: true,
         variadic: true,
@@ -48,12 +66,36 @@ export const execCommand = buildCommand({
           brief: "Query",
           parse: String,
           placeholder: "query",
+          default: "",
         },
       ],
     },
   },
 
   docs: {
-    brief: "Execute a query on a file",
+    brief: "Execute a query on the given input files",
+    fullDescription: [
+      "Run a caveql query.",
+      "See https://github.com/loganzartman/caveql for more information.",
+      "",
+      "Most queries will operate on one or more input files, specified using the --inputFile or -i flag. Some queries may generate results without any input. Providing multiple input files will concatenate their parsed contents.",
+      "",
+      "The format of an input file is inferred based on its extension. Supported formats are JSON, JSONL/NDJSON, and CSV. It's also possible to specify the format using a query string:",
+      "  file.ext?type=json&stream",
+      "",
+      "The supported format parameters are:",
+      "  type: json, csv     - how to parse the file",
+      "  stream: true, false - setting stream=true enables JSONL/NDJSON",
+      "",
+      "caveql does NOT yet support piped input from stdin.",
+      "",
+      "caveql always outputs streaming JSON, which can be piped to tools like `jq`.",
+      "",
+      "EXAMPLES",
+      "  caveql -i data.json 'value > 10'",
+      "  caveql -i data.csv 'name = Alice'",
+      "  caveql -i data1.csv -i 'data2.json?stream' '| stats sum(value)'",
+      "  caveql '| makeresults count=10 | streamstats count'",
+    ].join("\n"),
   },
 });

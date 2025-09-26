@@ -3,16 +3,19 @@ import { compileCommand } from "./compileCommand";
 import { compileInstrumentInput } from "./compileInstrumentInput";
 import { getRuntimeDeps, type InjectedDeps } from "./runtime";
 
+type InputIterable = Iterable<unknown> | AsyncIterable<unknown>;
+
 export type QueryFunction = ((
-  records: Iterable<unknown>,
+  records: InputIterable,
   context?: ExecutionContext,
-) => Generator<Record<string, unknown>>) & { source: QuerySource };
+) => AsyncGenerator<Record<string, unknown>>) & { source: QuerySource };
 
 const querySourceTag: unique symbol = Symbol();
 export type QuerySource = string & { [querySourceTag]?: true };
 
-const GeneratorFunction = function* () {}.constructor as {
-  new (...args: string[]): GeneratorFunction;
+const AsyncGeneratorFunction = Object.getPrototypeOf(async function* () {})
+  .constructor as {
+  new (...args: string[]): AsyncGeneratorFunction;
 };
 
 /**
@@ -30,19 +33,19 @@ export function compileQuery(query: QueryAST): QueryFunction {
  * You probably want compileQuery, which does this in one step.
  */
 export function bindCompiledQuery(source: QuerySource): QueryFunction {
-  const compiledFn = new GeneratorFunction(
+  const compiledFn = new AsyncGeneratorFunction(
     "deps",
     "records",
     "context",
     source,
   ) as unknown as (
     deps: InjectedDeps,
-    records: Iterable<unknown>,
+    records: InputIterable,
     context: ExecutionContext,
-  ) => Generator<Record<string, unknown>>;
+  ) => AsyncGenerator<Record<string, unknown>>;
 
   const deps = getRuntimeDeps();
-  const injectedFn = (records: Iterable<unknown>, context?: ExecutionContext) =>
+  const injectedFn = (records: InputIterable, context?: ExecutionContext) =>
     compiledFn(deps, records, context ?? createExecutionContext());
   injectedFn.source = source;
 
@@ -73,7 +76,7 @@ export function compileQueryRaw(query: QueryAST): QuerySource {
       ${Object.keys(getRuntimeDeps()).join(", ")}
     } = deps;
 
-    yield* (
+    yield* await (
       ${result}
     );
   ` as QuerySource;

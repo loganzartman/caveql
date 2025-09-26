@@ -3,14 +3,14 @@ import { compileSearchExpression } from "../compileSearchExpression";
 
 export function compileSearchCommand(command: SearchCommandAST): string {
   if (command.filters.length === 0) {
-    return "function* searchCommand(records) { yield* records; }";
+    return "async function* searchCommand(records) { yield* records; }";
   }
   const conditions = command.filters
     .map((filter) => `(${compileSearchExpression(filter)})`)
     .join(" && ");
   return `
-    function* searchCommand(records) {
-      for (const record of records) {
+    async function* searchCommand(records) {
+      for await (const record of records) {
         if (
           ${conditions}
         ) {

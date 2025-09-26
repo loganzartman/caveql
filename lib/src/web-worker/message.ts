@@ -1,4 +1,5 @@
 import type { ExecutionContext, QuerySource } from "../compiler";
+import type { SourceFormat } from "../data/readRecords";
 
 export type HostMessage =
   | {
@@ -9,14 +10,22 @@ export type HostMessage =
     }
   | {
       type: "getRecords";
-      max: number;
+      maxCount: number;
+      maxTimeMs: number;
     };
 
-// TODO: support streaming data in worker
-export type WorkerRecordsInput = {
-  type: "iterable";
-  value: Iterable<Record<string, unknown>>;
-};
+export type WorkerRecordsInput =
+  | {
+      type: "iterable";
+      value:
+        | Iterable<Record<string, unknown>>
+        | AsyncIterable<Record<string, unknown>>;
+    }
+  | {
+      type: "stream";
+      stream: ReadableStream<Uint8Array>;
+      format: SourceFormat;
+    };
 
 export type WorkerMessage = {
   type: "sendRecords";

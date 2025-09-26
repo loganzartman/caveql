@@ -27,7 +27,7 @@ export function UploadButton({
       <Input
         ref={inputRef}
         type="file"
-        accept="application/json"
+        accept=".json,.csv,.jsonl,.ndjson"
         className="hidden"
         onChange={handleChange}
       />

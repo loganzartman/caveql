@@ -30,7 +30,7 @@ export function compileMakeresultsCommand(
     });
 
     return `
-      function* makeresultsCommand(records, context) {
+      async function* makeresultsCommand(records, context) {
         yield* records;
         const items = ${JSON.stringify(items)};
         for (const item of items) {
@@ -42,7 +42,7 @@ export function compileMakeresultsCommand(
   }
 
   return `
-    function* makeresultsCommand(records, context) {
+    async function* makeresultsCommand(records, context) {
       yield* records;
       for (let i = 0; i < ${command.count.value}; ++i) {
         context.recordsRead += 1;

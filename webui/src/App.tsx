@@ -5,19 +5,22 @@ import {
   CodeBracketIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
+import { PlayIcon } from "@heroicons/react/24/outline";
 import type { QueryAST } from "caveql";
 import {
   type AsyncQueryHandle,
   createExecutionContext,
   createQueryWorker,
   type ExecutionContext,
+  formatFromExtension,
   formatJS,
   formatTree,
-  type Off,
+  iter,
   parseQuery,
   printAST,
 } from "caveql";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "./components/Button";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
@@ -33,20 +36,179 @@ import { debounce } from "./debounce";
 import { Editor } from "./Editor";
 import type { monaco } from "./monaco";
 import { useSortQuery } from "./useSortQuery";
+import { VirtualArray } from "./VirtualArray";
+
+const DEFAULT_RESULTS_LIMIT = 100_000;
 
 export function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [editorRef, setEditorRef] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState<string>("");
+  const [fileInput, setFileInput] = useState<File[] | null>(null);
 
-  const handleSourceChange = useMemo(
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [ast, setAST] = useState<QueryAST | null>(null);
+  const [compiled, setCompiled] = useState<string | null>(null);
+  const [executionContext, setExecutionContext] = useState<ExecutionContext>(
+    createExecutionContext(),
+  );
+  const [results, setResults] = useState<VirtualArray<Record<string, unknown>>>(
+    new VirtualArray(),
+  );
+  const resultsRef = useRef(results);
+  resultsRef.current = results;
+  const [resultsLimit, setResultsLimit] = useState<number>(
+    DEFAULT_RESULTS_LIMIT,
+  );
+  const [resultsLimited, setResultsLimited] = useState(false);
+
+  const [queryIterator, setQueryIterator] = useState<AsyncIterator<
+    Record<string, unknown>
+  > | null>(null);
+
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
+
+  const countFormatter = useMemo(() => {
+    return new Intl.NumberFormat(undefined, {});
+  }, []);
+
+  const astString = useMemo(() => {
+    if (!ast) return null;
+    try {
+      return formatTree(ast);
+    } catch {
+      return null;
+    }
+  }, [ast]);
+
+  const compiledString = useMemo(() => {
+    if (!compiled) return null;
+    try {
+      return formatJS(compiled);
+    } catch {
+      return null;
+    }
+  }, [compiled]);
+
+  useEffect(() => {
+    const context = createExecutionContext();
+    setResults((r) => r.clear());
+    setError(null);
+    setResultsLoading(true);
+    setAST(null);
+    setCompiled(null);
+    setExecutionContext(context);
+    setResultsLimit(DEFAULT_RESULTS_LIMIT);
+    setResultsLimited(false);
+
+    let handle: AsyncQueryHandle | undefined;
+
+    try {
+      const { ast } = parseQuery(source);
+      const worker = createQueryWorker(ast);
+
+      setAST(ast);
+      setCompiled(worker.source);
+
+      // TODO: multi-file
+      const file = fileInput?.[0];
+      if (file) {
+        handle = worker.query({
+          type: "stream",
+          format: formatFromExtension(file.name),
+          stream: file.stream(),
+        });
+      } else {
+        handle = worker.query({
+          type: "iterable",
+          value: [],
+        });
+      }
+
+      handle.onContext(({ context }) => setExecutionContext(context));
+      setQueryIterator(iter(handle.records));
+    } catch (error) {
+      console.error(error);
+      setError(error instanceof Error ? error.message : String(error));
+    }
+
+    return () => {
+      handle?.cancel();
+    };
+  }, [source, fileInput]);
+
+  useEffect(() => {
+    if (!queryIterator) {
+      return;
+    }
+
+    let stop = false;
+    let timeout: NodeJS.Timeout | undefined;
+    let intv: NodeJS.Timeout | undefined;
+
+    (async () => {
+      let buffer: Array<Record<string, unknown>> = [];
+
+      const flush = () => {
+        if (buffer.length === 0) {
+          return;
+        }
+        const b = buffer;
+        buffer = [];
+        setResults((r) => r.concat(b));
+      };
+
+      // initial fast flush
+      timeout = setTimeout(() => {
+        flush();
+      }, 100);
+
+      // regular intervaled flush
+      intv = setInterval(() => {
+        flush();
+      }, 500);
+
+      while (!stop) {
+        const result = await queryIterator.next();
+        if (result.done) {
+          break;
+        }
+
+        buffer.push(result.value);
+
+        if (resultsRef.current.length + buffer.length >= resultsLimit) {
+          setResultsLimited(true);
+          break;
+        }
+      }
+      flush();
+
+      setResultsLoading(false);
+    })().catch((error) => {
+      console.error(error);
+      setError(error instanceof Error ? error.message : String(error));
+    });
+
+    return () => {
+      stop = true;
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      if (intv) {
+        clearInterval(intv);
+      }
+    };
+  }, [queryIterator, resultsLimit]);
+
+  const updateHash = useMemo(
     () =>
       debounce(
         (source: string) => {
           history.replaceState(undefined, "", `#${btoa(source)}`);
-          setSource(source);
         },
         { intervalMs: 500, leading: false },
       ),
@@ -55,118 +217,36 @@ export function App() {
 
   const updateSource = useCallback(
     (source: string) => {
-      if (!editorRef) return;
-      editorRef.setValue(source);
-      handleSourceChange(source);
+      updateHash(source);
+      setSource(source);
     },
-    [editorRef, handleSourceChange],
+    [updateHash],
   );
 
-  const [inputRecords, setInputRecords] = useState<Record<string, unknown>[]>(
-    [],
-  );
-  const [chartType, setChartType] = useState<"bar" | "line">("bar");
   const [sort, setSort] = useSortQuery(source, updateSource);
+
+  const handleUpload = useCallback(({ files }: { files: FileList }) => {
+    const filesArray = Array.from(files);
+    setFileInput(filesArray);
+  }, []);
+
+  const handleSourceChange = useCallback(
+    (source: string) => {
+      updateSource(source);
+    },
+    [updateSource],
+  );
 
   useEffect(() => {
     if (!editorRef) return;
     try {
       const src = atob(window.location.hash.substring(1));
       editorRef.setValue(src);
-      setSource(src);
+      handleSourceChange(src);
     } catch {
       console.log("Failed to parse document hash");
     }
-  }, [editorRef]);
-
-  const countFormatter = useMemo(() => {
-    return new Intl.NumberFormat(undefined, {});
-  }, []);
-
-  const handleUpload = useCallback(({ files }: { files: FileList }) => {
-    (async () => {
-      const file = files[0];
-      if (!file) {
-        throw new Error("Expected exactly one file upload");
-      }
-      if (file.type !== "application/json") {
-        throw new Error("Expected JSON");
-      }
-      const text = await file.text();
-      const json = JSON.parse(text);
-      if (!Array.isArray(json)) {
-        throw new Error("Expected JSON array");
-      }
-      setInputRecords(json);
-    })().catch((e) => console.error(e));
-  }, []);
-
-  const [resultsLoading, setResultsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [tree, setTree] = useState<QueryAST | null>(null);
-  const [treeString, setTreeString] = useState<string | null>(null);
-  const [code, setCode] = useState<string | null>(null);
-  const [results, setResults] = useState<Record<string, unknown>[] | null>(
-    null,
-  );
-  const [executionContext, setExecutionContext] = useState<ExecutionContext>(
-    createExecutionContext(),
-  );
-
-  useEffect(() => {
-    let handle: AsyncQueryHandle | undefined;
-    let cleanupOnContext: Off | undefined;
-
-    try {
-      const tree = parseQuery(source).ast;
-      setTree(tree);
-      setTreeString(formatTree(tree));
-
-      const context = createExecutionContext();
-
-      const queryWorker = createQueryWorker(tree);
-      handle = queryWorker.query(
-        {
-          type: "iterable",
-          value: inputRecords,
-        },
-        context,
-      );
-      cleanupOnContext = handle.onContext(
-        debounce(
-          ({ context }) => {
-            setExecutionContext(context);
-          },
-          { intervalMs: 100 },
-        ),
-      );
-
-      setCode(formatJS(queryWorker.source));
-    } catch (e) {
-      setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
-      setResults(null);
-    }
-
-    (async () => {
-      try {
-        if (!handle) {
-          return;
-        }
-        setResultsLoading(true);
-        setResults(await Array.fromAsync(handle.records));
-        setResultsLoading(false);
-      } catch (e) {
-        setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
-        setResults(null);
-        setResultsLoading(false);
-      }
-    })();
-
-    return () => {
-      handle?.cancel();
-      cleanupOnContext?.();
-    };
-  }, [inputRecords, source]);
+  }, [editorRef, handleSourceChange]);
 
   return (
     <div
@@ -176,7 +256,7 @@ export function App() {
       <div className="flex flex-row justify-between">
         <CaveqlSvg />
         <div className="flex flex-row gap-4">
-          <Highlight enabled={inputRecords.length === 0 && !results?.length}>
+          <Highlight enabled={!fileInput && !results?.length}>
             <UploadButton label="add data" onChange={handleUpload} />
           </Highlight>
         </div>
@@ -187,7 +267,7 @@ export function App() {
       </div>
       <div className="grow shrink">
         <TabGroup>
-          <div className="flex flex-row justify-between">
+          <div className="flex flex-row gap-4 items-stretch justify-between">
             <TabList>
               <Tab icon={<TableCellsIcon />}>table</Tab>
               <Tab icon={<ChartBarIcon />}>chart</Tab>
@@ -195,17 +275,32 @@ export function App() {
               <Tab icon={<CodeBracketIcon />}>generated</Tab>
               <Tab icon={<CodeBracketIcon />}>formatted</Tab>
             </TabList>
+            {resultsLimited && (
+              <Button
+                variant="quiet"
+                className="shrink-0"
+                onClick={() => {
+                  setResultsLimit(
+                    (resultsLimit) => resultsLimit + DEFAULT_RESULTS_LIMIT,
+                  );
+                  setResultsLimited(false);
+                }}
+                icon={<PlayIcon />}
+              >
+                load more
+              </Button>
+            )}
             {results && (
               <div className="shrink-0 flex flex-row gap-1 items-center">
-                <span className="font-black">
+                <span className="font-black tabular-nums">
                   {countFormatter.format(executionContext.recordsRead)}
                 </span>{" "}
-                records scanned
+                in
                 <ArrowRightIcon className="w-[1em]" />
-                <span className="font-black">
+                <span className="font-black tabular-nums">
                   {countFormatter.format(results.length)}
                 </span>{" "}
-                results out
+                out
               </div>
             )}
           </div>
@@ -240,17 +335,17 @@ export function App() {
             </TabPanel>
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">
-                {treeString ?? error}
+                {astString ?? error}
               </pre>
             </TabPanel>
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">
-                {code ?? error}
+                {compiledString ?? error}
               </pre>
             </TabPanel>
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">
-                {tree ? printAST(tree) : error}
+                {ast ? printAST(ast) : error}
               </pre>
             </TabPanel>
           </TabPanels>

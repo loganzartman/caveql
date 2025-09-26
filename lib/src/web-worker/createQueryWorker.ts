@@ -1,4 +1,4 @@
-import { AsyncEmitter } from "../AsyncEmitter";
+import { AsyncQueue } from "../AsyncQueue";
 import {
   compileQueryRaw,
   createExecutionContext,
@@ -34,7 +34,6 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
   // TODO: compile in a worker? most queries probably are not large.
   const source = compileQueryRaw(ast);
 
-  const max = 1000;
   const activeQueries = new Set<AsyncQueryHandle>();
 
   const query = (
@@ -45,8 +44,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
       type: "module",
     });
 
-    const bufferedRecords: Record<string, unknown>[] = [];
-    const newRecords = new AsyncEmitter<void>();
+    const bufferedRecords = new AsyncQueue<Record<string, unknown>>();
     let done = false;
 
     const contextHandlers = new Set<ContextHandler>();
@@ -61,10 +59,11 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
 
     const records = (async function* () {
       while (!done) {
-        if (!bufferedRecords.length) {
-          worker.postMessage(hostMessage({ type: "getRecords", max }));
-          await newRecords.wait();
-        }
+        worker.postMessage(
+          hostMessage({ type: "getRecords", maxCount: 10000, maxTimeMs: 250 }),
+        );
+        await bufferedRecords.wait();
+
         while (bufferedRecords.length) {
           // biome-ignore lint/style/noNonNullAssertion: length checked
           yield bufferedRecords.shift()!;
@@ -77,7 +76,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
 
     const cancel = () => {
       worker.terminate();
-      records.return();
+      bufferedRecords.unblock();
       activeQueries.delete(handle);
     };
     handle.cancel = cancel;
@@ -87,10 +86,9 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
       ({ data }: MessageEvent<WorkerMessage>) => {
         switch (data.type) {
           case "sendRecords":
-            Array.prototype.push.apply(bufferedRecords, data.records);
+            bufferedRecords.pushAll(data.records);
             contextHandlers.forEach((cb) => cb({ context: data.context }));
             done = data.done;
-            newRecords.emit();
             break;
           default:
             impossible(data.type);
@@ -105,6 +103,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
         input,
         context,
       }),
+      input.type === "stream" ? [input.stream] : [],
     );
 
     activeQueries.add(handle);
