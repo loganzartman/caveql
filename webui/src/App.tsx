@@ -14,7 +14,6 @@ import {
   formatFromExtension,
   formatJS,
   formatTree,
-  type Off,
   parseQuery,
   printAST,
 } from "caveql";
@@ -39,15 +38,140 @@ export function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [editorRef, setEditorRef] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const queryHandleRef = useRef<AsyncQueryHandle | null>(null);
 
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState<string>("");
+  const [fileInput, setFileInput] = useState<File[] | null>(null);
 
-  const handleSourceChange = useMemo(
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [ast, setAST] = useState<QueryAST | null>(null);
+  const [compiled, setCompiled] = useState<string | null>(null);
+  const [executionContext, setExecutionContext] = useState<ExecutionContext>(
+    createExecutionContext(),
+  );
+  const [results, setResults] = useState<Record<string, unknown>[] | null>(
+    null,
+  );
+
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
+
+  const countFormatter = useMemo(() => {
+    return new Intl.NumberFormat(undefined, {});
+  }, []);
+
+  const astString = useMemo(() => {
+    if (!ast) return null;
+    try {
+      return formatTree(ast);
+    } catch {
+      return null;
+    }
+  }, [ast]);
+
+  const compiledString = useMemo(() => {
+    if (!compiled) return null;
+    try {
+      return formatJS(compiled);
+    } catch {
+      return null;
+    }
+  }, [compiled]);
+
+  const updateQuery = useCallback(
+    (source: string, fileInput: File[] | null) => {
+      if (queryHandleRef.current) {
+        queryHandleRef.current.cancel();
+        queryHandleRef.current = null;
+      }
+
+      const context = createExecutionContext();
+      setResults([]);
+      setError(null);
+      setResultsLoading(true);
+      setAST(null);
+      setCompiled(null);
+      setExecutionContext(context);
+
+      let stop = false;
+      let intv: NodeJS.Timeout | undefined;
+
+      try {
+        const { ast } = parseQuery(source);
+        const worker = createQueryWorker(ast);
+
+        setAST(ast);
+        setCompiled(worker.source);
+
+        // TODO: multi-file
+        const file = fileInput?.[0];
+        let handle: AsyncQueryHandle;
+        if (file) {
+          handle = worker.query({
+            type: "stream",
+            format: formatFromExtension(file.name),
+            stream: file.stream(),
+          });
+        } else {
+          handle = worker.query({
+            type: "iterable",
+            value: [],
+          });
+        }
+        queryHandleRef.current = handle;
+
+        handle.onContext(({ context }) => setExecutionContext(context));
+
+        (async () => {
+          let buffer: Array<Record<string, unknown>> = [];
+
+          const flush = () => {
+            const b = buffer;
+            setResults((prev) => (prev ? [...prev, ...b] : [...b]));
+            buffer = [];
+          };
+
+          intv = setInterval(() => {
+            if (buffer.length > 0) {
+              flush();
+            }
+          }, 250);
+
+          for await (const record of handle.records) {
+            if (stop) {
+              break;
+            }
+            buffer.push(record);
+            if (buffer.length >= 100) {
+              flush();
+            }
+          }
+          setResultsLoading(false);
+        })().catch((error) => {
+          console.error(error);
+          setError(error instanceof Error ? error.message : String(error));
+        });
+      } catch (error) {
+        console.error(error);
+        setError(error instanceof Error ? error.message : String(error));
+      }
+
+      return () => {
+        stop = true;
+        if (intv) {
+          clearInterval(intv);
+        }
+      };
+    },
+    [],
+  );
+
+  const updateHash = useMemo(
     () =>
       debounce(
         (source: string) => {
           history.replaceState(undefined, "", `#${btoa(source)}`);
-          setSource(source);
         },
         { intervalMs: 500, leading: false },
       ),
@@ -56,124 +180,41 @@ export function App() {
 
   const updateSource = useCallback(
     (source: string) => {
-      if (!editorRef) return;
-      editorRef.setValue(source);
-      handleSourceChange(source);
+      updateHash(source);
+      setSource(source);
     },
-    [editorRef, handleSourceChange],
+    [updateHash],
   );
 
-  const [fileInput, setFileInput] = useState<File[] | null>(null);
-  const [chartType, setChartType] = useState<"bar" | "line">("bar");
   const [sort, setSort] = useSortQuery(source, updateSource);
+
+  const handleUpload = useCallback(
+    ({ files }: { files: FileList }) => {
+      const filesArray = Array.from(files);
+      setFileInput(filesArray);
+      updateQuery(source, filesArray);
+    },
+    [source, updateQuery],
+  );
+
+  const handleSourceChange = useCallback(
+    (source: string) => {
+      updateSource(source);
+      updateQuery(source, fileInput);
+    },
+    [updateSource, fileInput, updateQuery],
+  );
 
   useEffect(() => {
     if (!editorRef) return;
     try {
       const src = atob(window.location.hash.substring(1));
       editorRef.setValue(src);
-      setSource(src);
+      handleSourceChange(src);
     } catch {
       console.log("Failed to parse document hash");
     }
-  }, [editorRef]);
-
-  const countFormatter = useMemo(() => {
-    return new Intl.NumberFormat(undefined, {});
-  }, []);
-
-  const handleUpload = useCallback(({ files }: { files: FileList }) => {
-    setFileInput(Array.from(files));
-  }, []);
-
-  const [resultsLoading, setResultsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [tree, setTree] = useState<QueryAST | null>(null);
-  const [treeString, setTreeString] = useState<string | null>(null);
-  const [code, setCode] = useState<string | null>(null);
-  const [results, setResults] = useState<Record<string, unknown>[] | null>(
-    null,
-  );
-  const [executionContext, setExecutionContext] = useState<ExecutionContext>(
-    createExecutionContext(),
-  );
-
-  useEffect(() => {
-    let handle: AsyncQueryHandle | undefined;
-    let cleanupOnContext: Off | undefined;
-    let cancelled = false;
-    let flushTimer: number | undefined;
-
-    (async () => {
-      try {
-        const tree = parseQuery(source).ast;
-        setTree(tree);
-        setTreeString(formatTree(tree));
-
-        const context = createExecutionContext();
-        const queryWorker = createQueryWorker(tree);
-        setCode(formatJS(queryWorker.source));
-
-        // TODO: multi-file input
-        const file = fileInput?.[0];
-        if (!file) {
-          return;
-        }
-
-        handle = queryWorker.query(
-          {
-            type: "stream",
-            stream: file.stream(),
-            // TODO: customize parser settings
-            format: formatFromExtension(file.name),
-          },
-          context,
-        );
-
-        cleanupOnContext = handle.onContext(
-          debounce(
-            ({ context }) => {
-              setExecutionContext(context);
-            },
-            { intervalMs: 100 },
-          ),
-        );
-
-        setResults([]);
-        setResultsLoading(true);
-
-        let buffer: Record<string, unknown>[] = [];
-        const flush = () => {
-          if (!buffer.length) {
-            return;
-          }
-          setResults((prev) => (prev ? [...prev, ...buffer] : [...buffer]));
-          buffer = [];
-        };
-        flushTimer = window.setInterval(flush, 100);
-
-        for await (const record of handle.records) {
-          if (cancelled) break;
-          buffer.push(record);
-          if (buffer.length >= 250) flush();
-        }
-        flush();
-        setResultsLoading(false);
-      } catch (e) {
-        console.error(e);
-        setError(`Error: ${e instanceof Error ? e.message : String(e)}`);
-        setResults(null);
-        setResultsLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      if (flushTimer) window.clearInterval(flushTimer);
-      handle?.cancel();
-      cleanupOnContext?.();
-    };
-  }, [fileInput, source]);
+  }, [editorRef, handleSourceChange]);
 
   return (
     <div
@@ -247,17 +288,17 @@ export function App() {
             </TabPanel>
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">
-                {treeString ?? error}
+                {astString ?? error}
               </pre>
             </TabPanel>
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">
-                {code ?? error}
+                {compiledString ?? error}
               </pre>
             </TabPanel>
             <TabPanel>
               <pre className="text-wrap break-all overflow-auto">
-                {tree ? printAST(tree) : error}
+                {ast ? printAST(ast) : error}
               </pre>
             </TabPanel>
           </TabPanels>
