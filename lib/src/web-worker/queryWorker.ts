@@ -1,7 +1,7 @@
 import { bindCompiledQuery, type ExecutionContext } from "../compiler";
 import { readRecords } from "../data/readRecords";
 import { impossible } from "../impossible";
-import type { HostMessage } from "./message";
+import { type HostMessage, workerMessage } from "./message";
 
 let generator: AsyncIterable<Record<string, unknown>> | undefined;
 let context: ExecutionContext | undefined;
@@ -47,17 +47,21 @@ async function getRecords(data: Extract<HostMessage, { type: "getRecords" }>) {
     throw new Error("Internal error: query not started");
   }
 
-  let done = true;
   const records: Record<string, unknown>[] = [];
+
+  const it = generator[Symbol.asyncIterator]();
+  let result = await it.next();
   let i = 0;
-  for await (const result of generator) {
-    records.push(result);
+
+  while (!result.done && i < data.max) {
+    records.push(result.value);
+    result = await it.next();
     i++;
-    if (i >= data.max) {
-      done = false;
-      break;
-    }
   }
 
-  globalThis.postMessage({ type: "sendRecords", records, context, done });
+  const done = Boolean(result.done);
+
+  globalThis.postMessage(
+    workerMessage({ type: "sendRecords", records, context, done }),
+  );
 }
