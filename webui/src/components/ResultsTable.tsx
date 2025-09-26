@@ -8,6 +8,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { impossible } from "../impossible";
+import type { Arrayish, VirtualArray } from "../VirtualArray";
 import { ValView } from "./ValView";
 
 export type SortDirection = "asc" | "desc" | "none";
@@ -23,7 +24,7 @@ export function ResultsTable({
   sort,
   onSortChange,
 }: {
-  results: Record<string, unknown>[];
+  results: VirtualArray<Record<string, unknown>>;
   scrollRef: React.RefObject<HTMLElement | null>;
   sort?: SortMap;
   onSortChange?: SortChangeHandler;
@@ -34,13 +35,11 @@ export function ResultsTable({
     count: results.length,
     estimateSize: () => 32,
     getScrollElement: () => scrollRef.current,
+    getItemKey: (i) => i,
     scrollMargin: listRef?.offsetTop ?? 0,
   });
 
-  const cols = useMemo(
-    () => [...new Set(Object.values(results).flatMap(Object.keys))],
-    [results],
-  );
+  const cols = useMemo(() => Array.from(results.fieldSet), [results]);
 
   return (
     <div ref={setListRef} data-testid="list-el">
@@ -100,7 +99,7 @@ export function ResultsTable({
                 key={col}
                 className="flex-1 px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10"
               >
-                <ValView val={results[item.index][col]} />
+                <ValView val={results.at(item.index)?.[col]} />
               </div>
             ))}
           </div>

@@ -33,6 +33,7 @@ import { debounce } from "./debounce";
 import { Editor } from "./Editor";
 import type { monaco } from "./monaco";
 import { useSortQuery } from "./useSortQuery";
+import { VirtualArray } from "./VirtualArray";
 
 export function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -50,8 +51,8 @@ export function App() {
   const [executionContext, setExecutionContext] = useState<ExecutionContext>(
     createExecutionContext(),
   );
-  const [results, setResults] = useState<Record<string, unknown>[] | null>(
-    null,
+  const [results, setResults] = useState<VirtualArray<Record<string, unknown>>>(
+    new VirtualArray(),
   );
 
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
@@ -80,7 +81,7 @@ export function App() {
 
   useEffect(() => {
     const context = createExecutionContext();
-    setResults([]);
+    setResults((r) => r.clear());
     setError(null);
     setResultsLoading(true);
     setAST(null);
@@ -89,6 +90,7 @@ export function App() {
 
     let handle: AsyncQueryHandle | undefined;
     let stop = false;
+    let timeout: NodeJS.Timeout | undefined;
     let intv: NodeJS.Timeout | undefined;
 
     try {
@@ -120,26 +122,30 @@ export function App() {
 
         const flush = () => {
           const b = buffer;
-          setResults((prev) => (prev ? [...prev, ...b] : [...b]));
+          setResults((r) => r.concat(b));
           buffer = [];
         };
 
+        // initial fast flush
+        timeout = setTimeout(() => {
+          flush();
+        }, 100);
+
+        // regular intervaled flush
         intv = setInterval(() => {
           if (buffer.length > 0) {
             flush();
           }
-        }, 250);
+        }, 500);
 
         for await (const record of handle.records) {
           if (stop) {
             break;
           }
           buffer.push(record);
-          if (buffer.length >= 100) {
-            flush();
-          }
         }
         flush();
+
         setResultsLoading(false);
       })().catch((error) => {
         console.error(error);
@@ -153,6 +159,9 @@ export function App() {
     return () => {
       handle?.cancel();
       stop = true;
+      if (timeout) {
+        clearTimeout(timeout);
+      }
       if (intv) {
         clearInterval(intv);
       }
