@@ -122,8 +122,8 @@ export function App() {
 
         const flush = () => {
           const b = buffer;
-          setResults((r) => r.concat(b));
           buffer = [];
+          setResults((r) => r.concat(b));
         };
 
         // initial fast flush
