@@ -11,7 +11,7 @@ export class VirtualArray<T extends object> implements Arrayish<T> {
     this._items = items ?? [];
     this._fieldSet =
       fieldSet ??
-      new Set(this._items.flatMap((item) => Object.keys(item as any)));
+      new Set(this._items.flatMap((item) => Object.keys(item)));
   }
 
   get length() {
