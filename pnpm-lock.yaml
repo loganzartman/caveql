@@ -69,6 +69,9 @@ importers:
       monaco-editor:
         specifier: ^0.52.2
         version: 0.52.2
+      udsv:
+        specifier: ^0.7.3
+        version: 0.7.3
 
   webui:
     dependencies:
@@ -1919,6 +1922,9 @@ packages:
     resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  udsv@0.7.3:
+    resolution: {integrity: sha512-RLDImCO8M0DQmMi9V9YRjoecAc8+GiylpZico6ZuibPvRGRj3LGI1YPYLzBrnQTSax0metXnDoBFg/1zSgGIhg==}
 
   undici-types@7.8.0:
     resolution: {integrity: sha512-9UJ2xGDvQ43tYyVMpuHlsgApydB8ZKfVYTsLDhXkFL/6gfkp+U8xTGdh8pMJv1SpZna0zxG1DwsKZsreLbXBxw==}
@@ -3942,6 +3948,8 @@ snapshots:
   type-fest@0.20.2: {}
 
   typescript@5.8.3: {}
+
+  udsv@0.7.3: {}
 
   undici-types@7.8.0: {}
 
