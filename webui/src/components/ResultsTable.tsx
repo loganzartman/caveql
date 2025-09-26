@@ -8,7 +8,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { impossible } from "../impossible";
-import type { Arrayish, VirtualArray } from "../VirtualArray";
+import type { VirtualArray } from "../VirtualArray";
 import { ValView } from "./ValView";
 
 export type SortDirection = "asc" | "desc" | "none";

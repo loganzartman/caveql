@@ -1,17 +1,11 @@
-export interface Arrayish<T> {
-  length: number;
-  at(index: number): T | undefined;
-}
-
-export class VirtualArray<T extends object> implements Arrayish<T> {
+export class VirtualArray<T extends object> {
   private _items: T[];
   private _fieldSet: Set<string>;
 
   constructor(items?: Array<T>, fieldSet?: Set<string>) {
     this._items = items ?? [];
     this._fieldSet =
-      fieldSet ??
-      new Set(this._items.flatMap((item) => Object.keys(item)));
+      fieldSet ?? new Set(this._items.flatMap((item) => Object.keys(item)));
   }
 
   get length() {
