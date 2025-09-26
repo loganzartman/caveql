@@ -86,7 +86,7 @@ export function ResultsTable({
             data-index={item.index}
             ref={virtualizer.measureElement}
             className={clsx(
-              "flex flex-row absolute top-0 left-0 w-full hover:ring-1 hover:ring-amber-900 hover:z-10",
+              "flex flex-row absolute top-0 left-0 w-full hover:ring-1 hover:ring-amber-500 hover:z-10",
               item.index % 2 ? "bg-stone-800" : "bg-stone-900",
             )}
             style={{
@@ -96,7 +96,10 @@ export function ResultsTable({
             }}
           >
             {cols.map((col) => (
-              <div key={col} className="flex-1 px-3 py-1 hover:bg-amber-900/50">
+              <div
+                key={col}
+                className="flex-1 px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10"
+              >
                 <ValView val={results[item.index][col]} />
               </div>
             ))}
