@@ -215,16 +215,6 @@ export function App() {
     [],
   );
 
-  const updateSource = useCallback(
-    (source: string) => {
-      updateHash(source);
-      setSource(source);
-    },
-    [updateHash],
-  );
-
-  const [sort, setSort] = useSortQuery(source, updateSource);
-
   const handleUpload = useCallback(({ files }: { files: FileList }) => {
     const filesArray = Array.from(files);
     setFileInput(filesArray);
@@ -232,10 +222,21 @@ export function App() {
 
   const handleSourceChange = useCallback(
     (source: string) => {
-      updateSource(source);
+      updateHash(source);
+      setSource(source);
     },
-    [updateSource],
+    [updateHash],
   );
+
+  const updateSource = useCallback(
+    (source: string) => {
+      editorRef?.setValue(source);
+      handleSourceChange(source);
+    },
+    [editorRef, handleSourceChange],
+  );
+
+  const [sort, setSort] = useSortQuery(source, updateSource);
 
   useEffect(() => {
     if (!editorRef) return;
