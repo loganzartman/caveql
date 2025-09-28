@@ -34,6 +34,7 @@ export function ResultsTable({
     getScrollElement: () => scrollRef,
     estimateSize: () => 32,
     getItemKey: (i) => i,
+    overscan: 20,
   });
 
   const cols = useMemo(() => Array.from(results.fieldSet), [results]);
@@ -44,7 +45,7 @@ export function ResultsTable({
       className="grow-1 shrink-1 basis-0 relative overflow-auto"
     >
       <div style={{ height: `${virtualizer.getTotalSize()}px` }}>
-        <table className="w-full table-auto">
+        <table className="w-full">
           {results.length === 0 && (
             <tbody>
               <tr className="w-full flex flex-row items-center justify-center">
