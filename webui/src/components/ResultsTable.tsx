@@ -49,6 +49,57 @@ export function ResultsTable({
 
   const cols = useMemo(() => Array.from(results.fieldSet), [results]);
 
+  // Sample a few rows to estimate content width
+  const columnWidthHints = useMemo(() => {
+    const hints: Record<string, number> = {};
+    const sampleSize = Math.min(100, results.length);
+
+    cols.forEach(col => {
+      let maxLength = col.length; // Start with header length
+      let hasLongContent = false;
+
+      for (let i = 0; i < sampleSize; i++) {
+        const value = results.at(i)?.[col];
+        const strValue = String(value ?? '');
+
+        // Check for different content types
+        if (typeof value === 'object' && value !== null) {
+          // Objects/arrays might need more space
+          hasLongContent = true;
+          maxLength = Math.max(maxLength, 30); // Baseline for complex types
+        } else {
+          maxLength = Math.max(maxLength, strValue.length);
+        }
+
+        // Early exit if we found very long content
+        if (maxLength > 100) {
+          hasLongContent = true;
+          break;
+        }
+      }
+
+      // Calculate width with different strategies
+      let estimatedWidth: number;
+      if (hasLongContent) {
+        // For long content, use a moderate default with max constraint
+        estimatedWidth = 250;
+      } else if (maxLength <= 10) {
+        // Short content - compact width
+        estimatedWidth = Math.max(80, maxLength * 10);
+      } else if (maxLength <= 30) {
+        // Medium content - balanced width
+        estimatedWidth = Math.max(100, maxLength * 8);
+      } else {
+        // Longer content - use conservative multiplier
+        estimatedWidth = Math.max(150, Math.min(maxLength * 6, 400));
+      }
+
+      hints[col] = estimatedWidth;
+    });
+
+    return hints;
+  }, [cols, results]);
+
   // Create columns definition for TanStack Table
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(
     () =>
@@ -57,9 +108,11 @@ export function ResultsTable({
         accessorFn: (row) => row[col],
         header: col,
         cell: (info) => <ValView val={info.getValue()} />,
-        size: undefined, // Let columns auto-size
+        size: columnWidthHints[col], // Suggested size based on content
+        minSize: 60, // Minimum column width
+        maxSize: 500, // Maximum column width
       })),
-    [cols]
+    [cols, columnWidthHints]
   );
 
   // Convert sort to TanStack Table sorting state
@@ -107,6 +160,8 @@ export function ResultsTable({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     manualSorting: true, // We're handling sorting externally
+    columnResizeMode: 'onChange',
+    enableColumnResizing: true, // Allow users to resize columns
   });
 
   const { rows } = table.getRowModel();
@@ -147,7 +202,7 @@ export function ResultsTable({
       className="grow-1 shrink-1 basis-0 relative overflow-auto"
     >
       <div className="min-w-full inline-block">
-        <table className="w-full table-auto">
+        <table className="w-full table-fixed">
           <thead
             className="text-red-300 font-mono font-bold sticky top-0 z-20"
             style={{
@@ -160,27 +215,44 @@ export function ResultsTable({
                 {headerGroup.headers.map((header) => {
                   const currentDirection = sort?.[header.id] ?? "none";
                   return (
-                    <Button
+                    <th
                       key={header.id}
-                      as="th"
-                      className="px-3 py-1 cursor-pointer text-left"
-                      onClick={() => {
-                        const newDirection =
-                          nextSortDirection(currentDirection);
-                        onSortChange?.({
-                          field: header.id,
-                          direction: newDirection,
-                        });
+                      className="relative"
+                      style={{
+                        width: header.getSize(),
+                        minWidth: header.column.columnDef.minSize,
+                        maxWidth: header.column.columnDef.maxSize,
                       }}
                     >
-                      <div className="flex flex-row gap-1 items-center">
-                        <SortIcon direction={currentDirection} />
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                      </div>
-                    </Button>
+                      <Button
+                        className="px-3 py-1 cursor-pointer text-left w-full truncate"
+                        onClick={() => {
+                          const newDirection =
+                            nextSortDirection(currentDirection);
+                          onSortChange?.({
+                            field: header.id,
+                            direction: newDirection,
+                          });
+                        }}
+                      >
+                        <div className="flex flex-row gap-1 items-center">
+                          <SortIcon direction={currentDirection} />
+                          <span className="truncate">
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          </span>
+                        </div>
+                      </Button>
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className="absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-amber-500/50 bg-stone-600/20"
+                        />
+                      )}
+                    </th>
                   );
                 })}
               </tr>
@@ -204,7 +276,13 @@ export function ResultsTable({
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10"
+                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-words"
+                      style={{
+                        width: cell.column.getSize(),
+                        minWidth: cell.column.columnDef.minSize,
+                        maxWidth: cell.column.columnDef.maxSize,
+                        wordBreak: 'break-word',
+                      }}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
