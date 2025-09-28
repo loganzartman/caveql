@@ -6,7 +6,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { impossible } from "../impossible";
 import type { VirtualArray } from "../VirtualArray";
 import { ValView } from "./ValView";
@@ -20,90 +20,91 @@ export type SortChangeHandler = (params: {
 
 export function ResultsTable({
   results,
-  scrollRef,
   sort,
   onSortChange,
 }: {
   results: VirtualArray<Record<string, unknown>>;
-  scrollRef: React.RefObject<HTMLElement | null>;
   sort?: SortMap;
   onSortChange?: SortChangeHandler;
 }) {
-  const [listRef, setListRef] = useState<HTMLDivElement | null>(null);
+  const [scrollRef, setScrollRef] = useState<HTMLDivElement | null>(null);
 
   const virtualizer = useVirtualizer({
     count: results.length,
+    getScrollElement: () => scrollRef,
     estimateSize: () => 32,
-    getScrollElement: () => scrollRef.current,
     getItemKey: (i) => i,
-    scrollMargin: listRef?.offsetTop ?? 0,
   });
 
   const cols = useMemo(() => Array.from(results.fieldSet), [results]);
 
   return (
-    <div ref={setListRef} data-testid="list-el">
-      {results.length === 0 && (
-        <div className="w-full flex flex-row items-center justify-center">
-          <div>No results.</div>
-        </div>
-      )}
-      <div
-        className="sticky z-10 flex flex-row -top-4 text-red-300 font-mono font-bold"
-        style={{
-          background:
-            "color-mix(in srgb, var(--color-red-500), var(--color-stone-800) 90%)",
-        }}
-      >
-        {cols.map((col) => (
-          <Button
-            key={col}
-            className="flex-1 px-3 py-1 gap-1 flex flex-row items-center cursor-pointer"
-            onClick={() => {
-              const currentDirection = sort?.[col] ?? "none";
-              const newDirection = nextSortDirection(currentDirection);
-              onSortChange?.({
-                field: col,
-                direction: newDirection,
-              });
-            }}
-          >
-            <SortIcon direction={sort?.[col]} />
-            {col}
-          </Button>
-        ))}
-      </div>
-      <div
-        className="relative w-full flex flex-col"
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-        }}
-      >
-        {virtualizer.getVirtualItems().map((item) => (
-          <div
-            key={item.key}
-            data-index={item.index}
-            ref={virtualizer.measureElement}
-            className={clsx(
-              "flex flex-row absolute top-0 left-0 w-full hover:ring-1 hover:ring-amber-500 hover:z-10",
-              item.index % 2 ? "bg-stone-800" : "bg-stone-900",
-            )}
+    <div
+      ref={setScrollRef}
+      className="grow-1 shrink-1 basis-0 relative overflow-auto"
+    >
+      <div style={{ height: `${virtualizer.getTotalSize()}px` }}>
+        <table className="w-full table-auto">
+          {results.length === 0 && (
+            <tbody>
+              <tr className="w-full flex flex-row items-center justify-center">
+                <td>No results.</td>
+              </tr>
+            </tbody>
+          )}
+          <thead
+            className="text-red-300 font-mono font-bold"
             style={{
-              transform: `translateY(${
-                item.start - virtualizer.options.scrollMargin
-              }px)`,
+              background:
+                "color-mix(in srgb, var(--color-red-500), var(--color-stone-800) 90%)",
             }}
           >
-            {cols.map((col) => (
-              <div
-                key={col}
-                className="flex-1 px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10"
+            <tr>
+              {cols.map((col) => (
+                <Button
+                  key={col}
+                  as="th"
+                  className="px-3 py-1 cursor-pointer"
+                  onClick={() => {
+                    const currentDirection = sort?.[col] ?? "none";
+                    const newDirection = nextSortDirection(currentDirection);
+                    onSortChange?.({
+                      field: col,
+                      direction: newDirection,
+                    });
+                  }}
+                >
+                  <div className="flex flex-row gap-1 items-center">
+                    <SortIcon direction={sort?.[col]} />
+                    {col}
+                  </div>
+                </Button>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="relative">
+            {virtualizer.getVirtualItems().map((item, index) => (
+              <tr
+                key={item.key}
+                data-index={item.index}
+                className="hover:ring-1 hover:ring-amber-500 hover:z-10"
+                style={{
+                  height: `${item.size}px`,
+                  transform: `translateY(${item.start - index * item.size}px)`,
+                }}
               >
-                <ValView val={results.at(item.index)?.[col]} />
-              </div>
+                {cols.map((col) => (
+                  <td
+                    key={col}
+                    className="flex-1 px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10"
+                  >
+                    <ValView val={results.at(item.index)?.[col]} />
+                  </td>
+                ))}
+              </tr>
             ))}
-          </div>
-        ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

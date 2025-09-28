@@ -254,7 +254,7 @@ export function App() {
       ref={scrollRef}
       className="flex flex-col w-full h-full gap-4 p-4 overflow-auto"
     >
-      <div className="flex flex-row justify-between">
+      <div className="shrink-0 flex flex-row justify-between">
         <CaveqlSvg />
         <div className="flex flex-row gap-4">
           <Highlight enabled={!fileInput && !results?.length}>
@@ -262,96 +262,91 @@ export function App() {
           </Highlight>
         </div>
       </div>
-      <div className="flex flex-col">
+      <div className="shrink-0 flex flex-col">
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
         <LoadingStrip isLoading={resultsLoading} />
       </div>
-      <div className="grow shrink">
-        <TabGroup>
-          <div className="flex flex-row gap-4 items-stretch justify-between">
-            <TabList>
-              <Tab icon={<TableCellsIcon />}>table</Tab>
-              <Tab icon={<ChartBarIcon />}>chart</Tab>
-              <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
-              <Tab icon={<CodeBracketIcon />}>generated</Tab>
-              <Tab icon={<CodeBracketIcon />}>formatted</Tab>
-            </TabList>
-            {resultsLimited && (
-              <Button
-                variant="quiet"
-                className="shrink-0"
-                onClick={() => {
-                  setResultsLimit(
-                    (resultsLimit) => resultsLimit + DEFAULT_RESULTS_LIMIT,
-                  );
-                  setResultsLimited(false);
-                }}
-                icon={<PlayIcon />}
-              >
-                load more
-              </Button>
-            )}
+      <TabGroup className="flex-1 flex flex-col">
+        <div className="shrink-0 flex flex-row gap-4 items-stretch justify-between">
+          <TabList>
+            <Tab icon={<TableCellsIcon />}>table</Tab>
+            <Tab icon={<ChartBarIcon />}>chart</Tab>
+            <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
+            <Tab icon={<CodeBracketIcon />}>generated</Tab>
+            <Tab icon={<CodeBracketIcon />}>formatted</Tab>
+          </TabList>
+          {resultsLimited && (
+            <Button
+              variant="quiet"
+              className="shrink-0"
+              onClick={() => {
+                setResultsLimit(
+                  (resultsLimit) => resultsLimit + DEFAULT_RESULTS_LIMIT,
+                );
+                setResultsLimited(false);
+              }}
+              icon={<PlayIcon />}
+            >
+              load more
+            </Button>
+          )}
+          {results && (
+            <div className="shrink-0 flex flex-row gap-1 items-center">
+              <span className="font-black tabular-nums">
+                {countFormatter.format(executionContext.recordsRead)}
+              </span>{" "}
+              in
+              <ArrowRightIcon className="w-[1em]" />
+              <span className="font-black tabular-nums">
+                {countFormatter.format(results.length)}
+              </span>{" "}
+              out
+            </div>
+          )}
+        </div>
+        <TabPanels>
+          <TabPanel>
             {results && (
-              <div className="shrink-0 flex flex-row gap-1 items-center">
-                <span className="font-black tabular-nums">
-                  {countFormatter.format(executionContext.recordsRead)}
-                </span>{" "}
-                in
-                <ArrowRightIcon className="w-[1em]" />
-                <span className="font-black tabular-nums">
-                  {countFormatter.format(results.length)}
-                </span>{" "}
-                out
+              <ResultsTable
+                results={results}
+                sort={sort}
+                onSortChange={setSort}
+              />
+            )}
+            {resultsLoading && (
+              <div className="flex flex-col items-center justify-center h-full">
+                <span>Loading results...</span>
               </div>
             )}
-          </div>
-          <TabPanels>
-            <TabPanel>
-              {results && (
-                <ResultsTable
-                  results={results}
-                  scrollRef={scrollRef}
-                  sort={sort}
-                  onSortChange={setSort}
-                />
-              )}
-              {resultsLoading && (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <span>Loading results...</span>
-                </div>
-              )}
-            </TabPanel>
-            <TabPanel>
-              <div className="flex flex-col h-full">
-                <ChartTypeSelector
-                  chartType={chartType}
-                  onChange={setChartType}
-                />
-                <div className="grow">
-                  {results && (
-                    <ResultsChart type={chartType} results={results} />
-                  )}
-                </div>
+          </TabPanel>
+          <TabPanel>
+            <div className="flex flex-col h-full">
+              <ChartTypeSelector
+                chartType={chartType}
+                onChange={setChartType}
+              />
+              <div className="grow">
+                {results && <ResultsChart type={chartType} results={results} />}
               </div>
-            </TabPanel>
-            <TabPanel>
-              <pre className="text-wrap break-all overflow-auto">
-                {astString ?? error}
-              </pre>
-            </TabPanel>
-            <TabPanel>
-              <pre className="text-wrap break-all overflow-auto">
-                {compiledString ?? error}
-              </pre>
-            </TabPanel>
-            <TabPanel>
-              <pre className="text-wrap break-all overflow-auto">
-                {ast ? printAST(ast) : error}
-              </pre>
-            </TabPanel>
-          </TabPanels>
-        </TabGroup>
-      </div>
+            </div>
+          </TabPanel>
+          <TabPanel>
+            <pre className="text-wrap break-all overflow-auto">
+              {astString ?? error}
+            </pre>
+          </TabPanel>
+          <TabPanel>
+            <pre className="text-wrap break-all overflow-auto">
+              {compiledString ?? error}
+            </pre>
+          </TabPanel>
+          <TabPanel>
+            <pre className="text-wrap break-all overflow-auto">
+              {ast ? printAST(ast) : error}
+            </pre>
+          </TabPanel>
+        </TabPanels>
+      </TabGroup>
     </div>
   );
 }
