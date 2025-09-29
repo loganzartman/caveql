@@ -60,6 +60,10 @@
   }
 }
 
+html {
+  color-scheme: dark;
+}
+
 .highlight-bg {
   @apply motion-safe:duration-[2s];
   animation: rotate-conic var(--tw-duration) linear infinite;
