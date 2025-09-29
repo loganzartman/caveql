@@ -5,16 +5,16 @@ import {
   ChevronUpIcon,
 } from "@heroicons/react/20/solid";
 import {
-  useReactTable,
+  type ColumnDef,
+  flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  flexRender,
-  type ColumnDef,
   type SortingState,
+  useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { useMemo, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { impossible } from "../impossible";
 import type { VirtualArray } from "../VirtualArray";
 import { ValView } from "./ValView";
@@ -49,56 +49,16 @@ export function ResultsTable({
 
   const cols = useMemo(() => Array.from(results.fieldSet), [results]);
 
-  // Sample a few rows to estimate content width
+  // Simple column width estimation based on header length
   const columnWidthHints = useMemo(() => {
     const hints: Record<string, number> = {};
-    const sampleSize = Math.min(100, results.length);
-
-    cols.forEach(col => {
-      let maxLength = col.length; // Start with header length
-      let hasLongContent = false;
-
-      for (let i = 0; i < sampleSize; i++) {
-        const value = results.at(i)?.[col];
-        const strValue = String(value ?? '');
-
-        // Check for different content types
-        if (typeof value === 'object' && value !== null) {
-          // Objects/arrays might need more space
-          hasLongContent = true;
-          maxLength = Math.max(maxLength, 30); // Baseline for complex types
-        } else {
-          maxLength = Math.max(maxLength, strValue.length);
-        }
-
-        // Early exit if we found very long content
-        if (maxLength > 100) {
-          hasLongContent = true;
-          break;
-        }
-      }
-
-      // Calculate width with different strategies
-      let estimatedWidth: number;
-      if (hasLongContent) {
-        // For long content, use a moderate default with max constraint
-        estimatedWidth = 250;
-      } else if (maxLength <= 10) {
-        // Short content - compact width
-        estimatedWidth = Math.max(80, maxLength * 10);
-      } else if (maxLength <= 30) {
-        // Medium content - balanced width
-        estimatedWidth = Math.max(100, maxLength * 8);
-      } else {
-        // Longer content - use conservative multiplier
-        estimatedWidth = Math.max(150, Math.min(maxLength * 6, 400));
-      }
-
-      hints[col] = estimatedWidth;
+    cols.forEach((col) => {
+      // Base width on column name length, with sensible defaults
+      const baseWidth = col.length * 10;
+      hints[col] = Math.min(300, Math.max(100, baseWidth));
     });
-
     return hints;
-  }, [cols, results]);
+  }, [cols]);
 
   // Create columns definition for TanStack Table
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(
@@ -112,7 +72,7 @@ export function ResultsTable({
         minSize: 60, // Minimum column width
         maxSize: 500, // Maximum column width
       })),
-    [cols, columnWidthHints]
+    [cols, columnWidthHints],
   );
 
   // Convert sort to TanStack Table sorting state
@@ -160,7 +120,7 @@ export function ResultsTable({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     manualSorting: true, // We're handling sorting externally
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
     enableColumnResizing: true, // Allow users to resize columns
   });
 
@@ -226,6 +186,7 @@ export function ResultsTable({
                     >
                       <Button
                         className="px-3 py-1 cursor-pointer text-left w-full truncate"
+                        title={header.id}
                         onClick={() => {
                           const newDirection =
                             nextSortDirection(currentDirection);
@@ -237,19 +198,24 @@ export function ResultsTable({
                       >
                         <div className="flex flex-row gap-1 items-center">
                           <SortIcon direction={currentDirection} />
-                          <span className="truncate">
+                          <span className="truncate" title={header.id}>
                             {flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                           </span>
                         </div>
                       </Button>
                       {header.column.getCanResize() && (
                         <div
+                          role="button"
+                          tabIndex={0}
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
-                          className="absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-amber-500/50 bg-stone-600/20"
+                          className={clsx(
+                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                            header.column.getIsResizing() && "bg-amber-500/50",
+                          )}
                         />
                       )}
                     </th>
@@ -281,12 +247,12 @@ export function ResultsTable({
                         width: cell.column.getSize(),
                         minWidth: cell.column.columnDef.minSize,
                         maxWidth: cell.column.columnDef.maxSize,
-                        wordBreak: 'break-word',
+                        wordBreak: "break-word",
                       }}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </td>
                   ))}
@@ -307,13 +273,13 @@ export function ResultsTable({
 
 function SortIcon({ direction }: { direction?: SortDirection }) {
   if (direction === "asc") {
-    return <ChevronUpIcon className="w-[1em]" />;
+    return <ChevronUpIcon className="shrink-0 w-[1em]" />;
   }
   if (direction === "desc") {
-    return <ChevronDownIcon className="w-[1em]" />;
+    return <ChevronDownIcon className="shrink-0 w-[1em]" />;
   }
   if (direction === "none" || direction === undefined) {
-    return <ChevronUpDownIcon className="w-[1em] opacity-50" />;
+    return <ChevronUpDownIcon className="shrink-0 w-[1em] opacity-50" />;
   }
   impossible(direction);
 }
