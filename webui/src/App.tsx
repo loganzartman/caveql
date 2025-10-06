@@ -57,7 +57,7 @@ export function App() {
     createExecutionContext(),
   );
   const [results, setResults] = useState<VirtualArray<Record<string, unknown>>>(
-    new VirtualArray(),
+    VirtualArray.create(),
   );
   const resultsRef = useRef(results);
   resultsRef.current = results;
@@ -308,7 +308,8 @@ export function App() {
           <TabPanel>
             {results && (
               <ResultsTable
-                results={results}
+                results={results.items}
+                fieldSet={results.fieldSet}
                 sort={sort}
                 onSortChange={setSort}
               />

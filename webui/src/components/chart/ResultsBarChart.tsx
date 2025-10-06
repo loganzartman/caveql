@@ -19,7 +19,7 @@ export function ResultsBarChart({
 }: {
   results: VirtualArray<Record<string, unknown>>;
 }) {
-  const head = useMemo(() => results.head(MAX_COUNT), [results]);
+  const head = useMemo(() => results.items.slice(0, MAX_COUNT), [results]);
   const keys = useMemo(() => Array.from(results.fieldSet), [results]);
   const xAxisKey = useMemo(() => keys[0], [keys]);
   const barKeys = useMemo(() => keys.slice(1), [keys]);

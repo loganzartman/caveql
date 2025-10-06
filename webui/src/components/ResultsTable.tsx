@@ -8,15 +8,12 @@ import {
   type ColumnDef,
   flexRender,
   getCoreRowModel,
-  getSortedRowModel,
-  type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { impossible } from "../impossible";
-import type { VirtualArray } from "../VirtualArray";
 import { ValView } from "./ValView";
 
 export type SortDirection = "asc" | "desc" | "none";
@@ -28,115 +25,48 @@ export type SortChangeHandler = (params: {
 
 export function ResultsTable({
   results,
+  fieldSet,
   sort,
   onSortChange,
 }: {
-  results: VirtualArray<Record<string, unknown>>;
+  results: ReadonlyArray<Record<string, unknown>>;
+  fieldSet: ReadonlySet<string>;
   sort?: SortMap;
   onSortChange?: SortChangeHandler;
 }) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // Convert results to array for TanStack Table
-  const data = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < results.length; i++) {
-      const row = results.at(i);
-      if (row) arr.push(row);
-    }
-    return arr;
-  }, [results]);
-
-  const cols = useMemo(() => Array.from(results.fieldSet), [results]);
-
-  // Simple column width estimation based on header length
-  const columnWidthHints = useMemo(() => {
-    const hints: Record<string, number> = {};
-    cols.forEach((col) => {
-      // Base width on column name length, with sensible defaults
-      const baseWidth = col.length * 10;
-      hints[col] = Math.min(300, Math.max(100, baseWidth));
-    });
-    return hints;
-  }, [cols]);
-
   // Create columns definition for TanStack Table
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(
     () =>
-      cols.map((col) => ({
+      Array.from(fieldSet).map((col) => ({
         id: col,
         accessorFn: (row) => row[col],
         header: col,
         cell: (info) => <ValView val={info.getValue()} />,
-        size: columnWidthHints[col], // Suggested size based on content
-        minSize: 60, // Minimum column width
-        maxSize: 500, // Maximum column width
+        minSize: 60,
+        maxSize: 500,
       })),
-    [cols, columnWidthHints],
+    [fieldSet],
   );
 
-  // Convert sort to TanStack Table sorting state
-  const sorting = useMemo<SortingState>(() => {
-    if (!sort) return [];
-    return Object.entries(sort)
-      .filter(([_, dir]) => dir !== "none")
-      .map(([id, dir]) => ({
-        id,
-        desc: dir === "desc",
-      }));
-  }, [sort]);
-
   const table = useReactTable({
-    data,
+    data: results as Array<Record<string, unknown>>,
     columns,
-    state: {
-      sorting,
-    },
-    onSortingChange: (updaterOrValue) => {
-      if (!onSortChange) return;
-      const newSorting =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(sorting)
-          : updaterOrValue;
-
-      // Convert back to our sort format
-      if (newSorting.length === 0) {
-        // Clear all sorts
-        cols.forEach((col) => {
-          if (sort?.[col] && sort[col] !== "none") {
-            onSortChange({ field: col, direction: "none" });
-          }
-        });
-      } else {
-        const sortItem = newSorting[0];
-        if (sortItem) {
-          onSortChange({
-            field: sortItem.id,
-            direction: sortItem.desc ? "desc" : "asc",
-          });
-        }
-      }
-    },
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    manualSorting: true, // We're handling sorting externally
+    manualSorting: true,
     columnResizeMode: "onChange",
-    enableColumnResizing: true, // Allow users to resize columns
+    enableColumnResizing: true,
   });
 
   const { rows } = table.getRowModel();
 
-  // Setup virtualizer with dynamic row heights
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 35, // Initial estimate
+    estimateSize: () => 35, // initial estimate
     overscan: 10,
-    measureElement:
-      typeof window !== "undefined" &&
-      navigator.userAgent.indexOf("Firefox") === -1
-        ? (element) => element?.getBoundingClientRect().height
-        : undefined,
+    measureElement: (element) => element?.getBoundingClientRect().height,
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
