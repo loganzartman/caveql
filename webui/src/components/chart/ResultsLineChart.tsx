@@ -40,8 +40,9 @@ export function ResultsLineChart({
             payload.length && (
               <div className="flex flex-col bg-stone-800 p-2 ring-2 ring-amber-400/50">
                 {Object.entries(payload[0].payload).map(([k, v]) => (
-                  <div key={k}>
-                    {k}: <ValView val={v} />
+                  <div key={k} className="flex flex-row gap-2">
+                    <div>{k}:</div>
+                    <ValView val={v} />
                   </div>
                 ))}
               </div>

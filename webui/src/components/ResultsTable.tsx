@@ -64,7 +64,7 @@ export function ResultsTable({
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 35, // initial estimate
+    estimateSize: () => 32, // initial estimate
     overscan: 10,
     measureElement: (element) => element?.getBoundingClientRect().height,
   });
@@ -143,8 +143,8 @@ export function ResultsTable({
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
                           className={clsx(
-                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
-                            header.column.getIsResizing() && "bg-amber-500/50",
+                            "absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none touch-none bg-red-300/20 hover:bg-red-300/50",
+                            header.column.getIsResizing() && "bg-red-300/50",
                           )}
                         />
                       )}
@@ -167,7 +167,7 @@ export function ResultsTable({
                   key={row.id}
                   ref={rowVirtualizer.measureElement}
                   data-index={virtualRow.index}
-                  className="hover:ring-1 hover:ring-amber-500 hover:z-10 relative"
+                  className="hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td

@@ -9,16 +9,20 @@ const formatter = new Intl.NumberFormat(undefined, {});
 
 export function ValView({ val }: { val: unknown }) {
   if (val === null || val === undefined) {
-    return <span>{String(val)}</span>;
+    return <div className="grow-1">{String(val)}</div>;
   }
   if (typeof val === "string") {
-    return <span className="text-stone-200">{val}</span>;
+    return <div className="grow-1 text-stone-200">{val}</div>;
   }
   if (typeof val === "number" || typeof val === "bigint") {
-    return <span className="text-purple-300">{formatter.format(val)}</span>;
+    return (
+      <div className="grow-1 text-purple-300 tabular-nums text-right">
+        {formatter.format(val)}
+      </div>
+    );
   }
   if (typeof val === "boolean") {
-    return <span className="text-red-300">{String(val)}</span>;
+    return <div className="grow-1 text-red-300">{String(val)}</div>;
   }
   if (typeof val !== "object") {
     throw new Error(`Unsupported type: ${typeof val}`);
@@ -28,7 +32,7 @@ export function ValView({ val }: { val: unknown }) {
 
 function ObjectView({ val }: { val: object }) {
   return (
-    <Disclosure as="div" className="flex flex-col gap-1 font-mono">
+    <Disclosure as="div" className="grow-1 flex flex-col gap-1 font-mono">
       <DisclosureButton>
         {({ open }) => (
           <div className="flex flex-row gap-1 items-center cursor-pointer">
