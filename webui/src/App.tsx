@@ -153,6 +153,7 @@ export function App() {
     (async () => {
       let buffer: Array<Record<string, unknown>> = [];
 
+      let didClearLoading = false;
       const flush = () => {
         if (buffer.length === 0) {
           return;
@@ -160,6 +161,11 @@ export function App() {
         const b = buffer;
         buffer = [];
         setResults((r) => r.concat(b));
+
+        if (!didClearLoading) {
+          setResultsLoading(false);
+          didClearLoading = true;
+        }
       };
 
       // initial fast flush
