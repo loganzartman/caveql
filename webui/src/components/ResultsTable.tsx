@@ -4,12 +4,6 @@ import {
   ChevronUpDownIcon,
   ChevronUpIcon,
 } from "@heroicons/react/20/solid";
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { useMemo, useRef } from "react";
@@ -36,38 +30,15 @@ export function ResultsTable({
 }) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // Create columns definition for TanStack Table
-  const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(
-    () =>
-      Array.from(fieldSet).map((col) => ({
-        id: col,
-        accessorFn: (row) => row[col],
-        header: col,
-        cell: (info) => <ValView val={info.getValue()} />,
-        minSize: 60,
-        maxSize: 500,
-      })),
-    [fieldSet],
-  );
-
-  const table = useReactTable({
-    data: results as Array<Record<string, unknown>>,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    manualSorting: true,
-    columnResizeMode: "onChange",
-    enableColumnResizing: true,
-  });
-
-  const { rows } = table.getRowModel();
-
   const rowVirtualizer = useVirtualizer({
-    count: rows.length,
+    count: results.length,
     getScrollElement: () => tableContainerRef.current,
     estimateSize: () => 32, // initial estimate
     overscan: 10,
     measureElement: (element) => element?.getBoundingClientRect().height,
   });
+
+  const fieldSetArray = useMemo(() => Array.from(fieldSet), [fieldSet]);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const totalSize = rowVirtualizer.getTotalSize();
@@ -77,6 +48,40 @@ export function ResultsTable({
     virtualRows.length > 0
       ? totalSize - (virtualRows[virtualRows.length - 1]?.end || 0)
       : 0;
+
+  const headerElems = useMemo(
+    () =>
+      Array.from(fieldSet).map((field) => {
+        const currentDirection = sort?.[field] ?? "none";
+        return (
+          <th key={field} className="relative min-w-9 max-w-80">
+            <Button
+              className="px-3 py-1 cursor-pointer text-left w-full truncate"
+              onClick={() => {
+                const newDirection = nextSortDirection(currentDirection);
+                onSortChange?.({
+                  field,
+                  direction: newDirection,
+                });
+              }}
+            >
+              <div className="flex flex-row gap-1 items-center">
+                <SortIcon direction={currentDirection} />
+                <span className="truncate">{field}</span>
+              </div>
+            </Button>
+            <div
+              role="button"
+              tabIndex={0}
+              className={clsx(
+                "absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none touch-none bg-red-300/20 hover:bg-red-300/50",
+              )}
+            />
+          </th>
+        );
+      }),
+    [fieldSet, sort, onSortChange],
+  );
 
   if (results.length === 0) {
     return (
@@ -100,59 +105,7 @@ export function ResultsTable({
                 "color-mix(in srgb, var(--color-red-500), var(--color-stone-800) 90%)",
             }}
           >
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  const currentDirection = sort?.[header.id] ?? "none";
-                  return (
-                    <th
-                      key={header.id}
-                      className="relative"
-                      style={{
-                        width: header.getSize(),
-                        minWidth: header.column.columnDef.minSize,
-                        maxWidth: header.column.columnDef.maxSize,
-                      }}
-                    >
-                      <Button
-                        className="px-3 py-1 cursor-pointer text-left w-full truncate"
-                        title={header.id}
-                        onClick={() => {
-                          const newDirection =
-                            nextSortDirection(currentDirection);
-                          onSortChange?.({
-                            field: header.id,
-                            direction: newDirection,
-                          });
-                        }}
-                      >
-                        <div className="flex flex-row gap-1 items-center">
-                          <SortIcon direction={currentDirection} />
-                          <span className="truncate" title={header.id}>
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                          </span>
-                        </div>
-                      </Button>
-                      {header.column.getCanResize() && (
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          className={clsx(
-                            "absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none touch-none bg-red-300/20 hover:bg-red-300/50",
-                            header.column.getIsResizing() && "bg-red-300/50",
-                          )}
-                        />
-                      )}
-                    </th>
-                  );
-                })}
-              </tr>
-            ))}
+            <tr>{headerElems}</tr>
           </thead>
           <tbody>
             {paddingTop > 0 && (
@@ -161,29 +114,20 @@ export function ResultsTable({
               </tr>
             )}
             {virtualRows.map((virtualRow) => {
-              const row = rows[virtualRow.index];
+              const row = results[virtualRow.index];
               return (
                 <tr
-                  key={row.id}
+                  key={virtualRow.key}
                   ref={rowVirtualizer.measureElement}
                   data-index={virtualRow.index}
                   className="hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative"
                 >
-                  {row.getVisibleCells().map((cell) => (
+                  {fieldSetArray.map((field) => (
                     <td
-                      key={cell.id}
-                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-words"
-                      style={{
-                        width: cell.column.getSize(),
-                        minWidth: cell.column.columnDef.minSize,
-                        maxWidth: cell.column.columnDef.maxSize,
-                        wordBreak: "break-word",
-                      }}
+                      key={field}
+                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-words cursor-context-menu"
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      <ValView val={row[field]} />
                     </td>
                   ))}
                 </tr>
