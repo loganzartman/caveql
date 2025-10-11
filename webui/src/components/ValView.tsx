@@ -34,7 +34,7 @@ export function ValView({ val }: { val: unknown }) {
 function NumberView({ val }: { val: number | bigint }) {
   const parts = useMemo(
     () =>
-      val < 1e12
+      abs(val) < 1e12
         ? formatter.formatToParts(val)
         : compactFormatter.formatToParts(val),
     [val],
@@ -98,4 +98,8 @@ function ObjectView({ val }: { val: object }) {
       </DisclosurePanel>
     </Disclosure>
   );
+}
+
+function abs(val: number | bigint) {
+  return val < 0 ? -val : val;
 }

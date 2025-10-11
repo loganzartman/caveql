@@ -41,9 +41,8 @@ export function ResultsTable({
 
   const columns = useColumns({
     columns: fieldSet,
-    minWidth: 60,
-    maxWidth: 600,
-    defaultWidth: 150,
+    minWidth: 100,
+    maxWidth: 800,
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
@@ -63,7 +62,7 @@ export function ResultsTable({
           <th
             key={id}
             className="relative shrink-0 overflow-hidden"
-            style={{ width: `${width}px` }}
+            style={{ width }}
           >
             <Button
               className="px-3 py-1 cursor-pointer text-left w-full truncate"
@@ -85,7 +84,7 @@ export function ResultsTable({
               role="button"
               tabIndex={0}
               className={clsx(
-                "absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none touch-none bg-red-300/20 hover:bg-red-300/50",
+                "absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none bg-red-300/20 hover:bg-red-300/50",
               )}
             />
           </th>
@@ -133,11 +132,12 @@ export function ResultsTable({
                   data-index={virtualRow.index}
                   className="w-full hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative"
                 >
-                  {columns.map(({ id, width }) => (
+                  {columns.map(({ id, width, measure }) => (
                     <td
                       key={id}
+                      ref={measure}
                       className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-all"
-                      style={{ width: `${width}px` }}
+                      style={{ width }}
                     >
                       <ValView val={row[id]} />
                     </td>

@@ -1,9 +1,11 @@
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { clamp } from "./clamp";
 
 export type ColumnState = {
   id: string;
-  width: number;
+  width: string;
+  measure: (el: HTMLElement | null) => void;
   resizeHandleProps: {
     onPointerDown: React.PointerEventHandler<HTMLDivElement>;
     onFocus: React.FocusEventHandler<HTMLDivElement>;
@@ -13,17 +15,18 @@ export type ColumnState = {
 
 export function useColumns({
   columns,
-  defaultWidth,
   minWidth,
   maxWidth,
 }: {
   columns: Iterable<string>;
-  defaultWidth: number;
   minWidth: number;
   maxWidth: number;
 }): ColumnState[] {
   const columnsArray = useMemo(() => Array.from(columns), [columns]);
   const [columnsWidth, setColumnsWidth] = useState<Record<string, number>>({});
+  const [defaultColumnsWidth, setDefaultColumnsWidth] = useState<
+    Record<string, number>
+  >({});
   const columnDraggingRef = useRef<string | null>(null);
   const columnDragStartRef = useRef<{ x: number; width: number } | null>(null);
   const columnFocusedRef = useRef<string | null>(null);
@@ -33,6 +36,27 @@ export function useColumns({
   columnsArrayRef.current = columnsArray;
   const columnsWidthRef = useRef(columnsWidth);
   columnsWidthRef.current = columnsWidth;
+  const measuredColumnWidthsRef = useRef<Record<string, number>>({});
+  const defaultColumnWidthsRef = useRef(defaultColumnsWidth);
+  defaultColumnWidthsRef.current = defaultColumnsWidth;
+
+  if (
+    Object.keys(measuredColumnWidthsRef.current).some(
+      (k) =>
+        measuredColumnWidthsRef.current[k] !==
+        defaultColumnWidthsRef.current[k],
+    )
+  ) {
+    setDefaultColumnsWidth({ ...measuredColumnWidthsRef.current });
+  }
+
+  const columnWidth = useCallback(
+    (column: string) =>
+      columnsWidthRef.current[column] ??
+      defaultColumnWidthsRef.current[column] ??
+      minWidth,
+    [minWidth],
+  );
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
@@ -44,7 +68,7 @@ export function useColumns({
         return;
       }
 
-      const column = columnsArray.find(
+      const column = columnsArrayRef.current.find(
         (id) => columnDraggingRef.current === id,
       );
       if (!column) {
@@ -92,12 +116,10 @@ export function useColumns({
 
       event.preventDefault();
 
-      const newColumnWidth = Math.min(
+      const newColumnWidth = clamp(
+        columnWidth(focusedColumn) + dx,
+        minWidth,
         maxWidth,
-        Math.max(
-          minWidth,
-          (columnsWidthRef.current[focusedColumn] ?? defaultWidth) + dx,
-        ),
       );
       console.log(newColumnWidth);
       setColumnsWidth((prev) => ({
@@ -114,13 +136,28 @@ export function useColumns({
       document.removeEventListener("pointerup", handlePointerUp);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [columnsArray, maxWidth, minWidth, defaultWidth]);
+  }, [maxWidth, minWidth, columnWidth]);
 
   return useMemo(
     () =>
       columnsArray.map((id) => ({
         id,
-        width: columnsWidth[id] ?? defaultWidth,
+        width: columnsWidth[id]
+          ? `${columnsWidth[id]}px`
+          : defaultColumnsWidth[id]
+            ? `${defaultColumnsWidth[id]}px`
+            : "auto",
+        measure: (el: HTMLElement | null) => {
+          if (!el) {
+            return;
+          }
+          const rect = el.getBoundingClientRect();
+          const newWidth = clamp(rect.width, minWidth, maxWidth);
+          measuredColumnWidthsRef.current[id] = Math.max(
+            measuredColumnWidthsRef.current[id] ?? minWidth,
+            newWidth,
+          );
+        },
         resizeHandleProps: {
           tabIndex: 0,
           onPointerDown: (event) => {
@@ -131,7 +168,7 @@ export function useColumns({
             columnDraggingRef.current = id;
             columnDragStartRef.current = {
               x: event.screenX,
-              width: columnsWidth[id] ?? defaultWidth,
+              width: columnsWidth[id] ?? columnWidth(id),
             };
           },
           onFocus: () => {
@@ -142,6 +179,13 @@ export function useColumns({
           },
         },
       })),
-    [columnsArray, columnsWidth, defaultWidth],
+    [
+      columnWidth,
+      columnsArray,
+      columnsWidth,
+      defaultColumnsWidth,
+      maxWidth,
+      minWidth,
+    ],
   );
 }
