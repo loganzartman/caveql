@@ -27,6 +27,7 @@ export function useColumns({
   const columnDraggingRef = useRef<string | null>(null);
   const columnDragStartRef = useRef<{ x: number; width: number } | null>(null);
   const columnFocusedRef = useRef<string | null>(null);
+  const captureElementRef = useRef<[HTMLElement, number] | null>(null);
 
   const columnsArrayRef = useRef(columnsArray);
   columnsArrayRef.current = columnsArray;
@@ -65,6 +66,11 @@ export function useColumns({
     const handlePointerUp = () => {
       columnDraggingRef.current = null;
       columnDragStartRef.current = null;
+      if (captureElementRef.current) {
+        const [elem, pointerId] = captureElementRef.current;
+        elem.releasePointerCapture(pointerId);
+        captureElementRef.current = null;
+      }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -119,6 +125,9 @@ export function useColumns({
           tabIndex: 0,
           onPointerDown: (event) => {
             event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+
+            captureElementRef.current = [event.currentTarget, event.pointerId];
             columnDraggingRef.current = id;
             columnDragStartRef.current = {
               x: event.screenX,

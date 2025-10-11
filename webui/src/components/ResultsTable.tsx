@@ -136,7 +136,7 @@ export function ResultsTable({
                   {columns.map(({ id, width }) => (
                     <td
                       key={id}
-                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-all cursor-context-menu"
+                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-all"
                       style={{ width: `${width}px` }}
                     >
                       <ValView val={row[id]} />
