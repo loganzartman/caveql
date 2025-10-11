@@ -8,6 +8,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { useMemo, useRef } from "react";
 import { impossible } from "../impossible";
+import { useColumns } from "../useColumns";
 import { ValView } from "./ValView";
 
 export type SortDirection = "asc" | "desc" | "none";
@@ -38,7 +39,12 @@ export function ResultsTable({
     measureElement: (element) => element?.getBoundingClientRect().height,
   });
 
-  const fieldSetArray = useMemo(() => Array.from(fieldSet), [fieldSet]);
+  const columns = useColumns({
+    columns: fieldSet,
+    minWidth: 60,
+    maxWidth: 600,
+    defaultWidth: 150,
+  });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const totalSize = rowVirtualizer.getTotalSize();
@@ -51,26 +57,31 @@ export function ResultsTable({
 
   const headerElems = useMemo(
     () =>
-      Array.from(fieldSet).map((field) => {
-        const currentDirection = sort?.[field] ?? "none";
+      columns.map(({ id, width, resizeHandleProps }) => {
+        const currentDirection = sort?.[id] ?? "none";
         return (
-          <th key={field} className="relative min-w-9 max-w-80">
+          <th
+            key={id}
+            className="relative shrink-0 overflow-hidden"
+            style={{ width: `${width}px` }}
+          >
             <Button
               className="px-3 py-1 cursor-pointer text-left w-full truncate"
               onClick={() => {
                 const newDirection = nextSortDirection(currentDirection);
                 onSortChange?.({
-                  field,
+                  field: id,
                   direction: newDirection,
                 });
               }}
             >
               <div className="flex flex-row gap-1 items-center">
                 <SortIcon direction={currentDirection} />
-                <span className="truncate">{field}</span>
+                <span className="truncate">{id}</span>
               </div>
             </Button>
             <div
+              {...resizeHandleProps}
               role="button"
               tabIndex={0}
               className={clsx(
@@ -80,7 +91,7 @@ export function ResultsTable({
           </th>
         );
       }),
-    [fieldSet, sort, onSortChange],
+    [sort, onSortChange, columns],
   );
 
   if (results.length === 0) {
@@ -97,15 +108,15 @@ export function ResultsTable({
       className="grow-1 shrink-1 basis-0 relative overflow-auto"
     >
       <div className="min-w-full inline-block">
-        <table className="w-full table-fixed">
+        <table className="w-full block">
           <thead
-            className="text-red-300 font-mono font-bold sticky top-0 z-20"
+            className="flex flex-row text-red-300 font-mono font-bold sticky top-0 z-20"
             style={{
               background:
                 "color-mix(in srgb, var(--color-red-500), var(--color-stone-800) 90%)",
             }}
           >
-            <tr>{headerElems}</tr>
+            <tr className="flex flex-row">{headerElems}</tr>
           </thead>
           <tbody>
             {paddingTop > 0 && (
@@ -120,14 +131,15 @@ export function ResultsTable({
                   key={virtualRow.key}
                   ref={rowVirtualizer.measureElement}
                   data-index={virtualRow.index}
-                  className="hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative"
+                  className="w-full hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative"
                 >
-                  {fieldSetArray.map((field) => (
+                  {columns.map(({ id, width }) => (
                     <td
-                      key={field}
-                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-words cursor-context-menu"
+                      key={id}
+                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-all cursor-context-menu"
+                      style={{ width: `${width}px` }}
                     >
-                      <ValView val={row[field]} />
+                      <ValView val={row[id]} />
                     </td>
                   ))}
                 </tr>
