@@ -22,12 +22,4 @@ describe("pack e2e", () => {
     const packed = await packString(input);
     assert(packed.length < input.length);
   });
-
-  it("test", async () => {
-    console.log(
-      await unpackString(
-        "𢉸蚫苈菌缭挭廍謩𥑈𥌯𣜫椵攰𦯠蚪挨缩𥉍挭𠩉巉䨤褫馀𥅒𓄒弔恭徴徴䈀䨔ᗄ",
-      ),
-    );
-  });
 });
