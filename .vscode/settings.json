@@ -13,5 +13,6 @@
       "extensions": ["mts", "cts", "ts"],
       "parameters": ["--import", "tsx"]
     }
-  ]
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
