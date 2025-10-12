@@ -118,7 +118,7 @@ export function ResultsTable({
           >
             <tr className="flex flex-row">{headerElems}</tr>
           </thead>
-          <tbody>
+          <tbody className="flex flex-col">
             {paddingTop > 0 && (
               <tr>
                 <td style={{ height: `${paddingTop}px` }} />
@@ -138,7 +138,10 @@ export function ResultsTable({
                   <tr
                     ref={rowVirtualizer.measureElement}
                     data-index={virtualRow.index}
-                    className="w-full hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative"
+                    className={clsx(
+                      "w-full flex flex-row hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative",
+                      virtualRow.index % 2 === 0 && "bg-stone-950/30",
+                    )}
                   >
                     {columns.map(({ id, width, measured }) => (
                       <td
