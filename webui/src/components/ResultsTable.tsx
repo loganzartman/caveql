@@ -1,4 +1,4 @@
-import { Button } from "@headlessui/react";
+import { Button, Transition } from "@headlessui/react";
 import {
   ChevronDownIcon,
   ChevronUpDownIcon,
@@ -127,22 +127,30 @@ export function ResultsTable({
             {virtualRows.map((virtualRow) => {
               const row = results[virtualRow.index];
               return (
-                <tr
+                <Transition
                   key={virtualRow.key}
-                  ref={rowVirtualizer.measureElement}
-                  data-index={virtualRow.index}
-                  className="w-full hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative"
+                  show
+                  appear
+                  enter="transition-opacity duration-200"
+                  enterFrom="opacity-0"
+                  enterTo="opacity-100"
                 >
-                  {columns.map(({ id, width, measured }) => (
-                    <td
-                      key={id}
-                      className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-all"
-                      style={{ width }}
-                    >
-                      {measured(virtualRow.index, <ValView val={row[id]} />)}
-                    </td>
-                  ))}
-                </tr>
+                  <tr
+                    ref={rowVirtualizer.measureElement}
+                    data-index={virtualRow.index}
+                    className="w-full hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative"
+                  >
+                    {columns.map(({ id, width, measured }) => (
+                      <td
+                        key={id}
+                        className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-all"
+                        style={{ width }}
+                      >
+                        {measured(virtualRow.index, <ValView val={row[id]} />)}
+                      </td>
+                    ))}
+                  </tr>
+                </Transition>
               );
             })}
             {paddingBottom > 0 && (
