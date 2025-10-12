@@ -1,9 +1,9 @@
 import CaveqlSvg from "jsx:./caveql.svg";
-import { Transition } from "@headlessui/react";
 import {
   ArrowRightIcon,
   ChartBarIcon,
   CodeBracketIcon,
+  LinkIcon,
   MagnifyingGlassIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
@@ -220,7 +220,7 @@ export function App() {
         (source: string) => {
           (async () => {
             try {
-              const packed = await packString(source);
+              const packed = await packString(source, "base64-deflate");
               history.replaceState(undefined, "", `#${packed}`);
             } catch (error) {
               console.error("Failed to pack hash", error);
@@ -282,9 +282,9 @@ export function App() {
               (async () => {
                 try {
                   await navigator.clipboard.writeText(
-                    `${window.location.origin}${window.location.pathname}${window.location.search}#${await packString(source)}`,
+                    `${window.location.origin}${window.location.pathname}${window.location.search}#${await packString(source, "base2048-deflate")}`,
                   );
-                  toast.success("Copied share link to clipboard!", {
+                  toast.success("Copied short link to clipboard!", {
                     style: {
                       color: "var(--color-stone-100)",
                       background: "var(--color-stone-700)",
@@ -295,11 +295,12 @@ export function App() {
                 }
               })();
             }}
+            icon={<LinkIcon />}
           >
             share
           </Button>
           <Highlight enabled={!fileInput && !results?.length}>
-            <UploadButton label="add data" onChange={handleUpload} />
+            <UploadButton label="load data" onChange={handleUpload} />
           </Highlight>
         </div>
       </div>
