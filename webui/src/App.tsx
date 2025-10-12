@@ -281,34 +281,36 @@ export function App() {
             <Tab icon={<CodeBracketIcon />}>generated</Tab>
             <Tab icon={<CodeBracketIcon />}>formatted</Tab>
           </TabList>
-          {resultsLimited && (
-            <Button
-              variant="quiet"
-              className="shrink-0"
-              onClick={() => {
-                setResultsLimit(
-                  (resultsLimit) => resultsLimit + DEFAULT_RESULTS_LIMIT,
-                );
-                setResultsLimited(false);
-              }}
-              icon={<PlayIcon />}
-            >
-              load more
-            </Button>
-          )}
-          {results && (
-            <div className="shrink-0 flex flex-row gap-1 items-center">
-              <span className="font-black tabular-nums">
-                {countFormatter.format(executionContext.recordsRead)}
-              </span>{" "}
-              in
-              <ArrowRightIcon className="w-[1em]" />
-              <span className="font-black tabular-nums">
-                {countFormatter.format(results.length)}
-              </span>{" "}
-              out
-            </div>
-          )}
+          <div className="flex flex-row gap-2">
+            {resultsLimited && (
+              <Button
+                variant="quiet"
+                className="shrink-0"
+                onClick={() => {
+                  setResultsLimit(
+                    (resultsLimit) => resultsLimit + DEFAULT_RESULTS_LIMIT,
+                  );
+                  setResultsLimited(false);
+                }}
+                icon={<PlayIcon />}
+              >
+                load more
+              </Button>
+            )}
+            {results && (
+              <div className="shrink-0 flex flex-row gap-1 items-center">
+                <span className="font-black tabular-nums">
+                  {countFormatter.format(executionContext.recordsRead)}
+                </span>{" "}
+                in
+                <ArrowRightIcon className="w-[1em]" />
+                <span className="font-black tabular-nums">
+                  {countFormatter.format(results.length)}
+                </span>{" "}
+                out
+              </div>
+            )}
+          </div>
         </div>
         <TabPanels>
           <TabPanel>
