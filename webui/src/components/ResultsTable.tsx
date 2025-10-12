@@ -66,7 +66,7 @@ export function ResultsTable({
             style={{ width }}
           >
             <Button
-              className="px-3 py-1 cursor-pointer text-left w-full truncate"
+              className="pl-1 pr-3 py-1 cursor-pointer text-left w-full truncate"
               onClick={() => {
                 const newDirection = nextSortDirection(currentDirection);
                 onSortChange?.({

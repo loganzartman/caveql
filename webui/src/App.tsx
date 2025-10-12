@@ -3,6 +3,7 @@ import {
   ArrowRightIcon,
   ChartBarIcon,
   CodeBracketIcon,
+  MagnifyingGlassIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { PlayIcon } from "@heroicons/react/24/outline";
@@ -268,7 +269,7 @@ export function App() {
           </Highlight>
         </div>
       </div>
-      <div className="shrink-0 flex flex-col">
+      <div className="shrink-0 flex flex-col max-h-[35%]">
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
         <LoadingStrip isLoading={resultsLoading} />
       </div>
@@ -277,9 +278,7 @@ export function App() {
           <TabList>
             <Tab icon={<TableCellsIcon />}>table</Tab>
             <Tab icon={<ChartBarIcon />}>chart</Tab>
-            <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
-            <Tab icon={<CodeBracketIcon />}>generated</Tab>
-            <Tab icon={<CodeBracketIcon />}>formatted</Tab>
+            <Tab icon={<MagnifyingGlassIcon />}>inspect</Tab>
           </TabList>
           <div className="flex flex-row gap-2">
             {resultsLimited && (
@@ -329,7 +328,7 @@ export function App() {
             )}
           </TabPanel>
           <TabPanel>
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full p-2">
               <ChartTypeSelector
                 chartType={chartType}
                 onChange={setChartType}
@@ -340,19 +339,30 @@ export function App() {
             </div>
           </TabPanel>
           <TabPanel>
-            <pre className="text-wrap break-all overflow-auto">
-              {astString ?? error}
-            </pre>
-          </TabPanel>
-          <TabPanel>
-            <pre className="text-wrap break-all overflow-auto">
-              {compiledString ?? error}
-            </pre>
-          </TabPanel>
-          <TabPanel>
-            <pre className="text-wrap break-all overflow-auto">
-              {ast ? printAST(ast) : error}
-            </pre>
+            <TabGroup>
+              <TabList>
+                <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
+                <Tab icon={<CodeBracketIcon />}>generated</Tab>
+                <Tab icon={<CodeBracketIcon />}>formatted</Tab>
+              </TabList>
+              <TabPanels>
+                <TabPanel>
+                  <pre className="text-wrap break-all overflow-auto p-2">
+                    {astString ?? error}
+                  </pre>
+                </TabPanel>
+                <TabPanel>
+                  <pre className="text-wrap break-all overflow-auto p-2">
+                    {compiledString ?? error}
+                  </pre>
+                </TabPanel>
+                <TabPanel>
+                  <pre className="text-wrap break-all overflow-auto p-2">
+                    {ast ? printAST(ast) : error}
+                  </pre>
+                </TabPanel>
+              </TabPanels>
+            </TabGroup>
           </TabPanel>
         </TabPanels>
       </TabGroup>
