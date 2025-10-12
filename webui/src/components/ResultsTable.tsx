@@ -57,7 +57,7 @@ export function ResultsTable({
 
   const headerElems = useMemo(
     () =>
-      columns.map(({ id, width, resizeHandleProps }) => {
+      columns.map(({ id, width, resizeHandleProps, measured }) => {
         const currentDirection = sort?.[id] ?? "none";
         return (
           <th
@@ -75,10 +75,13 @@ export function ResultsTable({
                 });
               }}
             >
-              <div className="flex flex-row gap-1 items-center">
-                <SortIcon direction={currentDirection} />
-                <span className="truncate">{id}</span>
-              </div>
+              {measured(
+                -1,
+                <div className="flex flex-row gap-1 items-center">
+                  <SortIcon direction={currentDirection} />
+                  <span className="truncate text-sm">{id}</span>
+                </div>,
+              )}
             </Button>
             <div
               {...resizeHandleProps}
