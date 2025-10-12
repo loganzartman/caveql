@@ -26,6 +26,7 @@
     "@heroicons/react": "^2.2.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
+    "base65536": "^5.0.0",
     "caveql": "workspace:*",
     "clsx": "^2.1.1",
     "monaco-editor": "^0.52.2",
