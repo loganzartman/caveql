@@ -35,6 +35,7 @@ import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
 import { Editor } from "./Editor";
 import { debounce } from "./lib/debounce";
+import { packString, unpackString } from "./lib/pack";
 import { useSortQuery } from "./lib/useSortQuery";
 import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
@@ -215,7 +216,14 @@ export function App() {
     () =>
       debounce(
         (source: string) => {
-          history.replaceState(undefined, "", `#${btoa(source)}`);
+          (async () => {
+            try {
+              const packed = await packString(source);
+              history.replaceState(undefined, "", `#${packed}`);
+            } catch (error) {
+              console.error("Failed to pack hash", error);
+            }
+          })();
         },
         { intervalMs: 500, leading: false },
       ),
@@ -247,13 +255,16 @@ export function App() {
 
   useEffect(() => {
     if (!editorRef) return;
-    try {
-      const src = atob(window.location.hash.substring(1));
-      editorRef.setValue(src);
-      handleSourceChange(src);
-    } catch {
-      console.log("Failed to parse document hash");
-    }
+    (async () => {
+      try {
+        const packed = decodeURIComponent(window.location.hash.substring(1));
+        const src = await unpackString(packed);
+        handleSourceChange(src);
+        editorRef.setValue(src);
+      } catch (error) {
+        console.error("Failed to unpack hash", error);
+      }
+    })();
   }, [editorRef, handleSourceChange]);
 
   return (
