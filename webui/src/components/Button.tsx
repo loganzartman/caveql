@@ -29,7 +29,7 @@ export function Button({
     <HButton
       {...rest}
       className={clsx(
-        "flex flex-row gap-2 items-center px-4 py-1.5",
+        "flex flex-row gap-2 items-center px-4 py-1.5 transition-colors",
         variantClasses[variant],
         className,
       )}

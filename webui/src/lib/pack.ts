@@ -5,10 +5,15 @@ export async function packString(str: string): Promise<string> {
 }
 
 export async function unpackString(packed: string): Promise<string> {
+  if (packed.length === 0) {
+    return "";
+  }
+
   const code = packed[0];
   if (code !== "a") {
     throw new Error("Unsupported format code");
   }
+
   return new TextDecoder().decode(await unpackBinary(packed.substring(1)));
 }
 

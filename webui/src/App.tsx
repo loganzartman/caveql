@@ -1,4 +1,5 @@
 import CaveqlSvg from "jsx:./caveql.svg";
+import { Transition } from "@headlessui/react";
 import {
   ArrowRightIcon,
   ChartBarIcon,
@@ -21,6 +22,7 @@ import {
   printAST,
 } from "caveql";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import { Button } from "./components/Button";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
@@ -275,6 +277,27 @@ export function App() {
       <div className="shrink-0 flex flex-row justify-between">
         <CaveqlSvg />
         <div className="flex flex-row gap-4">
+          <Button
+            onClick={() => {
+              (async () => {
+                try {
+                  await navigator.clipboard.writeText(
+                    `${window.location.origin}${window.location.pathname}${window.location.search}#${await packString(source)}`,
+                  );
+                  toast.success("Copied share link to clipboard!", {
+                    style: {
+                      color: "var(--color-stone-100)",
+                      background: "var(--color-stone-700)",
+                    },
+                  });
+                } catch (error) {
+                  console.error("Failed to copy share link", error);
+                }
+              })();
+            }}
+          >
+            share
+          </Button>
           <Highlight enabled={!fileInput && !results?.length}>
             <UploadButton label="add data" onChange={handleUpload} />
           </Highlight>
@@ -377,6 +400,7 @@ export function App() {
           </TabPanel>
         </TabPanels>
       </TabGroup>
+      <Toaster />
     </div>
   );
 }
