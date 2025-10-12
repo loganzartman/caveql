@@ -1,6 +1,6 @@
 import type { ParseQueryResult, QueryAST, SortCommandAST } from "caveql";
 import { parseQuery, printAST } from "caveql";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import type { SortChangeHandler, SortMap } from "./components/ResultsTable";
 
 export function useSortQuery(
@@ -15,8 +15,9 @@ export function useSortQuery(
     }
   }, [query]);
 
-  const [sort, setSort] = useState<SortMap>(
-    parseResult ? getQuerySort(parseResult.ast) : {},
+  const sort = useMemo(
+    () => (parseResult ? getQuerySort(parseResult.ast) : {}),
+    [parseResult],
   );
 
   const handleUpdateSort = useCallback<SortChangeHandler>(
@@ -29,7 +30,6 @@ export function useSortQuery(
         ...sort,
         [field]: direction,
       };
-      setSort(newSort);
       setQuery(updateQuerySort(query, parseResult, newSort));
     },
     [query, setQuery, sort, parseResult],
