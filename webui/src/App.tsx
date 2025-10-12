@@ -1,4 +1,5 @@
 import CaveqlSvg from "jsx:./caveql.svg";
+import { Transition } from "@headlessui/react";
 import {
   ArrowRightIcon,
   ChartBarIcon,
@@ -21,6 +22,7 @@ import {
   printAST,
 } from "caveql";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import { Button } from "./components/Button";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
@@ -33,11 +35,12 @@ import { TabList } from "./components/TabList";
 import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
-import { debounce } from "./debounce";
 import { Editor } from "./Editor";
+import { debounce } from "./lib/debounce";
+import { packString, unpackString } from "./lib/pack";
+import { useSortQuery } from "./lib/useSortQuery";
+import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
-import { useSortQuery } from "./useSortQuery";
-import { VirtualArray } from "./VirtualArray";
 
 const DEFAULT_RESULTS_LIMIT = 100_000;
 
@@ -215,7 +218,14 @@ export function App() {
     () =>
       debounce(
         (source: string) => {
-          history.replaceState(undefined, "", `#${btoa(source)}`);
+          (async () => {
+            try {
+              const packed = await packString(source);
+              history.replaceState(undefined, "", `#${packed}`);
+            } catch (error) {
+              console.error("Failed to pack hash", error);
+            }
+          })();
         },
         { intervalMs: 500, leading: false },
       ),
@@ -247,13 +257,16 @@ export function App() {
 
   useEffect(() => {
     if (!editorRef) return;
-    try {
-      const src = atob(window.location.hash.substring(1));
-      editorRef.setValue(src);
-      handleSourceChange(src);
-    } catch {
-      console.log("Failed to parse document hash");
-    }
+    (async () => {
+      try {
+        const packed = decodeURIComponent(window.location.hash.substring(1));
+        const src = await unpackString(packed);
+        handleSourceChange(src);
+        editorRef.setValue(src);
+      } catch (error) {
+        console.error("Failed to unpack hash", error);
+      }
+    })();
   }, [editorRef, handleSourceChange]);
 
   return (
@@ -264,6 +277,27 @@ export function App() {
       <div className="shrink-0 flex flex-row justify-between">
         <CaveqlSvg />
         <div className="flex flex-row gap-4">
+          <Button
+            onClick={() => {
+              (async () => {
+                try {
+                  await navigator.clipboard.writeText(
+                    `${window.location.origin}${window.location.pathname}${window.location.search}#${await packString(source)}`,
+                  );
+                  toast.success("Copied share link to clipboard!", {
+                    style: {
+                      color: "var(--color-stone-100)",
+                      background: "var(--color-stone-700)",
+                    },
+                  });
+                } catch (error) {
+                  console.error("Failed to copy share link", error);
+                }
+              })();
+            }}
+          >
+            share
+          </Button>
           <Highlight enabled={!fileInput && !results?.length}>
             <UploadButton label="add data" onChange={handleUpload} />
           </Highlight>
@@ -366,6 +400,7 @@ export function App() {
           </TabPanel>
         </TabPanels>
       </TabGroup>
+      <Toaster />
     </div>
   );
 }
