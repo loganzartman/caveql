@@ -8,8 +8,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { colorScale } from "../../colorScale";
-import type { VirtualArray } from "../../VirtualArray";
+import { colorScale } from "../../lib/colorScale";
+import type { VirtualArray } from "../../lib/VirtualArray";
 import { ValView } from "../ValView";
 
 const MAX_COUNT = 100;

@@ -33,11 +33,11 @@ import { TabList } from "./components/TabList";
 import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
-import { debounce } from "./debounce";
 import { Editor } from "./Editor";
+import { debounce } from "./lib/debounce";
+import { useSortQuery } from "./lib/useSortQuery";
+import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
-import { useSortQuery } from "./useSortQuery";
-import { VirtualArray } from "./VirtualArray";
 
 const DEFAULT_RESULTS_LIMIT = 100_000;
 

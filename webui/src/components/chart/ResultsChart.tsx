@@ -1,5 +1,5 @@
-import { impossible } from "../../impossible";
-import type { VirtualArray } from "../../VirtualArray";
+import { impossible } from "../../lib/impossible";
+import type { VirtualArray } from "../../lib/VirtualArray";
 import { ResultsBarChart } from "./ResultsBarChart";
 import { ResultsLineChart } from "./ResultsLineChart";
 
