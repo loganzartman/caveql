@@ -41,7 +41,7 @@ export function ResultsTable({
 
   const columns = useColumns({
     columns: fieldSet,
-    padding: 24,
+    padding: 32,
     minWidth: 100,
     maxWidth: 800,
   });
@@ -139,7 +139,7 @@ export function ResultsTable({
                       className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-all"
                       style={{ width }}
                     >
-                      {measured(<ValView val={row[id]} />)}
+                      {measured(virtualRow.index, <ValView val={row[id]} />)}
                     </td>
                   ))}
                 </tr>

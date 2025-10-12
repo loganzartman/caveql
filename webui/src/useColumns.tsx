@@ -5,7 +5,7 @@ import { clamp } from "./clamp";
 export type ColumnState = {
   id: string;
   width: string;
-  measured: (contents: ReactNode) => ReactNode;
+  measured: (row: number, contents: ReactNode) => ReactNode;
   resizeHandleProps: {
     tabIndex: number;
     onPointerDown: React.PointerEventHandler<HTMLDivElement>;
@@ -46,6 +46,8 @@ export function useColumns({
   const intrinsicColumnsWidthRef = useRef(intrinsicColumnsWidth);
   intrinsicColumnsWidthRef.current = intrinsicColumnsWidth;
 
+  const cellsMeasuredRef = useRef<Set<string>>(new Set());
+
   const columnsWidth = useMemo(
     () =>
       Object.fromEntries(
@@ -71,6 +73,7 @@ export function useColumns({
 
   useEffect(() => {
     columnsArray;
+    cellsMeasuredRef.current.clear();
     setIntrinsicColumnsWidth({});
   }, [columnsArray]);
 
@@ -163,14 +166,20 @@ export function useColumns({
 
             width: `${columnsWidth[id]}px`,
 
-            measured: (contents) => {
+            measured: (row, contents) => {
               const measure = (el: HTMLElement | null) => {
                 if (!el) {
                   return;
                 }
 
+                const cellKey = JSON.stringify({ id, row });
+                if (cellsMeasuredRef.current.has(cellKey)) {
+                  return;
+                }
+                cellsMeasuredRef.current.add(cellKey);
+
                 const prevWidth = intrinsicColumnsWidthRef.current[id] ?? 0;
-                const newWidth = el.getBoundingClientRect().width + padding;
+                const newWidth = el.offsetWidth + padding;
                 if (newWidth > prevWidth) {
                   intrinsicColumnsWidthRef.current[id] = newWidth;
                   setIntrinsicColumnsWidth((prev) => ({
@@ -183,7 +192,7 @@ export function useColumns({
               return (
                 <>
                   {contents}
-                  <span ref={measure} inert className="fixed invisible">
+                  <span ref={measure} inert className="invisible fixed w-max">
                     {contents}
                   </span>
                 </>
