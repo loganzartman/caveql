@@ -1,24 +1,29 @@
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: yolo */
 import {
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
 } from "@headlessui/react";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/20/solid";
+import { useMemo } from "react";
 
 const formatter = new Intl.NumberFormat(undefined, {});
+const compactFormatter = new Intl.NumberFormat(undefined, {
+  notation: "scientific",
+});
 
 export function ValView({ val }: { val: unknown }) {
   if (val === null || val === undefined) {
-    return <span>{String(val)}</span>;
+    return <div className="grow-1">{String(val)}</div>;
   }
   if (typeof val === "string") {
-    return <span className="text-stone-200">{val}</span>;
+    return <div className="grow-1 text-stone-200">{val}</div>;
   }
   if (typeof val === "number" || typeof val === "bigint") {
-    return <span className="text-purple-300">{formatter.format(val)}</span>;
+    return <NumberView val={val} />;
   }
   if (typeof val === "boolean") {
-    return <span className="text-red-300">{String(val)}</span>;
+    return <div className="grow-1 text-red-300">{String(val)}</div>;
   }
   if (typeof val !== "object") {
     throw new Error(`Unsupported type: ${typeof val}`);
@@ -26,9 +31,49 @@ export function ValView({ val }: { val: unknown }) {
   return <ObjectView val={val} />;
 }
 
+function NumberView({ val }: { val: number | bigint }) {
+  const parts = useMemo(
+    () =>
+      abs(val) < 1e12
+        ? formatter.formatToParts(val)
+        : compactFormatter.formatToParts(val),
+    [val],
+  );
+
+  const spans = useMemo(
+    () =>
+      parts.map((part, i) => {
+        switch (part.type) {
+          case "integer":
+          case "fraction":
+          case "exponentInteger":
+          case "decimal":
+          case "plusSign":
+          case "minusSign":
+          case "exponentMinusSign":
+          case "group":
+            return (
+              <span className="text-purple-300" key={i}>
+                {part.value}
+              </span>
+            );
+          default:
+            return (
+              <span className="text-purple-400" key={i}>
+                {part.value}
+              </span>
+            );
+        }
+      }),
+    [parts],
+  );
+
+  return <div className="grow-1 tabular-nums text-right">{spans}</div>;
+}
+
 function ObjectView({ val }: { val: object }) {
   return (
-    <Disclosure as="div" className="flex flex-col gap-1 font-mono">
+    <Disclosure as="div" className="grow-1 flex flex-col gap-1 font-mono">
       <DisclosureButton>
         {({ open }) => (
           <div className="flex flex-row gap-1 items-center cursor-pointer">
@@ -53,4 +98,8 @@ function ObjectView({ val }: { val: object }) {
       </DisclosurePanel>
     </Disclosure>
   );
+}
+
+function abs(val: number | bigint) {
+  return val < 0 ? -val : val;
 }

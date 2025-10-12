@@ -1,4 +1,4 @@
-import { Button } from "@headlessui/react";
+import { Button, Transition } from "@headlessui/react";
 import {
   ChevronDownIcon,
   ChevronUpDownIcon,
@@ -6,9 +6,9 @@ import {
 } from "@heroicons/react/20/solid";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { useMemo, useRef } from "react";
 import { impossible } from "../impossible";
-import type { VirtualArray } from "../VirtualArray";
+import { useColumns } from "../useColumns";
 import { ValView } from "./ValView";
 
 export type SortDirection = "asc" | "desc" | "none";
@@ -20,90 +20,149 @@ export type SortChangeHandler = (params: {
 
 export function ResultsTable({
   results,
-  scrollRef,
+  fieldSet,
   sort,
   onSortChange,
 }: {
-  results: VirtualArray<Record<string, unknown>>;
-  scrollRef: React.RefObject<HTMLElement | null>;
+  results: ReadonlyArray<Record<string, unknown>>;
+  fieldSet: ReadonlySet<string>;
   sort?: SortMap;
   onSortChange?: SortChangeHandler;
 }) {
-  const [listRef, setListRef] = useState<HTMLDivElement | null>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const virtualizer = useVirtualizer({
+  const rowVirtualizer = useVirtualizer({
     count: results.length,
-    estimateSize: () => 32,
-    getScrollElement: () => scrollRef.current,
-    getItemKey: (i) => i,
-    scrollMargin: listRef?.offsetTop ?? 0,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 32, // initial estimate
+    overscan: 10,
+    measureElement: (element) => element?.getBoundingClientRect().height,
   });
 
-  const cols = useMemo(() => Array.from(results.fieldSet), [results]);
+  const columns = useColumns({
+    columns: fieldSet,
+    padding: 32,
+    minWidth: 100,
+    maxWidth: 800,
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start || 0 : 0;
+  const paddingBottom =
+    virtualRows.length > 0
+      ? totalSize - (virtualRows[virtualRows.length - 1]?.end || 0)
+      : 0;
+
+  const headerElems = useMemo(
+    () =>
+      columns.map(({ id, width, resizeHandleProps }) => {
+        const currentDirection = sort?.[id] ?? "none";
+        return (
+          <th
+            key={id}
+            className="relative shrink-0 overflow-hidden"
+            style={{ width }}
+          >
+            <Button
+              className="pl-1 pr-3 py-1 cursor-pointer text-left w-full truncate"
+              onClick={() => {
+                const newDirection = nextSortDirection(currentDirection);
+                onSortChange?.({
+                  field: id,
+                  direction: newDirection,
+                });
+              }}
+            >
+              <div className="flex flex-row gap-1 items-center">
+                <SortIcon direction={currentDirection} />
+                <span className="truncate">{id}</span>
+              </div>
+            </Button>
+            <div
+              {...resizeHandleProps}
+              role="button"
+              tabIndex={0}
+              className={clsx(
+                "absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none bg-red-300/20 hover:bg-red-300/50",
+              )}
+            />
+          </th>
+        );
+      }),
+    [sort, onSortChange, columns],
+  );
+
+  if (results.length === 0) {
+    return (
+      <div className="grow-1 shrink-1 basis-0 relative overflow-auto flex items-center justify-center">
+        <div>No results.</div>
+      </div>
+    );
+  }
 
   return (
-    <div ref={setListRef} data-testid="list-el">
-      {results.length === 0 && (
-        <div className="w-full flex flex-row items-center justify-center">
-          <div>No results.</div>
-        </div>
-      )}
-      <div
-        className="sticky z-10 flex flex-row -top-4 text-red-300 font-mono font-bold"
-        style={{
-          background:
-            "color-mix(in srgb, var(--color-red-500), var(--color-stone-800) 90%)",
-        }}
-      >
-        {cols.map((col) => (
-          <Button
-            key={col}
-            className="flex-1 px-3 py-1 gap-1 flex flex-row items-center cursor-pointer"
-            onClick={() => {
-              const currentDirection = sort?.[col] ?? "none";
-              const newDirection = nextSortDirection(currentDirection);
-              onSortChange?.({
-                field: col,
-                direction: newDirection,
-              });
-            }}
-          >
-            <SortIcon direction={sort?.[col]} />
-            {col}
-          </Button>
-        ))}
-      </div>
-      <div
-        className="relative w-full flex flex-col"
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-        }}
-      >
-        {virtualizer.getVirtualItems().map((item) => (
-          <div
-            key={item.key}
-            data-index={item.index}
-            ref={virtualizer.measureElement}
-            className={clsx(
-              "flex flex-row absolute top-0 left-0 w-full hover:ring-1 hover:ring-amber-500 hover:z-10",
-              item.index % 2 ? "bg-stone-800" : "bg-stone-900",
-            )}
+    <div
+      ref={tableContainerRef}
+      className="grow-1 shrink-1 basis-0 relative overflow-auto"
+    >
+      <div className="min-w-full inline-block">
+        <table className="w-full block">
+          <thead
+            className="flex flex-row text-red-300 font-mono font-bold sticky top-0 z-20"
             style={{
-              transform: `translateY(${
-                item.start - virtualizer.options.scrollMargin
-              }px)`,
+              background:
+                "color-mix(in srgb, var(--color-red-500), var(--color-stone-800) 90%)",
             }}
           >
-            {cols.map((col) => (
-              <div
-                key={col}
-                className="flex-1 px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10"
-              >
-                <ValView val={results.at(item.index)?.[col]} />
-              </div>
-            ))}
-          </div>
-        ))}
+            <tr className="flex flex-row">{headerElems}</tr>
+          </thead>
+          <tbody className="flex flex-col">
+            {paddingTop > 0 && (
+              <tr>
+                <td style={{ height: `${paddingTop}px` }} />
+              </tr>
+            )}
+            {virtualRows.map((virtualRow) => {
+              const row = results[virtualRow.index];
+              return (
+                <Transition
+                  key={virtualRow.key}
+                  show
+                  appear
+                  enter="transition-opacity duration-200"
+                  enterFrom="opacity-0"
+                  enterTo="opacity-100"
+                >
+                  <tr
+                    ref={rowVirtualizer.measureElement}
+                    data-index={virtualRow.index}
+                    className={clsx(
+                      "w-full flex flex-row hover:outline-1 hover:outline-amber-500 -outline-offset-1 hover:z-10 relative",
+                      virtualRow.index % 2 === 0 && "bg-stone-950/30",
+                    )}
+                  >
+                    {columns.map(({ id, width, measured }) => (
+                      <td
+                        key={id}
+                        className="px-3 py-1 transition-colors hover:transition-none hover:bg-amber-400/10 break-all"
+                        style={{ width }}
+                      >
+                        {measured(virtualRow.index, <ValView val={row[id]} />)}
+                      </td>
+                    ))}
+                  </tr>
+                </Transition>
+              );
+            })}
+            {paddingBottom > 0 && (
+              <tr>
+                <td style={{ height: `${paddingBottom}px` }} />
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -111,13 +170,13 @@ export function ResultsTable({
 
 function SortIcon({ direction }: { direction?: SortDirection }) {
   if (direction === "asc") {
-    return <ChevronUpIcon className="w-[1em]" />;
+    return <ChevronUpIcon className="shrink-0 w-[1em]" />;
   }
   if (direction === "desc") {
-    return <ChevronDownIcon className="w-[1em]" />;
+    return <ChevronDownIcon className="shrink-0 w-[1em]" />;
   }
   if (direction === "none" || direction === undefined) {
-    return <ChevronUpDownIcon className="w-[1em] opacity-50" />;
+    return <ChevronUpDownIcon className="shrink-0 w-[1em] opacity-50" />;
   }
   impossible(direction);
 }

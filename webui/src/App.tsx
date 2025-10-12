@@ -3,6 +3,7 @@ import {
   ArrowRightIcon,
   ChartBarIcon,
   CodeBracketIcon,
+  MagnifyingGlassIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { PlayIcon } from "@heroicons/react/24/outline";
@@ -57,7 +58,7 @@ export function App() {
     createExecutionContext(),
   );
   const [results, setResults] = useState<VirtualArray<Record<string, unknown>>>(
-    new VirtualArray(),
+    VirtualArray.create(),
   );
   const resultsRef = useRef(results);
   resultsRef.current = results;
@@ -153,6 +154,7 @@ export function App() {
     (async () => {
       let buffer: Array<Record<string, unknown>> = [];
 
+      let didClearLoading = false;
       const flush = () => {
         if (buffer.length === 0) {
           return;
@@ -160,6 +162,11 @@ export function App() {
         const b = buffer;
         buffer = [];
         setResults((r) => r.concat(b));
+
+        if (!didClearLoading) {
+          setResultsLoading(false);
+          didClearLoading = true;
+        }
       };
 
       // initial fast flush
@@ -215,16 +222,6 @@ export function App() {
     [],
   );
 
-  const updateSource = useCallback(
-    (source: string) => {
-      updateHash(source);
-      setSource(source);
-    },
-    [updateHash],
-  );
-
-  const [sort, setSort] = useSortQuery(source, updateSource);
-
   const handleUpload = useCallback(({ files }: { files: FileList }) => {
     const filesArray = Array.from(files);
     setFileInput(filesArray);
@@ -232,10 +229,21 @@ export function App() {
 
   const handleSourceChange = useCallback(
     (source: string) => {
-      updateSource(source);
+      updateHash(source);
+      setSource(source);
     },
-    [updateSource],
+    [updateHash],
   );
+
+  const updateSource = useCallback(
+    (source: string) => {
+      editorRef?.setValue(source);
+      handleSourceChange(source);
+    },
+    [editorRef, handleSourceChange],
+  );
+
+  const [sort, setSort] = useSortQuery(source, updateSource);
 
   useEffect(() => {
     if (!editorRef) return;
@@ -253,7 +261,7 @@ export function App() {
       ref={scrollRef}
       className="flex flex-col w-full h-full gap-4 p-4 overflow-auto"
     >
-      <div className="flex flex-row justify-between">
+      <div className="shrink-0 flex flex-row justify-between">
         <CaveqlSvg />
         <div className="flex flex-row gap-4">
           <Highlight enabled={!fileInput && !results?.length}>
@@ -261,20 +269,18 @@ export function App() {
           </Highlight>
         </div>
       </div>
-      <div className="flex flex-col">
+      <div className="shrink-0 flex flex-col max-h-[35%]">
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
         <LoadingStrip isLoading={resultsLoading} />
       </div>
-      <div className="grow shrink">
-        <TabGroup>
-          <div className="flex flex-row gap-4 items-stretch justify-between">
-            <TabList>
-              <Tab icon={<TableCellsIcon />}>table</Tab>
-              <Tab icon={<ChartBarIcon />}>chart</Tab>
-              <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
-              <Tab icon={<CodeBracketIcon />}>generated</Tab>
-              <Tab icon={<CodeBracketIcon />}>formatted</Tab>
-            </TabList>
+      <TabGroup className="flex-1 flex flex-col">
+        <div className="shrink-0 flex flex-row gap-4 items-stretch justify-between">
+          <TabList>
+            <Tab icon={<TableCellsIcon />}>table</Tab>
+            <Tab icon={<ChartBarIcon />}>chart</Tab>
+            <Tab icon={<MagnifyingGlassIcon />}>inspect</Tab>
+          </TabList>
+          <div className="flex flex-row gap-2">
             {resultsLimited && (
               <Button
                 variant="quiet"
@@ -304,53 +310,62 @@ export function App() {
               </div>
             )}
           </div>
-          <TabPanels>
-            <TabPanel>
-              {results && (
-                <ResultsTable
-                  results={results}
-                  scrollRef={scrollRef}
-                  sort={sort}
-                  onSortChange={setSort}
-                />
-              )}
-              {resultsLoading && (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <span>Loading results...</span>
-                </div>
-              )}
-            </TabPanel>
-            <TabPanel>
-              <div className="flex flex-col h-full">
-                <ChartTypeSelector
-                  chartType={chartType}
-                  onChange={setChartType}
-                />
-                <div className="grow">
-                  {results && (
-                    <ResultsChart type={chartType} results={results} />
-                  )}
-                </div>
+        </div>
+        <TabPanels>
+          <TabPanel>
+            {results && (
+              <ResultsTable
+                results={results.items}
+                fieldSet={results.fieldSet}
+                sort={sort}
+                onSortChange={setSort}
+              />
+            )}
+            {resultsLoading && (
+              <div className="flex flex-col items-center justify-center h-full">
+                <span>Loading results...</span>
               </div>
-            </TabPanel>
-            <TabPanel>
-              <pre className="text-wrap break-all overflow-auto">
-                {astString ?? error}
-              </pre>
-            </TabPanel>
-            <TabPanel>
-              <pre className="text-wrap break-all overflow-auto">
-                {compiledString ?? error}
-              </pre>
-            </TabPanel>
-            <TabPanel>
-              <pre className="text-wrap break-all overflow-auto">
-                {ast ? printAST(ast) : error}
-              </pre>
-            </TabPanel>
-          </TabPanels>
-        </TabGroup>
-      </div>
+            )}
+          </TabPanel>
+          <TabPanel>
+            <div className="flex flex-col h-full p-2">
+              <ChartTypeSelector
+                chartType={chartType}
+                onChange={setChartType}
+              />
+              <div className="grow">
+                {results && <ResultsChart type={chartType} results={results} />}
+              </div>
+            </div>
+          </TabPanel>
+          <TabPanel>
+            <TabGroup>
+              <TabList>
+                <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
+                <Tab icon={<CodeBracketIcon />}>generated</Tab>
+                <Tab icon={<CodeBracketIcon />}>formatted</Tab>
+              </TabList>
+              <TabPanels>
+                <TabPanel>
+                  <pre className="text-wrap break-all overflow-auto p-2">
+                    {astString ?? error}
+                  </pre>
+                </TabPanel>
+                <TabPanel>
+                  <pre className="text-wrap break-all overflow-auto p-2">
+                    {compiledString ?? error}
+                  </pre>
+                </TabPanel>
+                <TabPanel>
+                  <pre className="text-wrap break-all overflow-auto p-2">
+                    {ast ? printAST(ast) : error}
+                  </pre>
+                </TabPanel>
+              </TabPanels>
+            </TabGroup>
+          </TabPanel>
+        </TabPanels>
+      </TabGroup>
     </div>
   );
 }

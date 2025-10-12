@@ -93,5 +93,5 @@ export function Editor({
     };
   }, [fontsLoaded, editorRef]);
 
-  return <div className="w-full h-full min-h-32" ref={divEl}></div>;
+  return <div className="w-full h-full min-h-28" ref={divEl}></div>;
 }

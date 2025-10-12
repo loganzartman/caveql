@@ -1,18 +1,27 @@
 export class VirtualArray<T extends object> {
   private _items: T[];
+  private _itemsView: ReadonlyArray<T>;
   private _fieldSet: Set<string>;
 
-  constructor(items?: Array<T>, fieldSet?: Set<string>) {
-    this._items = items ?? [];
-    this._fieldSet =
-      fieldSet ?? new Set(this._items.flatMap((item) => Object.keys(item)));
+  private constructor(items: Array<T>, fieldSet: Set<string>) {
+    this._items = items;
+    this._fieldSet = new Set(fieldSet);
+    this._itemsView = new Proxy(this._items, {});
+  }
+
+  static create<T extends object>(): VirtualArray<T> {
+    return new VirtualArray<T>([], new Set());
   }
 
   get length() {
     return this._items.length;
   }
 
-  get fieldSet(): Readonly<Set<string>> {
+  get items(): ReadonlyArray<T> {
+    return this._itemsView;
+  }
+
+  get fieldSet(): ReadonlySet<string> {
     return this._fieldSet;
   }
 
@@ -38,9 +47,5 @@ export class VirtualArray<T extends object> {
 
   at(index: number): T | undefined {
     return this._items.at(index);
-  }
-
-  head(n: number): T[] {
-    return this._items.slice(0, n);
   }
 }

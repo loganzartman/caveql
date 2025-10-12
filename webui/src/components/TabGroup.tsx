@@ -1,7 +1,16 @@
 import { TabGroup as HTabGroup } from "@headlessui/react";
+import { clsx } from "clsx";
 
-export function TabGroup({ children }: { children: React.ReactNode }) {
+export function TabGroup({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <HTabGroup className="w-full h-full flex flex-col">{children}</HTabGroup>
+    <HTabGroup className={clsx("flex flex-col", className)}>
+      {children}
+    </HTabGroup>
   );
 }

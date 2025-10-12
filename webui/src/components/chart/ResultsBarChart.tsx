@@ -19,7 +19,7 @@ export function ResultsBarChart({
 }: {
   results: VirtualArray<Record<string, unknown>>;
 }) {
-  const head = useMemo(() => results.head(MAX_COUNT), [results]);
+  const head = useMemo(() => results.items.slice(0, MAX_COUNT), [results]);
   const keys = useMemo(() => Array.from(results.fieldSet), [results]);
   const xAxisKey = useMemo(() => keys[0], [keys]);
   const barKeys = useMemo(() => keys.slice(1), [keys]);
@@ -40,8 +40,9 @@ export function ResultsBarChart({
             payload.length && (
               <div className="flex flex-col bg-stone-800 p-2 ring-2 ring-amber-400/50">
                 {Object.entries(payload[0].payload).map(([k, v]) => (
-                  <div key={k}>
-                    {k}: <ValView val={v} />
+                  <div key={k} className="flex flex-row gap-2">
+                    <div>{k}:</div>
+                    <ValView val={v} />
                   </div>
                 ))}
               </div>
