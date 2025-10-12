@@ -1,8 +1,9 @@
+import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import {
-  type FieldNameAST,
-  type NumericAST,
+  fieldNameASTSchema,
+  numericASTSchema,
   parseFieldName,
   parseLiteral,
   parseNumeric,
@@ -11,18 +12,20 @@ import {
   parseWs,
 } from "../parseCommon";
 
-export type SortCommandAST = {
-  type: "sort";
-  count: NumericAST | undefined;
-  fields: SortFieldAST[];
-};
+export const sortFieldASTSchema = z.object({
+  type: z.literal("sort-field"),
+  field: fieldNameASTSchema,
+  comparator: z.enum(["auto", "str", "ip", "num"]).optional(),
+  desc: z.boolean().optional(),
+});
+export type SortFieldAST = z.infer<typeof sortFieldASTSchema>;
 
-export type SortFieldAST = {
-  type: "sort-field";
-  field: FieldNameAST;
-  comparator: "auto" | "str" | "ip" | "num" | undefined;
-  desc: boolean | undefined;
-};
+export const sortCommandASTSchema = z.object({
+  type: z.literal("sort"),
+  count: numericASTSchema.optional(),
+  fields: z.array(sortFieldASTSchema),
+});
+export type SortCommandAST = z.infer<typeof sortCommandASTSchema>;
 
 export function parseSortCommand(ctx: ParseContext): SortCommandAST {
   parseWs(ctx);

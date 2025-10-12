@@ -1,15 +1,18 @@
+import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
 import {
   type AggregationTermAST,
+  aggregationTermASTSchema,
   parseAggregationTerm,
 } from "./parseAggregationTerm";
 
-export type StreamstatsCommandAST = {
-  type: "streamstats";
-  aggregations: AggregationTermAST[];
-};
+export const streamstatsCommandASTSchema = z.object({
+  type: z.literal("streamstats"),
+  aggregations: z.array(aggregationTermASTSchema),
+});
+export type StreamstatsCommandAST = z.infer<typeof streamstatsCommandASTSchema>;
 
 export function parseStreamstatsCommand(
   ctx: ParseContext,
