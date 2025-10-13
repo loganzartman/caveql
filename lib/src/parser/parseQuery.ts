@@ -1,13 +1,11 @@
-import { z } from "zod";
 import type { ParseContext } from "./ParseContext";
-import { commandASTSchema } from "./parseCommand";
+import type { CommandAST } from "./parseCommand";
 import { parsePipeline } from "./parsePipeline";
 
-export const queryASTSchema = z.object({
-  type: z.literal("query"),
-  pipeline: z.array(commandASTSchema),
-});
-export type QueryAST = z.infer<typeof queryASTSchema>;
+export type QueryAST = {
+  type: "query";
+  pipeline: CommandAST[];
+};
 
 export type ParseQueryResult = {
   ast: QueryAST;

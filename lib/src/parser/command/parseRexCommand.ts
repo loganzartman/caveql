@@ -1,28 +1,24 @@
-import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import {
   type FieldNameAST,
-  fieldNameASTSchema,
   parseFieldName,
   parseLiteral,
   parseOne,
   parseParam,
   parseString,
   parseWs,
-  stringASTSchema,
+  type StringAST,
 } from "../parseCommon";
 
-export const rexModeSchema = z.enum(["sed"]).optional();
-export type RexMode = z.infer<typeof rexModeSchema>;
+export type RexMode = "sed" | undefined;
 
-export const rexCommandASTSchema = z.object({
-  type: z.literal("rex"),
-  field: fieldNameASTSchema.optional(),
-  mode: rexModeSchema,
-  regex: stringASTSchema,
-});
-export type RexCommandAST = z.infer<typeof rexCommandASTSchema>;
+export type RexCommandAST = {
+  type: "rex";
+  field: FieldNameAST | undefined;
+  mode: RexMode;
+  regex: StringAST;
+};
 
 export function parseRexCommand(ctx: ParseContext): RexCommandAST {
   parseWs(ctx);

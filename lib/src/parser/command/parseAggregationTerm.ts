@@ -1,33 +1,28 @@
-import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import {
   type FieldNameAST,
-  fieldNameASTSchema,
   parseFieldName,
   parseLiteral,
   parseWs,
 } from "../parseCommon";
 
-export const aggregationTermTypeSchema = z.enum([
-  "count",
-  "distinct",
-  "sum",
-  "avg",
-  "min",
-  "max",
-  "mode",
-  "median",
-  "perc",
-]);
-export type AggregationTermType = z.infer<typeof aggregationTermTypeSchema>;
+export type AggregationTermType =
+  | "count"
+  | "distinct"
+  | "sum"
+  | "avg"
+  | "min"
+  | "max"
+  | "mode"
+  | "median"
+  | "perc";
 
-export const aggregationTermASTSchema = z.object({
-  type: aggregationTermTypeSchema,
-  field: fieldNameASTSchema.optional(),
-  asField: fieldNameASTSchema.optional(),
-});
-export type AggregationTermAST = z.infer<typeof aggregationTermASTSchema>;
+export type AggregationTermAST = {
+  type: AggregationTermType;
+  field?: FieldNameAST;
+  asField?: FieldNameAST;
+};
 
 export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
   parseWs(ctx);

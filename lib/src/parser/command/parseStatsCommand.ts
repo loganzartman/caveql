@@ -1,18 +1,15 @@
-import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
 import {
   type AggregationTermAST,
-  aggregationTermASTSchema,
   parseAggregationTerm,
 } from "./parseAggregationTerm";
 
-export const statsCommandASTSchema = z.object({
-  type: z.literal("stats"),
-  aggregations: z.array(aggregationTermASTSchema),
-});
-export type StatsCommandAST = z.infer<typeof statsCommandASTSchema>;
+export type StatsCommandAST = {
+  type: "stats";
+  aggregations: AggregationTermAST[];
+};
 
 export function parseStatsCommand(ctx: ParseContext): StatsCommandAST {
   parseWs(ctx);
