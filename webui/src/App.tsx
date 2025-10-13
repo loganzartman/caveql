@@ -5,6 +5,7 @@ import {
   CodeBracketIcon,
   LinkIcon,
   MagnifyingGlassIcon,
+  SparklesIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { PlayIcon } from "@heroicons/react/24/outline";
@@ -36,6 +37,7 @@ import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
 import { Editor } from "./Editor";
+import { GenerateTab } from "./GenerateTab";
 import { debounce } from "./lib/debounce";
 import { packString, unpackString } from "./lib/pack";
 import { useSortQuery } from "./lib/useSortQuery";
@@ -269,6 +271,14 @@ export function App() {
     })();
   }, [editorRef, handleSourceChange]);
 
+  const handleAcceptGeneratedQuery = useCallback(
+    (query: string) => {
+      editorRef?.setValue(query);
+      handleSourceChange(query);
+    },
+    [editorRef, handleSourceChange],
+  );
+
   return (
     <div
       ref={scrollRef}
@@ -314,6 +324,7 @@ export function App() {
             <Tab icon={<TableCellsIcon />}>table</Tab>
             <Tab icon={<ChartBarIcon />}>chart</Tab>
             <Tab icon={<MagnifyingGlassIcon />}>inspect</Tab>
+            <Tab icon={<SparklesIcon />}>generate</Tab>
           </TabList>
           <div className="flex flex-row gap-2">
             {resultsLimited && (
@@ -398,6 +409,9 @@ export function App() {
                 </TabPanel>
               </TabPanels>
             </TabGroup>
+          </TabPanel>
+          <TabPanel>
+            <GenerateTab onAcceptQuery={handleAcceptGeneratedQuery} />
           </TabPanel>
         </TabPanels>
       </TabGroup>

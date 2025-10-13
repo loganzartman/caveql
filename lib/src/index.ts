@@ -9,6 +9,7 @@ export { iter } from "./iter";
 export * from "./monaco/language";
 export type * from "./parser";
 export { parseQuery } from "./parser";
+export { queryASTSchema } from "./parser/parseQuery";
 export { printAST } from "./printer/printAST";
 export type * from "./web-worker";
 export { createQueryWorker } from "./web-worker";
