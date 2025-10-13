@@ -1,3 +1,4 @@
+import z from "zod";
 import { impossible } from "../impossible";
 import type {
   BinaryOpAST,
@@ -141,4 +142,8 @@ export const builtinFuncs = {
   true: () => `true`,
 } satisfies Record<string, (args: ExpressionAST[]) => string>;
 
-export type BuiltinFuncName = keyof typeof builtinFuncs;
+export const builtinFuncNameSchema = z.enum(
+  Object.keys(builtinFuncs) as (keyof typeof builtinFuncs)[],
+);
+
+export type BuiltinFuncName = z.infer<typeof builtinFuncNameSchema>;

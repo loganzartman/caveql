@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { Token } from "../tokens";
 import {
   type ParseContext,
@@ -27,7 +28,11 @@ export function parseParam<T>(
   return parseValue(ctx);
 }
 
-export type StringAST = { type: "string"; value: string };
+export const stringASTSchema = z.object({
+  type: z.literal("string"),
+  value: z.string(),
+});
+export type StringAST = z.infer<typeof stringASTSchema>;
 
 export function parseString(
   ctx: ParseContext,
@@ -48,10 +53,11 @@ export function parseString(
   );
 }
 
-export type FieldNameAST = {
-  type: "field-name";
-  value: string;
-};
+export const fieldNameASTSchema = z.object({
+  type: z.literal("field-name"),
+  value: z.string(),
+});
+export type FieldNameAST = z.infer<typeof fieldNameASTSchema>;
 
 export function parseFieldName(ctx: ParseContext): FieldNameAST {
   return parseOne(
@@ -165,7 +171,11 @@ function collectionFieldNameCompletions(
   }
 }
 
-export type NumericAST = { type: "number"; value: number | bigint };
+export const numericASTSchema = z.object({
+  type: z.literal("number"),
+  value: z.union([z.number(), z.bigint()]),
+});
+export type NumericAST = z.infer<typeof numericASTSchema>;
 
 export function parseNumeric(ctx: ParseContext): NumericAST {
   return parseOne(
