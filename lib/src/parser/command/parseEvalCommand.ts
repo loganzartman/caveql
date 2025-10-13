@@ -1,24 +1,17 @@
-import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import {
   type FieldNameAST,
-  fieldNameASTSchema,
   parseFieldName,
   parseLiteral,
   parseWs,
 } from "../parseCommon";
-import {
-  type ExpressionAST,
-  expressionASTSchema,
-  parseExpression,
-} from "../parseExpression";
+import { type ExpressionAST, parseExpression } from "../parseExpression";
 
-export const evalCommandASTSchema = z.object({
-  type: z.literal("eval"),
-  bindings: z.array(z.tuple([fieldNameASTSchema, expressionASTSchema])),
-});
-export type EvalCommandAST = z.infer<typeof evalCommandASTSchema>;
+export type EvalCommandAST = {
+  type: "eval";
+  bindings: [FieldNameAST, ExpressionAST][];
+};
 
 export function parseEvalCommand(ctx: ParseContext): EvalCommandAST {
   parseWs(ctx);

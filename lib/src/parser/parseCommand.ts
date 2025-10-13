@@ -1,55 +1,49 @@
-import { z } from "zod";
 import {
-  evalCommandASTSchema,
+  type EvalCommandAST,
   parseEvalCommand,
 } from "./command/parseEvalCommand";
 import {
-  fieldsCommandASTSchema,
+  type FieldsCommandAST,
   parseFieldsCommand,
 } from "./command/parseFieldsCommand";
 import {
-  makeresultsCommandASTSchema,
+  type MakeresultsCommandAST,
   parseMakeresultsCommand,
 } from "./command/parseMakeresultsCommand";
-import {
-  parseRexCommand,
-  rexCommandASTSchema,
-} from "./command/parseRexCommand";
+import { parseRexCommand, type RexCommandAST } from "./command/parseRexCommand";
 import {
   parseSearchCommand,
-  searchCommandASTSchema,
+  type SearchCommandAST,
 } from "./command/parseSearchCommand";
 import {
   parseSortCommand,
-  sortCommandASTSchema,
+  type SortCommandAST,
 } from "./command/parseSortCommand";
 import {
   parseStatsCommand,
-  statsCommandASTSchema,
+  type StatsCommandAST,
 } from "./command/parseStatsCommand";
 import {
   parseStreamstatsCommand,
-  streamstatsCommandASTSchema,
+  type StreamstatsCommandAST,
 } from "./command/parseStreamstatsCommand";
 import {
   parseWhereCommand,
-  whereCommandASTSchema,
+  type WhereCommandAST,
 } from "./command/parseWhereCommand";
 import type { ParseContext } from "./ParseContext";
 import { parseOne } from "./parseCommon";
 
-export const commandASTSchema = z.union([
-  evalCommandASTSchema,
-  fieldsCommandASTSchema,
-  makeresultsCommandASTSchema,
-  rexCommandASTSchema,
-  searchCommandASTSchema,
-  sortCommandASTSchema,
-  statsCommandASTSchema,
-  streamstatsCommandASTSchema,
-  whereCommandASTSchema,
-]);
-export type CommandAST = z.infer<typeof commandASTSchema>;
+export type CommandAST =
+  | EvalCommandAST
+  | FieldsCommandAST
+  | MakeresultsCommandAST
+  | RexCommandAST
+  | SearchCommandAST
+  | SortCommandAST
+  | StatsCommandAST
+  | StreamstatsCommandAST
+  | WhereCommandAST;
 
 export function parseCommand(ctx: ParseContext): CommandAST {
   return parseOne(

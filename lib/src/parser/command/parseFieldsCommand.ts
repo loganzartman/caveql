@@ -1,20 +1,18 @@
-import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import {
-  fieldNameASTSchema,
+  type FieldNameAST,
   parseFieldName,
   parseLiteral,
   parseOptional,
   parseWs,
 } from "../parseCommon";
 
-export const fieldsCommandASTSchema = z.object({
-  type: z.literal("fields"),
-  fields: z.array(fieldNameASTSchema),
-  remove: z.boolean().optional(),
-});
-export type FieldsCommandAST = z.infer<typeof fieldsCommandASTSchema>;
+export type FieldsCommandAST = {
+  type: "fields";
+  fields: FieldNameAST[];
+  remove?: boolean;
+};
 
 export function parseFieldsCommand(ctx: ParseContext): FieldsCommandAST {
   parseWs(ctx);

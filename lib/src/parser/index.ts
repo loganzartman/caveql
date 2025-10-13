@@ -1,10 +1,7 @@
 export type * from "./command/parseAggregationTerm";
 export type * from "./command/parseEvalCommand";
-export type * from "./command/parseFieldsCommand";
 export type * from "./command/parseMakeresultsCommand";
-export type * from "./command/parseRexCommand";
 export type * from "./command/parseSearchCommand";
-export type * from "./command/parseSortCommand";
 export type * from "./command/parseStatsCommand";
 export type * from "./command/parseStreamstatsCommand";
 export type * from "./command/parseWhereCommand";

@@ -1,11 +1,9 @@
-import { z } from "zod";
 import { type BuiltinFuncName, builtinFuncs } from "../compiler";
-import { builtinFuncNameSchema } from "../compiler/compileExpression";
 import { Token } from "../tokens";
 import type { ParseContext } from "./ParseContext";
 import {
-  fieldNameASTSchema,
-  numericASTSchema,
+  type FieldNameAST,
+  type NumericAST,
   parseFieldName,
   parseLiteral,
   parseNumeric,
@@ -13,86 +11,16 @@ import {
   parseOptional,
   parseString,
   parseWs,
-  stringASTSchema,
+  type StringAST,
 } from "./parseCommon";
 
-export const binaryOpSchema = z.enum([
-  "and",
-  "or",
-  "AND",
-  "OR",
-  "=",
-  "==",
-  ">",
-  "<",
-  ">=",
-  "<=",
-  "!=",
-  "+",
-  "-",
-  "*",
-  "/",
-  "%",
-  ".",
-]);
-export type BinaryOp = z.infer<typeof binaryOpSchema>;
-
-export const unaryOpSchema = z.enum(["not", "NOT"]);
-export type UnaryOp = z.infer<typeof unaryOpSchema>;
-
-export const binaryOpASTSchema: z.ZodType<BinaryOpAST> = z.lazy(() =>
-  z.object({
-    type: z.literal("binary-op"),
-    op: binaryOpSchema,
-    left: expressionASTSchema,
-    right: expressionASTSchema,
-  }),
-);
-export type BinaryOpAST = {
-  type: "binary-op";
-  op: BinaryOp;
-  left: ExpressionAST;
-  right: ExpressionAST;
-};
-
-export const unaryOpASTSchema: z.ZodType<UnaryOpAST> = z.lazy(() =>
-  z.object({
-    type: z.literal("unary-op"),
-    op: unaryOpSchema,
-    operand: expressionASTSchema,
-  }),
-);
-export type UnaryOpAST = {
-  type: "unary-op";
-  op: UnaryOp;
-  operand: ExpressionAST;
-};
-
-export const functionCallASTSchema: z.ZodType<FunctionCallAST> = z.lazy(() =>
-  z.object({
-    type: z.literal("function-call"),
-    name: builtinFuncNameSchema,
-    args: z.array(expressionASTSchema),
-  }),
-);
-export type FunctionCallAST = {
-  type: "function-call";
-  name: BuiltinFuncName;
-  args: ExpressionAST[];
-};
-
-export const expressionASTSchema = z.lazy(() =>
-  z.union([
-    unaryOpASTSchema,
-    binaryOpASTSchema,
-    functionCallASTSchema,
-    numericASTSchema,
-    stringASTSchema,
-    fieldNameASTSchema,
-  ]),
-);
-
-export type ExpressionAST = z.infer<typeof expressionASTSchema>;
+export type ExpressionAST =
+  | UnaryOpAST
+  | BinaryOpAST
+  | FunctionCallAST
+  | NumericAST
+  | StringAST
+  | FieldNameAST;
 
 export function parseExpression(ctx: ParseContext): ExpressionAST {
   return parseOrExpr(ctx);
@@ -108,6 +36,32 @@ export function parseTerm(ctx: ParseContext): ExpressionAST {
     parseFieldName,
   );
 }
+
+export type BinaryOp =
+  | "and"
+  | "or"
+  | "AND"
+  | "OR"
+  | "="
+  | "=="
+  | ">"
+  | "<"
+  | ">="
+  | "<="
+  | "!="
+  | "+"
+  | "-"
+  | "*"
+  | "/"
+  | "%"
+  | ".";
+
+export type BinaryOpAST = {
+  type: "binary-op";
+  op: BinaryOp;
+  left: ExpressionAST;
+  right: ExpressionAST;
+};
 
 function parseOrExpr(ctx: ParseContext): ExpressionAST {
   return parseBinaryLevel(ctx, parseAndExpr, ["or"]);
@@ -163,6 +117,14 @@ function parseBinaryLevel(
   return left;
 }
 
+export type UnaryOp = "not" | "NOT";
+
+export type UnaryOpAST = {
+  type: "unary-op";
+  op: UnaryOp;
+  operand: ExpressionAST;
+};
+
 export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
   try {
     parseWs(ctx);
@@ -189,6 +151,12 @@ export function parseGroup(ctx: ParseContext): ExpressionAST {
   parseLiteral(ctx, [Token.paren, ")"]);
   return expr;
 }
+
+export type FunctionCallAST = {
+  type: "function-call";
+  name: BuiltinFuncName;
+  args: ExpressionAST[];
+};
 
 export function parseFunctionCall(ctx: ParseContext): ExpressionAST {
   parseWs(ctx);
