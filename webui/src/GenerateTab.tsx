@@ -1,5 +1,5 @@
 import * as webllm from "@mlc-ai/web-llm";
-import { type QueryAST, queryASTSchema } from "caveql";
+import { printAST, type QueryAST, queryASTSchema } from "caveql";
 import { useCallback, useRef, useState } from "react";
 import * as z from "zod";
 import { Button } from "./components/Button";
@@ -17,8 +17,7 @@ console.log(appConfig);
 
 const jsonSchema = z.toJSONSchema(queryASTSchema, {
   unrepresentable: "any",
-  // seems to be the only one that qwen doesn't crash on...
-  target: "openapi-3.0",
+  target: "draft-7",
 });
 
 export function GenerateTab({
@@ -30,6 +29,7 @@ export function GenerateTab({
   const [isShowingConfirmDownload, setIsShowingConfirmDownload] =
     useState(false);
   const [preloadProgress, setPreloadProgress] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<
     "downloading" | "preparing" | "generating" | "idle"
   >("idle");
@@ -93,12 +93,23 @@ export function GenerateTab({
 
         setStatus("generating");
 
+        let generated = "";
         for await (const chunk of chunks) {
           const content = chunk.choices[0]?.delta.content || "";
-          setGenerated((g) => g + content);
+          generated += content;
           if (chunk.usage) {
             console.log(chunk.usage); // only last chunk has usage
           }
+        }
+
+        try {
+          const parsed = JSON.parse(generated);
+          const printed = printAST(parsed);
+          setGenerated(printed);
+        } catch (e) {
+          console.error("Output:\n", generated);
+          console.error(e);
+          setErrorMessage("LLM failed to produce valid output");
         }
 
         setStatus("idle");
@@ -148,10 +159,12 @@ export function GenerateTab({
         onClick={() => status === "idle" && generate()}
         disabled={status !== "idle"}
         variant="filled-2"
+        className="mb-2"
       >
         generate query
       </Button>
       {renderProgressBar()}
+      {errorMessage && <div className="text-red-300">{errorMessage}</div>}
       <pre className="text-wrap break-all">{generated}</pre>
       {generated !== "" && status === "idle" && (
         <Button variant="filled-2" onClick={() => onAcceptQuery(generated)}>
@@ -376,7 +389,7 @@ function makeCompletionInput({ request }: { request: string }) {
     ],
     response_format: {
       type: "json_object",
-      schema: JSON.stringify(jsonSchema),
+      // schema: JSON.stringify(jsonSchema),
     },
     temperature: 0.7,
     top_p: 0.8,
