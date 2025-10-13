@@ -18,12 +18,12 @@ export const makeresultsCommandASTSchema = z.union([
   z.object({
     type: z.literal("makeresults"),
     count: numericASTSchema,
-    format: z.undefined(),
-    data: z.undefined(),
+    format: z.undefined().optional(),
+    data: z.undefined().optional(),
   }),
   z.object({
     type: z.literal("makeresults"),
-    count: z.undefined(),
+    count: z.undefined().optional(),
     format: z.enum(["csv", "json"]),
     data: stringASTSchema,
   }),
@@ -68,7 +68,6 @@ export function parseMakeresultsCommand(
     }
     return {
       type: "makeresults",
-      count: undefined,
       format,
       data,
     };
@@ -76,7 +75,5 @@ export function parseMakeresultsCommand(
   return {
     type: "makeresults",
     count,
-    format: undefined,
-    data: undefined,
   };
 }

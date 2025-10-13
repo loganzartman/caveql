@@ -1,11 +1,10 @@
 import { z } from "zod";
 import { type BuiltinFuncName, builtinFuncs } from "../compiler";
+import { builtinFuncNameSchema } from "../compiler/compileExpression";
 import { Token } from "../tokens";
 import type { ParseContext } from "./ParseContext";
 import {
-  type FieldNameAST,
   fieldNameASTSchema,
-  type NumericAST,
   numericASTSchema,
   parseFieldName,
   parseLiteral,
@@ -14,7 +13,6 @@ import {
   parseOptional,
   parseString,
   parseWs,
-  type StringAST,
   stringASTSchema,
 } from "./parseCommon";
 
@@ -73,7 +71,7 @@ export type UnaryOpAST = {
 export const functionCallASTSchema: z.ZodType<FunctionCallAST> = z.lazy(() =>
   z.object({
     type: z.literal("function-call"),
-    name: z.string() as z.ZodType<BuiltinFuncName>,
+    name: builtinFuncNameSchema,
     args: z.array(expressionASTSchema),
   }),
 );
@@ -83,7 +81,7 @@ export type FunctionCallAST = {
   args: ExpressionAST[];
 };
 
-export const expressionASTSchema: z.ZodType<ExpressionAST> = z.lazy(() =>
+export const expressionASTSchema = z.lazy(() =>
   z.union([
     unaryOpASTSchema,
     binaryOpASTSchema,
@@ -93,13 +91,8 @@ export const expressionASTSchema: z.ZodType<ExpressionAST> = z.lazy(() =>
     fieldNameASTSchema,
   ]),
 );
-export type ExpressionAST =
-  | UnaryOpAST
-  | BinaryOpAST
-  | FunctionCallAST
-  | NumericAST
-  | StringAST
-  | FieldNameAST;
+
+export type ExpressionAST = z.infer<typeof expressionASTSchema>;
 
 export function parseExpression(ctx: ParseContext): ExpressionAST {
   return parseOrExpr(ctx);

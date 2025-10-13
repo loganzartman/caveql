@@ -9,11 +9,10 @@ export const queryASTSchema = z.object({
 });
 export type QueryAST = z.infer<typeof queryASTSchema>;
 
-export const parseQueryResultSchema = z.object({
-  ast: queryASTSchema,
-  context: z.custom<ParseContext>(),
-});
-export type ParseQueryResult = z.infer<typeof parseQueryResultSchema>;
+export type ParseQueryResult = {
+  ast: QueryAST;
+  context: ParseContext;
+};
 
 export function parseQuery(
   src: string,

@@ -4,7 +4,6 @@ import type { ParseContext } from "./ParseContext";
 import {
   type FieldNameAST,
   fieldNameASTSchema,
-  type NumericAST,
   numericASTSchema,
   parseFieldName,
   parseLiteral,
@@ -73,22 +72,16 @@ export type SearchUnaryExpressionAST = {
   operand: SearchExpressionAST;
 };
 
-export const searchExpressionASTSchema: z.ZodType<SearchExpressionAST> = z.lazy(
-  () =>
-    z.union([
-      searchBinaryExpressionASTSchema,
-      searchUnaryExpressionASTSchema,
-      compareExpressionASTSchema,
-      stringASTSchema,
-      numericASTSchema,
-    ]),
+export const searchExpressionASTSchema = z.lazy(() =>
+  z.union([
+    searchBinaryExpressionASTSchema,
+    searchUnaryExpressionASTSchema,
+    compareExpressionASTSchema,
+    stringASTSchema,
+    numericASTSchema,
+  ]),
 );
-export type SearchExpressionAST =
-  | SearchBinaryExpressionAST
-  | SearchUnaryExpressionAST
-  | CompareExpressionAST
-  | StringAST
-  | NumericAST;
+export type SearchExpressionAST = z.infer<typeof searchExpressionASTSchema>;
 
 export function parseSearchExpression(ctx: ParseContext): SearchExpressionAST {
   return parseSearchOrExpression(ctx);
