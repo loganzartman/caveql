@@ -6,19 +6,20 @@ import { Button } from "./components/Button";
 import { ConfirmDownloadDialog } from "./components/ConfirmDownloadDialog";
 import { LoadingStrip } from "./components/LoadingStrip";
 
-console.log(webllm.prebuiltAppConfig.model_list);
-
-const modelID = "Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC";
+// Qwen3 1.7B struggles with syntax (seems to break structured generation??)
+// Qwen2.5-Coder-1.5B is workable but makes some mistakes.
+// Qwen2.5-Coder-3B is effective.
+// const modelID = "Qwen2.5-Coder-1.5B-Instruct-q4f32_1-MLC";
+const modelID = "Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC";
 
 const appConfig: webllm.AppConfig = webllm.prebuiltAppConfig;
+console.log(appConfig);
 
 const jsonSchema = z.toJSONSchema(queryASTSchema, {
   unrepresentable: "any",
   // seems to be the only one that qwen doesn't crash on...
   target: "openapi-3.0",
 });
-
-console.log(jsonSchema);
 
 export function GenerateTab({
   onAcceptQuery,
@@ -131,10 +132,10 @@ export function GenerateTab({
   };
 
   return (
-    <div className="p-4">
-      <div className="flex flex-row items-center gap-2 mb-2">
-        <div className="text-xl font-semibold">What do you want to do?</div>
-        <span className="text-sm bg-amber-800 text-amber-200 px-1 py-0.5 capitalize">
+    <div className="p-4 flex flex-col gap-2 items-start">
+      <div className="flex flex-row items-center gap-3 mb-2">
+        <div className="text-2xl font-semibold">what do you want to do?</div>
+        <span className="text-xs bg-amber-800 text-amber-200 px-1 py-0.5 uppercase">
           Experimental
         </span>
       </div>
@@ -148,7 +149,7 @@ export function GenerateTab({
         disabled={status !== "idle"}
         variant="filled-2"
       >
-        generate
+        generate query
       </Button>
       {renderProgressBar()}
       <pre className="text-wrap break-all">{generated}</pre>
@@ -356,16 +357,14 @@ function makeCompletionInput({ request }: { request: string }) {
         content: [
           "The user will make a request and you will respond with a Splunk query AST.",
           "",
-          fewShotExamples
-            .slice(0, 3)
-            .map((ex) => [
-              "EXAMPLE:",
-              `Input: ${ex.input}`,
-              `Output: ${JSON.stringify(ex.output, null, 2)}`,
-            ]),
+          fewShotExamples.map((ex) => [
+            "EXAMPLE:",
+            `Input: ${ex.input}`,
+            `Output: ${JSON.stringify(ex.output, null, 2)}`,
+          ]),
           "",
           "As a Splunk expert, respond with a JSON-formatted Splunk query AST, and nothing else.",
-          "If you're missing information to create a working query, just guess to create an example.",
+          "If you're missing information to create a working query, use sample values.",
         ]
           .flat()
           .join("\n"),
@@ -381,7 +380,7 @@ function makeCompletionInput({ request }: { request: string }) {
     },
     temperature: 0.7,
     top_p: 0.8,
-    max_tokens: 128,
+    max_tokens: 256,
     stream: true,
     stream_options: { include_usage: true },
   } satisfies webllm.ChatCompletionRequest;

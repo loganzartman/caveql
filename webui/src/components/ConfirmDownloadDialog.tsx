@@ -45,10 +45,12 @@ export function ConfirmDownloadDialog({
                 We'll cache the model locally so you can skip this step in the
                 future.
               </p>
-              <p>This will transfer approximately 1GB of data.</p>
+              <p>This will transfer approximately 2GB of data.</p>
             </div>
             {progress !== null ? (
-              <ProgressBar progress={progress} max={1} />
+              <div className="w-full mt-2">
+                <ProgressBar progress={progress} max={1} />
+              </div>
             ) : (
               <div className="mt-4 flex flex-row justify-end gap-2">
                 <Button
