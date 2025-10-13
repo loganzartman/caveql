@@ -6,6 +6,7 @@ import {
 } from "@headlessui/react";
 import { CloudArrowDownIcon, XMarkIcon } from "@heroicons/react/20/solid";
 import { Button } from "./Button";
+import { ProgressBar } from "./ProgressBar";
 
 export function ConfirmDownloadDialog({
   isOpen,
@@ -47,11 +48,7 @@ export function ConfirmDownloadDialog({
               <p>This will transfer approximately 1GB of data.</p>
             </div>
             {progress !== null ? (
-              <progress
-                value={progress}
-                max={1}
-                className="w-full [&::-webkit-progress-bar]:bg-stone-900 [&::-webkit-progress-value]:bg-amber-400 [&::-moz-progress-bar]:bg-amber-400"
-              />
+              <ProgressBar progress={progress} max={1} />
             ) : (
               <div className="mt-4 flex flex-row justify-end gap-2">
                 <Button
