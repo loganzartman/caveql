@@ -24,15 +24,18 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
+    "@mlc-ai/web-llm": "^0.2.79",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
     "base2048": "^2.0.2",
     "caveql": "workspace:*",
     "clsx": "^2.1.1",
+    "dedent": "^1.7.0",
     "monaco-editor": "^0.52.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hot-toast": "^2.6.0",
-    "recharts": "^3.0.2"
+    "recharts": "^3.0.2",
+    "zod": "^4.1.12"
   }
 }
