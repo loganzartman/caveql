@@ -1,3 +1,10 @@
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+} from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import * as webllm from "@mlc-ai/web-llm";
 import { printAST, type QueryAST, queryASTSchema } from "caveql";
 import { useCallback, useRef, useState } from "react";
@@ -6,18 +13,20 @@ import { Button } from "./components/Button";
 import { ConfirmDownloadDialog } from "./components/ConfirmDownloadDialog";
 import { LoadingStrip } from "./components/LoadingStrip";
 
-// Qwen3 1.7B struggles with syntax (seems to break structured generation??)
-// Qwen2.5-Coder-1.5B is workable but makes some mistakes.
-// Qwen2.5-Coder-3B is effective.
-// const modelID = "Qwen2.5-Coder-1.5B-Instruct-q4f32_1-MLC";
-const modelID = "Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC";
-
 const appConfig: webllm.AppConfig = webllm.prebuiltAppConfig;
-console.log(appConfig);
+const availableModels = appConfig.model_list
+  .filter((model) => model.model_type !== 1)
+  // .sort((a, b) => (a.vram_required_MB ?? 0) - (b.vram_required_MB ?? 0));
+  .sort((a, b) => a.model_id.localeCompare(b.model_id));
+console.log(availableModels);
 
 const jsonSchema = z.toJSONSchema(queryASTSchema, {
   unrepresentable: "any",
   target: "draft-7",
+  override: (ctx) => {
+    delete ctx.jsonSchema.minItems;
+    delete ctx.jsonSchema.maxItems;
+  },
 });
 
 export function GenerateTab({
@@ -34,6 +43,9 @@ export function GenerateTab({
     "downloading" | "preparing" | "generating" | "idle"
   >("idle");
   const [generated, setGenerated] = useState("");
+  const [modelID, setModelID] = useState(
+    "Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC",
+  );
   const engine = useRef<webllm.MLCEngine | null>(null);
 
   const getEngine = useCallback<() => Promise<webllm.MLCEngine>>(async () => {
@@ -47,7 +59,7 @@ export function GenerateTab({
     });
     engine.current = newEngine;
     return newEngine;
-  }, []);
+  }, [modelID]);
 
   const confirmLoadModel = useCallback(() => {
     (async () => {
@@ -109,7 +121,9 @@ export function GenerateTab({
         } catch (e) {
           console.error("Output:\n", generated);
           console.error(e);
-          setErrorMessage("LLM failed to produce valid output");
+          setErrorMessage(
+            "LLM failed to produce valid output" + "\n" + generated,
+          );
         }
 
         setStatus("idle");
@@ -117,7 +131,7 @@ export function GenerateTab({
         console.error(e);
       }
     })();
-  }, [status, getEngine]);
+  }, [status, getEngine, modelID]);
 
   const renderProgressBar = () => {
     let text: string | null = null;
@@ -144,11 +158,40 @@ export function GenerateTab({
 
   return (
     <div className="p-4 flex flex-col gap-2 items-start">
-      <div className="flex flex-row items-center gap-3 mb-2">
-        <div className="text-2xl font-semibold">what do you want to do?</div>
-        <span className="text-xs bg-amber-800 text-amber-200 px-1 py-0.5 uppercase">
-          Experimental
-        </span>
+      <div className="w-full flex flex-row items-center justify-between">
+        <div className="flex flex-row items-center gap-3 mb-2">
+          <div className="text-2xl font-semibold">what do you want to do?</div>
+          <span className="text-xs bg-amber-800 text-amber-200 px-1 py-0.5 uppercase">
+            Experimental
+          </span>
+        </div>
+        <Listbox value={modelID} onChange={setModelID}>
+          <div className="flex flex-row items-start">
+            <ListboxButton className="w-full flex flex-row items-center gap-2 px-4 py-2 bg-stone-700">
+              <ChevronDownIcon className="w-5 h-5 text-stone-400" />
+              {modelID}
+            </ListboxButton>
+          </div>
+          <ListboxOptions
+            anchor="bottom end"
+            className="ring-1 ring-amber-500/50"
+          >
+            {availableModels.map((model) => (
+              <ListboxOption
+                autoFocus
+                key={model.model_id}
+                value={model.model_id}
+                className="cursor-pointer px-2 py-1 bg-stone-700 hover:bg-stone-600"
+              >
+                {model.model_id} (
+                {model.vram_required_MB?.toLocaleString(undefined, {
+                  maximumFractionDigits: 0,
+                })}{" "}
+                MB)
+              </ListboxOption>
+            ))}
+          </ListboxOptions>
+        </Listbox>
       </div>
       <textarea
         ref={textareaRef}
@@ -164,7 +207,9 @@ export function GenerateTab({
         generate query
       </Button>
       {renderProgressBar()}
-      {errorMessage && <div className="text-red-300">{errorMessage}</div>}
+      {errorMessage && (
+        <pre className="text-red-300 font-sans">{errorMessage}</pre>
+      )}
       <pre className="text-wrap break-all">{generated}</pre>
       {generated !== "" && status === "idle" && (
         <Button variant="filled-2" onClick={() => onAcceptQuery(generated)}>
@@ -366,7 +411,7 @@ function makeCompletionInput({ request }: { request: string }) {
   return {
     messages: [
       {
-        role: "system",
+        role: "user",
         content: [
           "The user will make a request and you will respond with a Splunk query AST.",
           "",
@@ -378,18 +423,15 @@ function makeCompletionInput({ request }: { request: string }) {
           "",
           "As a Splunk expert, respond with a JSON-formatted Splunk query AST, and nothing else.",
           "If you're missing information to create a working query, use sample values.",
+          `/no_think ${request}`,
         ]
           .flat()
           .join("\n"),
       },
-      {
-        role: "user",
-        content: `/no_think ${request}`,
-      },
     ],
     response_format: {
       type: "json_object",
-      // schema: JSON.stringify(jsonSchema),
+      schema: JSON.stringify(jsonSchema),
     },
     temperature: 0.7,
     top_p: 0.8,
