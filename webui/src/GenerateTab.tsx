@@ -6,9 +6,8 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import * as webllm from "@mlc-ai/web-llm";
-import { printAST, type QueryAST, queryASTSchema } from "caveql";
+import { grammarGBNF, parseQuery, printAST } from "caveql";
 import { useCallback, useRef, useState } from "react";
-import * as z from "zod";
 import { Button } from "./components/Button";
 import { ConfirmDownloadDialog } from "./components/ConfirmDownloadDialog";
 import { LoadingStrip } from "./components/LoadingStrip";
@@ -19,15 +18,6 @@ const availableModels = appConfig.model_list
   // .sort((a, b) => (a.vram_required_MB ?? 0) - (b.vram_required_MB ?? 0));
   .sort((a, b) => a.model_id.localeCompare(b.model_id));
 console.log(availableModels);
-
-const jsonSchema = z.toJSONSchema(queryASTSchema, {
-  unrepresentable: "any",
-  target: "draft-7",
-  override: (ctx) => {
-    delete ctx.jsonSchema.minItems;
-    delete ctx.jsonSchema.maxItems;
-  },
-});
 
 export function GenerateTab({
   onAcceptQuery,
@@ -43,9 +33,7 @@ export function GenerateTab({
     "downloading" | "preparing" | "generating" | "idle"
   >("idle");
   const [generated, setGenerated] = useState("");
-  const [modelID, setModelID] = useState(
-    "Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC",
-  );
+  const [modelID, setModelID] = useState("Qwen2.5-0.5B-Instruct-q4f16_1-MLC");
   const engine = useRef<webllm.MLCEngine | null>(null);
 
   const getEngine = useCallback<() => Promise<webllm.MLCEngine>>(async () => {
@@ -109,14 +97,15 @@ export function GenerateTab({
         for await (const chunk of chunks) {
           const content = chunk.choices[0]?.delta.content || "";
           generated += content;
+          setGenerated(generated);
           if (chunk.usage) {
             console.log(chunk.usage); // only last chunk has usage
           }
         }
 
         try {
-          const parsed = JSON.parse(generated);
-          const printed = printAST(parsed);
+          const parsed = parseQuery(generated);
+          const printed = printAST(parsed.ast);
           setGenerated(printed);
         } catch (e) {
           console.error("Output:\n", generated);
@@ -197,6 +186,7 @@ export function GenerateTab({
         ref={textareaRef}
         className="w-full p-2 border border-stone-500"
         placeholder="Find the average duration of successful requests"
+        defaultValue="count the total number of events"
       ></textarea>
       <Button
         onClick={() => status === "idle" && generate()}
@@ -228,182 +218,22 @@ export function GenerateTab({
   );
 }
 
-const fewShotExamples: Array<{ input: string; output: QueryAST }> = [
-  // 1. SIMPLE: Basic search with single comparison
+const fewShotExamples: Array<{ input: string; output: string }> = [
   {
     input: "find events where status equals 404",
-    output: {
-      type: "query",
-      pipeline: [
-        {
-          type: "search",
-          filters: [
-            {
-              type: "compare",
-              left: { type: "field-name", value: "status" },
-              op: "=",
-              right: { type: "number", value: 404 },
-            },
-          ],
-        },
-      ],
-    },
+    output: "status=404",
   },
-
-  // 2. SIMPLE: Search with AND condition
   {
-    input: "show errors from the web server",
-    output: {
-      type: "query",
-      pipeline: [
-        {
-          type: "search",
-          filters: [
-            {
-              type: "search-binary-op",
-              op: "AND",
-              left: {
-                type: "compare",
-                left: { type: "field-name", value: "level" },
-                op: "=",
-                right: { type: "string", value: "error" },
-              },
-              right: {
-                type: "compare",
-                left: { type: "field-name", value: "source" },
-                op: "=",
-                right: { type: "string", value: "web" },
-              },
-            },
-          ],
-        },
-      ],
-    },
+    input: "count the number of requests with 2xx status",
+    output: "status>=200 status<300\n| stats count",
   },
-
-  // 3. MEDIUM: Search + stats aggregation
   {
-    input: "count events by host",
-    output: {
-      type: "query",
-      pipeline: [
-        {
-          type: "stats",
-          aggregations: [
-            {
-              type: "count",
-            },
-          ],
-        },
-      ],
-    },
+    input: "extract the path from the url field",
+    output: '| rex field=url "[a-z]+:/+[^/]+/(?<path>[^?]+)"',
   },
-
-  // 4. MEDIUM: Stats with grouping (by field)
   {
-    input: "calculate average response time by endpoint",
-    output: {
-      type: "query",
-      pipeline: [
-        {
-          type: "stats",
-          aggregations: [
-            {
-              type: "avg",
-              field: { type: "field-name", value: "response_time" },
-              asField: { type: "field-name", value: "avg_response_time" },
-            },
-          ],
-        },
-      ],
-    },
-  },
-
-  // 5. COMPLEX: Search + sort with limit
-  {
-    input: "find the top 10 slowest requests",
-    output: {
-      type: "query",
-      pipeline: [
-        {
-          type: "sort",
-          count: { type: "number", value: 10 },
-          fields: [
-            {
-              type: "sort-field",
-              field: { type: "field-name", value: "duration" },
-              desc: true,
-            },
-          ],
-        },
-      ],
-    },
-  },
-
-  // 6. COMPLEX: Multi-stage pipeline
-  {
-    input: "find errors, count them by severity, and show the top 5",
-    output: {
-      type: "query",
-      pipeline: [
-        {
-          type: "search",
-          filters: [
-            {
-              type: "compare",
-              left: { type: "field-name", value: "level" },
-              op: "=",
-              right: { type: "string", value: "error" },
-            },
-          ],
-        },
-        {
-          type: "stats",
-          aggregations: [
-            {
-              type: "count",
-              asField: { type: "field-name", value: "error_count" },
-            },
-          ],
-        },
-        {
-          type: "sort",
-          count: { type: "number", value: 5 },
-          fields: [
-            {
-              type: "sort-field",
-              field: { type: "field-name", value: "error_count" },
-              desc: true,
-            },
-          ],
-        },
-      ],
-    },
-  },
-
-  // 7. EDGE CASE: eval with expression
-  {
-    input:
-      "create a field called is_slow that's true when duration is over 1000",
-    output: {
-      type: "query",
-      pipeline: [
-        {
-          type: "eval",
-          bindings: [
-            [
-              { type: "field-name", value: "is_slow" },
-              {
-                type: "binary-op",
-                op: ">",
-                left: { type: "field-name", value: "duration" },
-                right: { type: "number", value: 1000 },
-              },
-            ],
-          ],
-        },
-      ],
-    },
+    input: "calculate average DB and CPU duration of requests",
+    output: "| stats avg(db_duration), avg(cpu_duration)",
   },
 ];
 
@@ -411,9 +241,10 @@ function makeCompletionInput({ request }: { request: string }) {
   return {
     messages: [
       {
-        role: "user",
+        role: "system",
         content: [
-          "The user will make a request and you will respond with a Splunk query AST.",
+          "The user will make a request and you will respond with a Splunk query.",
+          "If you're missing information to create a working query, use sample values.",
           "",
           fewShotExamples.map((ex) => [
             "EXAMPLE:",
@@ -421,17 +252,16 @@ function makeCompletionInput({ request }: { request: string }) {
             `Output: ${JSON.stringify(ex.output, null, 2)}`,
           ]),
           "",
-          "As a Splunk expert, respond with a JSON-formatted Splunk query AST, and nothing else.",
-          "If you're missing information to create a working query, use sample values.",
-          `/no_think ${request}`,
+          "As a Splunk expert, respond with a Splunk query, and nothing else.",
         ]
           .flat()
           .join("\n"),
       },
+      { role: "user", content: request },
     ],
     response_format: {
-      type: "json_object",
-      schema: JSON.stringify(jsonSchema),
+      type: "grammar",
+      grammar: grammarGBNF,
     },
     temperature: 0.7,
     top_p: 0.8,

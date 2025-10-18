@@ -5,6 +5,7 @@ export type * from "./data/readRecords";
 export * from "./data/readRecords";
 export { formatJS } from "./formatJS";
 export { formatTree } from "./formatTree";
+export { grammarGBNF } from "./grammar";
 export { iter } from "./iter";
 export * from "./monaco/language";
 export type * from "./parser";
