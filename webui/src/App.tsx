@@ -37,12 +37,12 @@ import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
 import { Editor } from "./Editor";
-import { GenerateTab } from "./GenerateTab";
 import { debounce } from "./lib/debounce";
 import { packString, unpackString } from "./lib/pack";
 import { useSortQuery } from "./lib/useSortQuery";
 import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
+import { GenerateTab } from "./tabs/generate/GenerateTab";
 
 const DEFAULT_RESULTS_LIMIT = 100_000;
 
