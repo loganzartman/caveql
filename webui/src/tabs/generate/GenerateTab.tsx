@@ -6,11 +6,11 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import * as webllm from "@mlc-ai/web-llm";
-import { grammarGBNF, parseQuery, printAST } from "caveql";
 import { useCallback, useRef, useState } from "react";
-import { Button } from "./components/Button";
-import { ConfirmDownloadDialog } from "./components/ConfirmDownloadDialog";
-import { LoadingStrip } from "./components/LoadingStrip";
+import { Button } from "../../components/Button";
+import { ConfirmDownloadDialog } from "../../components/ConfirmDownloadDialog";
+import { LoadingStrip } from "../../components/LoadingStrip";
+import { grammarGBNF } from "./grammar";
 
 const appConfig: webllm.AppConfig = webllm.prebuiltAppConfig;
 const availableModels = appConfig.model_list
@@ -33,7 +33,7 @@ export function GenerateTab({
     "downloading" | "preparing" | "generating" | "idle"
   >("idle");
   const [generated, setGenerated] = useState("");
-  const [modelID, setModelID] = useState("Qwen2.5-0.5B-Instruct-q4f16_1-MLC");
+  const [modelID, setModelID] = useState("Qwen2.5-1.5B-Instruct-q4f32_1-MLC");
   const engine = useRef<webllm.MLCEngine | null>(null);
 
   const getEngine = useCallback<() => Promise<webllm.MLCEngine>>(async () => {
@@ -101,18 +101,6 @@ export function GenerateTab({
           if (chunk.usage) {
             console.log(chunk.usage); // only last chunk has usage
           }
-        }
-
-        try {
-          const parsed = parseQuery(generated);
-          const printed = printAST(parsed.ast);
-          setGenerated(printed);
-        } catch (e) {
-          console.error("Output:\n", generated);
-          console.error(e);
-          setErrorMessage(
-            "LLM failed to produce valid output" + "\n" + generated,
-          );
         }
 
         setStatus("idle");
@@ -221,11 +209,11 @@ export function GenerateTab({
 const fewShotExamples: Array<{ input: string; output: string }> = [
   {
     input: "find events where status equals 404",
-    output: "status=404",
+    output: "| search status=404",
   },
   {
     input: "count the number of requests with 2xx status",
-    output: "status>=200 status<300\n| stats count",
+    output: "| search status>=200 status<300\n| stats count",
   },
   {
     input: "extract the path from the url field",
@@ -235,6 +223,10 @@ const fewShotExamples: Array<{ input: string; output: string }> = [
     input: "calculate average DB and CPU duration of requests",
     output: "| stats avg(db_duration), avg(cpu_duration)",
   },
+  {
+    input: "sort events by response_time descending",
+    output: "| sort - response_time",
+  },
 ];
 
 function makeCompletionInput({ request }: { request: string }) {
@@ -242,30 +234,29 @@ function makeCompletionInput({ request }: { request: string }) {
     messages: [
       {
         role: "system",
-        content: [
-          "The user will make a request and you will respond with a Splunk query.",
-          "If you're missing information to create a working query, use sample values.",
-          "",
-          fewShotExamples.map((ex) => [
-            "EXAMPLE:",
-            `Input: ${ex.input}`,
-            `Output: ${JSON.stringify(ex.output, null, 2)}`,
-          ]),
-          "",
-          "As a Splunk expert, respond with a Splunk query, and nothing else.",
-        ]
-          .flat()
-          .join("\n"),
+        content:
+          "You are a Splunk query generator. The user will make a request and you will respond with a Splunk query.",
       },
+      ...fewShotExamples.flatMap((ex) => [
+        {
+          role: "user",
+          content: ex.input,
+        } as const,
+        {
+          role: "assistant",
+          content: ex.output,
+        } as const,
+      ]),
       { role: "user", content: request },
     ],
     response_format: {
       type: "grammar",
       grammar: grammarGBNF,
     },
+    frequency_penalty: 1.05,
     temperature: 0.7,
     top_p: 0.8,
-    max_tokens: 256,
+    max_tokens: 128,
     stream: true,
     stream_options: { include_usage: true },
   } satisfies webllm.ChatCompletionRequest;
