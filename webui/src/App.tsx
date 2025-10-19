@@ -273,8 +273,10 @@ export function App() {
 
   const handleAcceptGeneratedQuery = useCallback(
     (query: string) => {
-      editorRef?.setValue(query);
-      handleSourceChange(query);
+      const value = editorRef?.getValue() ?? "";
+      const newValue = `${value}\n${query}`;
+      editorRef?.setValue(newValue);
+      handleSourceChange(newValue);
     },
     [editorRef, handleSourceChange],
   );
@@ -411,7 +413,10 @@ export function App() {
             </TabGroup>
           </TabPanel>
           <TabPanel>
-            <GenerateTab onAcceptQuery={handleAcceptGeneratedQuery} />
+            <GenerateTab
+              onAcceptQuery={handleAcceptGeneratedQuery}
+              fieldSet={results.fieldSet}
+            />
           </TabPanel>
         </TabPanels>
       </TabGroup>

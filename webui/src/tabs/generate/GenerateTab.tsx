@@ -15,25 +15,29 @@ import { grammarGBNF } from "./grammar";
 const appConfig: webllm.AppConfig = webllm.prebuiltAppConfig;
 const availableModels = appConfig.model_list
   .filter((model) => model.model_type !== 1)
-  // .sort((a, b) => (a.vram_required_MB ?? 0) - (b.vram_required_MB ?? 0));
   .sort((a, b) => a.model_id.localeCompare(b.model_id));
-console.log(availableModels);
 
 export function GenerateTab({
   onAcceptQuery,
+  fieldSet,
 }: {
   onAcceptQuery: (query: string) => void;
+  fieldSet: ReadonlySet<string>;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const planContainerRef = useRef<HTMLPreElement | null>(null);
   const [isShowingConfirmDownload, setIsShowingConfirmDownload] =
     useState(false);
   const [preloadProgress, setPreloadProgress] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<
-    "downloading" | "preparing" | "generating" | "idle"
+    "downloading" | "preparing" | "planning" | "generating" | "idle"
   >("idle");
+  const [plan, setPlan] = useState("");
   const [generated, setGenerated] = useState("");
-  const [modelID, setModelID] = useState("Qwen2.5-1.5B-Instruct-q4f32_1-MLC");
+  const [modelID, setModelID] = useState(
+    "Qwen2.5-Coder-3B-Instruct-q4f32_1-MLC",
+  );
 
   const engineModel = useRef<string | null>(null);
   const engine = useRef<webllm.MLCEngine | null>(null);
@@ -51,6 +55,7 @@ export function GenerateTab({
         setPreloadProgress(progress.progress);
       },
     });
+    engineModel.current = modelID;
     engine.current = newEngine;
     return newEngine;
   }, [modelID]);
@@ -73,34 +78,62 @@ export function GenerateTab({
           return;
         }
 
+        setPlan("");
         setGenerated("");
         setStatus("preparing");
         await new Promise((r) => requestAnimationFrame(r));
 
         const engine = await getEngine();
-        const input = makeCompletionInput({ request });
-        console.log(input);
-        const chunks = await engine.chat.completions.create(input);
+
+        setStatus("planning");
+
+        let plan = "";
+        {
+          const input = makePlanInput({
+            request,
+            fields: Array.from(fieldSet),
+          });
+          console.log(input);
+          const chunks = await engine.chat.completions.create(input);
+          for await (const chunk of chunks) {
+            const content = chunk.choices[0]?.delta.content || "";
+            plan += content;
+            setPlan(plan);
+            planContainerRef.current?.scrollTo(
+              0,
+              planContainerRef.current.scrollHeight,
+            );
+            if (chunk.usage) {
+              console.log(chunk.usage);
+            }
+          }
+        }
 
         setStatus("generating");
 
         let generated = "";
-        for await (const chunk of chunks) {
-          const content = chunk.choices[0]?.delta.content || "";
-          generated += content;
-          setGenerated(generated);
-          if (chunk.usage) {
-            console.log(chunk.usage); // only last chunk has usage
+        {
+          const input = makeGenerateInput({ plan });
+          console.log(input);
+          const chunks = await engine.chat.completions.create(input);
+          for await (const chunk of chunks) {
+            const content = chunk.choices[0]?.delta.content || "";
+            generated += content;
+            setGenerated(generated);
+            if (chunk.usage) {
+              console.log(chunk.usage);
+            }
           }
         }
 
+        setGenerated(generated);
         setStatus("idle");
       } catch (e) {
         setErrorMessage(String(e));
         console.error(e);
       }
     })();
-  }, [status, getEngine, modelID]);
+  }, [status, getEngine, modelID, fieldSet]);
 
   const confirmLoadModel = useCallback(() => {
     (async () => {
@@ -125,6 +158,9 @@ export function GenerateTab({
     switch (status) {
       case "preparing":
         text = "Getting ready...";
+        break;
+      case "planning":
+        text = "Creating plan...";
         break;
       case "generating":
         text = "Generating...";
@@ -182,7 +218,7 @@ export function GenerateTab({
       </div>
       <textarea
         ref={textareaRef}
-        className="w-full p-2 border border-stone-500"
+        className="w-full p-2 bg-stone-900"
         placeholder="Find the average duration of successful requests"
         defaultValue="count the total number of events"
       ></textarea>
@@ -198,7 +234,31 @@ export function GenerateTab({
       {errorMessage && (
         <pre className="text-red-300 font-sans">{errorMessage}</pre>
       )}
-      <pre className="text-wrap break-all">{generated}</pre>
+      <div
+        style={{ display: plan ? "unset" : "none" }}
+        className="flex flex-col w-full"
+      >
+        <span className="text-stone-900 bg-stone-500 uppercase text-sm px-2 py-0.5">
+          Plan
+        </span>
+        <pre
+          ref={planContainerRef}
+          className="max-h-40 overflow-auto w-full p-2 border-l-1 border-stone-500 text-stone-400 font-sans italic text-wrap"
+        >
+          {plan}
+        </pre>
+      </div>
+      <div
+        style={{ display: generated ? "unset" : "none" }}
+        className="flex flex-col w-full"
+      >
+        <span className="text-stone-900 bg-amber-500 uppercase text-sm px-2 py-0.5">
+          Query
+        </span>
+        <pre className="max-h-40 w-full overflow-auto text-wrap break-all p-2 border-l-1 border-amber-500 text-amber-100">
+          {generated}
+        </pre>
+      </div>
       {generated !== "" && status === "idle" && (
         <Button variant="filled-2" onClick={() => onAcceptQuery(generated)}>
           use query
@@ -239,34 +299,83 @@ const fewShotExamples: Array<{ input: string; output: string }> = [
   },
 ];
 
-function makeCompletionInput({ request }: { request: string }) {
+function makePlanInput({
+  request,
+  fields,
+}: {
+  request: string;
+  fields: string[];
+}) {
   return {
     messages: [
       {
         role: "system",
-        content:
-          "You are a Splunk query generator. The user will make a request and you will respond with a Splunk query.",
+        content: [
+          "You are a Splunk expert. You analyze user requests and then generate a Splunk query.",
+          "Remember that Splunk queries are a sequence of commands. Each command starts with a |",
+          "Commands go in this order: filter, transform, aggregate/sort.",
+          "",
+          "EXAMPLES:",
+          ...fewShotExamples.flatMap((example) => [
+            `Goal: ${example.input}`,
+            `Query: ${example.output}`,
+            "",
+          ]),
+          "",
+          `AVAILABLE FIELDS: ${fields.join(", ")}`,
+          "AVAILABLE COMMANDS: search, where, rex, stats, sort",
+          "",
+          "The user will make a request. Make a plan and implement the request.",
+          "Do not include an index. Do not include a sourcetype.",
+          "Do no more than necessary to fulfill the request.",
+        ].join("\n"),
       },
-      ...fewShotExamples.flatMap((ex) => [
-        {
-          role: "user",
-          content: ex.input,
-        } as const,
-        {
-          role: "assistant",
-          content: ex.output,
-        } as const,
-      ]),
-      { role: "user", content: request },
+      {
+        role: "user",
+        content: request,
+      },
+    ],
+    response_format: {
+      type: "text",
+    },
+    presence_penalty: 1,
+    frequency_penalty: 1,
+    temperature: 0.7,
+    top_p: 0.8,
+    max_tokens: 512,
+    stream: true,
+    stream_options: { include_usage: true },
+  } satisfies webllm.ChatCompletionRequest;
+}
+
+function makeGenerateInput({ plan }: { plan: string }) {
+  return {
+    messages: [
+      {
+        role: "system",
+        content: [
+          "You are a Splunk autocomplete engine.",
+          "Remember that Splunk queries are a sequence of commands. Each command starts with a |",
+          "",
+          "The user inputs a plan, and you extract a valid Splunk query.",
+          "You ignore invalid syntax.",
+          "You never explain yourself. You only output the Splunk query.",
+        ].join("\n"),
+      },
+      {
+        role: "user",
+        content: plan,
+      },
     ],
     response_format: {
       type: "grammar",
       grammar: grammarGBNF,
     },
-    frequency_penalty: 1.05,
+    presence_penalty: 1,
+    frequency_penalty: 1,
     temperature: 0.7,
-    top_p: 0.8,
-    max_tokens: 128,
+    top_p: 1.0,
+    max_tokens: 256,
     stream: true,
     stream_options: { include_usage: true },
   } satisfies webllm.ChatCompletionRequest;
