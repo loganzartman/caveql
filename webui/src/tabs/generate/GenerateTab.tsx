@@ -34,11 +34,17 @@ export function GenerateTab({
   >("idle");
   const [generated, setGenerated] = useState("");
   const [modelID, setModelID] = useState("Qwen2.5-1.5B-Instruct-q4f32_1-MLC");
+
+  const engineModel = useRef<string | null>(null);
   const engine = useRef<webllm.MLCEngine | null>(null);
 
   const getEngine = useCallback<() => Promise<webllm.MLCEngine>>(async () => {
     if (engine.current) {
-      return engine.current;
+      if (engineModel.current === modelID) {
+        return engine.current;
+      }
+      await engine.current.unload();
+      engine.current = null;
     }
     const newEngine = await webllm.CreateMLCEngine(modelID, {
       initProgressCallback: (progress) => {
@@ -48,21 +54,6 @@ export function GenerateTab({
     engine.current = newEngine;
     return newEngine;
   }, [modelID]);
-
-  const confirmLoadModel = useCallback(() => {
-    (async () => {
-      try {
-        setPreloadProgress(0);
-        setStatus("downloading");
-        await getEngine();
-
-        setStatus("idle");
-        setIsShowingConfirmDownload(false);
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-  }, [getEngine]);
 
   const generate = useCallback(() => {
     if (status !== "idle") {
@@ -105,10 +96,29 @@ export function GenerateTab({
 
         setStatus("idle");
       } catch (e) {
+        setErrorMessage(String(e));
         console.error(e);
       }
     })();
   }, [status, getEngine, modelID]);
+
+  const confirmLoadModel = useCallback(() => {
+    (async () => {
+      try {
+        setPreloadProgress(0);
+        setStatus("downloading");
+        await getEngine();
+
+        setStatus("idle");
+        setIsShowingConfirmDownload(false);
+
+        generate();
+      } catch (e) {
+        setErrorMessage(String(e));
+        console.error(e);
+      }
+    })();
+  }, [getEngine, generate]);
 
   const renderProgressBar = () => {
     let text: string | null = null;
