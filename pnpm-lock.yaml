@@ -85,8 +85,8 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0(react@19.1.0)
       '@mlc-ai/web-llm':
-        specifier: ^0.2.79
-        version: 0.2.79
+        specifier: npm:@loganz/mlc-ai--web-llm@0.2.80-patch.1
+        version: '@loganz/mlc-ai--web-llm@0.2.80-patch.1'
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -503,6 +503,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@loganz/mlc-ai--web-llm@0.2.80-patch.1':
+    resolution: {integrity: sha512-9Y/gQBNgvc0WX5yMqFTdVV0U3U0n91pqXxN6cwUv5s89KRQlXXPH1YtfkUzJ+ho7EdYVV66UUTPpq3M9VPM5+w==}
+
   '@manypkg/find-root@1.1.0':
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
 
@@ -512,9 +515,6 @@ packages:
   '@mischnic/json-sourcemap@0.1.1':
     resolution: {integrity: sha512-iA7+tyVqfrATAIsIRWQG+a7ZLLD0VaOCKV2Wd/v4mqIU3J9c4jx9p7S0nw1XH3gJCKNBOOwACOPYYSUu9pgT+w==}
     engines: {node: '>=12.0.0'}
-
-  '@mlc-ai/web-llm@0.2.79':
-    resolution: {integrity: sha512-Hy1ZHQ0o2bZGZoVnGK48+fts/ZSKwLe96xjvqL/6C59Mem9HoHTcFE07NC2E23mRmhd01tL655N6CPeYmwWgwQ==}
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
@@ -2379,6 +2379,10 @@ snapshots:
   '@lmdb/lmdb-win32-x64@2.8.5':
     optional: true
 
+  '@loganz/mlc-ai--web-llm@0.2.80-patch.1':
+    dependencies:
+      loglevel: 1.9.2
+
   '@manypkg/find-root@1.1.0':
     dependencies:
       '@babel/runtime': 7.28.2
@@ -2400,10 +2404,6 @@ snapshots:
       '@lezer/common': 1.2.3
       '@lezer/lr': 1.4.2
       json5: 2.2.3
-
-  '@mlc-ai/web-llm@0.2.79':
-    dependencies:
-      loglevel: 1.9.2
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     optional: true
