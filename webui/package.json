@@ -24,7 +24,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
-    "@mlc-ai/web-llm": "^0.2.79",
+    "@mlc-ai/web-llm": "npm:@loganz/mlc-ai--web-llm@0.2.80-patch.1",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
     "base2048": "^2.0.2",
