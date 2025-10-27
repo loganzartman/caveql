@@ -12,14 +12,13 @@ export async function generatePlan({
   fieldSet: ReadonlySet<string>;
   onProgress?: (partialPlan: string) => void;
 }): Promise<{ plan: string; usage: webllm.CompletionUsage | undefined }> {
-  let plan = "";
-
   const input = makePlanInput({
     request,
     fields: Array.from(fieldSet),
   });
-
   const chunks = await engine.chat.completions.create(input);
+
+  let plan = "";
   let usage: webllm.CompletionUsage | undefined;
 
   for await (const chunk of chunks) {
