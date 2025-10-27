@@ -10,7 +10,7 @@ import { useCallback, useRef, useState } from "react";
 import { Button } from "../../components/Button";
 import { ConfirmDownloadDialog } from "../../components/ConfirmDownloadDialog";
 import { LoadingStrip } from "../../components/LoadingStrip";
-import { grammarGBNF } from "./grammar";
+import { generatePlan, generateQuery } from "./generate";
 
 const appConfig: webllm.AppConfig = webllm.prebuiltAppConfig;
 const availableModels = appConfig.model_list
@@ -87,46 +87,30 @@ export function GenerateTab({
 
         setStatus("planning");
 
-        let plan = "";
-        {
-          const input = makePlanInput({
-            request,
-            fields: Array.from(fieldSet),
-          });
-          console.log(input);
-          const chunks = await engine.chat.completions.create(input);
-          for await (const chunk of chunks) {
-            const content = chunk.choices[0]?.delta.content || "";
-            plan += content;
-            setPlan(plan);
+        const { plan } = await generatePlan({
+          engine,
+          request,
+          fieldSet,
+          onProgress: (partialPlan) => {
+            setPlan(partialPlan);
             planContainerRef.current?.scrollTo(
               0,
               planContainerRef.current.scrollHeight,
             );
-            if (chunk.usage) {
-              console.log(chunk.usage);
-            }
-          }
-        }
+          },
+        });
 
         setStatus("generating");
 
-        let generated = "";
-        {
-          const input = makeGenerateInput({ plan });
-          console.log(input);
-          const chunks = await engine.chat.completions.create(input);
-          for await (const chunk of chunks) {
-            const content = chunk.choices[0]?.delta.content || "";
-            generated += content;
-            setGenerated(generated);
-            if (chunk.usage) {
-              console.log(chunk.usage);
-            }
-          }
-        }
+        const { query } = await generateQuery({
+          engine,
+          plan,
+          onProgress: (partialQuery) => {
+            setGenerated(partialQuery);
+          },
+        });
 
-        setGenerated(generated);
+        setGenerated(query);
         setStatus("idle");
       } catch (e) {
         setErrorMessage(String(e));
@@ -274,109 +258,4 @@ export function GenerateTab({
       />
     </div>
   );
-}
-
-const fewShotExamples: Array<{ input: string; output: string }> = [
-  {
-    input: "find events where status equals 404",
-    output: "| search status=404",
-  },
-  {
-    input: "count the number of requests with 2xx status",
-    output: "| search status>=200 status<300\n| stats count",
-  },
-  {
-    input: "extract the path from the url field",
-    output: '| rex field=url "[a-z]+:/+[^/]+/(?<path>[^?]+)"',
-  },
-  {
-    input: "calculate average DB and CPU duration of requests",
-    output: "| stats avg(db_duration), avg(cpu_duration)",
-  },
-  {
-    input: "sort events by response_time descending",
-    output: "| sort - response_time",
-  },
-];
-
-function makePlanInput({
-  request,
-  fields,
-}: {
-  request: string;
-  fields: string[];
-}) {
-  return {
-    messages: [
-      {
-        role: "system",
-        content: [
-          "You are a Splunk expert. You analyze user requests and then generate a Splunk query.",
-          "Remember that Splunk queries are a sequence of commands. Each command starts with a |",
-          "Commands go in this order: filter, transform, aggregate/sort.",
-          "",
-          "EXAMPLES:",
-          ...fewShotExamples.flatMap((example) => [
-            `Goal: ${example.input}`,
-            `Query: ${example.output}`,
-            "",
-          ]),
-          "",
-          `AVAILABLE FIELDS: ${fields.join(", ")}`,
-          "AVAILABLE COMMANDS: search, where, rex, stats, sort",
-          "",
-          "The user will make a request. Make a plan and implement the request.",
-          "Do not include an index. Do not include a sourcetype.",
-          "Do no more than necessary to fulfill the request.",
-        ].join("\n"),
-      },
-      {
-        role: "user",
-        content: request,
-      },
-    ],
-    response_format: {
-      type: "text",
-    },
-    presence_penalty: 1,
-    frequency_penalty: 1,
-    temperature: 0.7,
-    top_p: 0.8,
-    max_tokens: 512,
-    stream: true,
-    stream_options: { include_usage: true },
-  } satisfies webllm.ChatCompletionRequest;
-}
-
-function makeGenerateInput({ plan }: { plan: string }) {
-  return {
-    messages: [
-      {
-        role: "system",
-        content: [
-          "You are a Splunk autocomplete engine.",
-          "Remember that Splunk queries are a sequence of commands. Each command starts with a |",
-          "",
-          "The user inputs a plan, and you extract a valid Splunk query.",
-          "You ignore invalid syntax.",
-          "You never explain yourself. You only output the Splunk query.",
-        ].join("\n"),
-      },
-      {
-        role: "user",
-        content: plan,
-      },
-    ],
-    response_format: {
-      type: "grammar",
-      grammar: grammarGBNF,
-    },
-    presence_penalty: 1,
-    frequency_penalty: 1,
-    temperature: 0.7,
-    top_p: 1.0,
-    max_tokens: 256,
-    stream: true,
-    stream_options: { include_usage: true },
-  } satisfies webllm.ChatCompletionRequest;
 }
