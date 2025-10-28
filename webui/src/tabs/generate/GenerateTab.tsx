@@ -8,13 +8,18 @@ import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import * as webllm from "@mlc-ai/web-llm";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "../../components/Button";
-import { ConfirmDownloadDialog } from "../../components/ConfirmDownloadDialog";
 import { LoadingStrip } from "../../components/LoadingStrip";
+import { ConfirmDownloadDialog } from "./ConfirmDownloadDialog";
 import { generatePlan, generateQuery } from "./generate";
 
 const appConfig: webllm.AppConfig = webllm.prebuiltAppConfig;
 const availableModels = appConfig.model_list
   .filter((model) => model.model_type !== 1)
+  .filter(
+    (model) =>
+      model.model_id.startsWith("Qwen2.5-Coder") &&
+      !model.model_id.includes("0.5B"),
+  )
   .sort((a, b) => a.model_id.localeCompare(b.model_id));
 
 export function GenerateTab({
@@ -174,27 +179,32 @@ export function GenerateTab({
         </div>
         <Listbox value={modelID} onChange={setModelID}>
           <div className="flex flex-row items-start">
-            <ListboxButton className="w-full flex flex-row items-center gap-2 px-4 py-2 bg-stone-700">
+            <ListboxButton className="w-full flex flex-row items-center gap-2 px-4 py-2 bg-stone-700 hover:bg-stone-600 transition-colors hover:transition-none">
               <ChevronDownIcon className="w-5 h-5 text-stone-400" />
               {modelID}
             </ListboxButton>
           </div>
           <ListboxOptions
             anchor="bottom end"
-            className="ring-1 ring-amber-500/50"
+            className="ring-1 ring-stone-500/50"
           >
             {availableModels.map((model) => (
               <ListboxOption
                 autoFocus
                 key={model.model_id}
                 value={model.model_id}
-                className="cursor-pointer px-2 py-1 bg-stone-700 hover:bg-stone-600"
+                className="cursor-pointer px-2 py-1 bg-stone-800 data-[selected]:bg-stone-700 hover:bg-stone-600 transition-colors hover:transition-none"
               >
                 {model.model_id} (
-                {model.vram_required_MB?.toLocaleString(undefined, {
-                  maximumFractionDigits: 0,
-                })}{" "}
-                MB)
+                {((model.vram_required_MB ?? 0) / 1024).toLocaleString(
+                  undefined,
+                  {
+                    maximumFractionDigits: 1,
+                    style: "unit",
+                    unit: "gigabyte",
+                  },
+                )}
+                &nbsp;VRAM)
               </ListboxOption>
             ))}
           </ListboxOptions>
