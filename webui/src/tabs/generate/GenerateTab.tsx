@@ -172,8 +172,15 @@ export function GenerateTab({
     <div className="p-4 flex flex-col gap-2 items-start">
       <div className="w-full flex flex-row items-center justify-between">
         <div className="flex flex-row items-center gap-3 mb-2">
-          <div className="text-2xl font-semibold">what do you want to do?</div>
-          <span className="text-xs bg-amber-800 text-amber-200 px-1 py-0.5 uppercase">
+          <div>
+            <div className="text-2xl font-semibold">
+              what do you want to do?
+            </div>
+            <div className="text-sm text-stone-400">
+              generate a query using an on-device AI model
+            </div>
+          </div>
+          <span className="text-xs bg-amber-800 text-amber-200 px-1 py-0.5 uppercase self-end">
             Experimental
           </span>
         </div>
