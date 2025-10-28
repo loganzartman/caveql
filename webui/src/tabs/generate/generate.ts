@@ -80,6 +80,15 @@ const fewShotExamples: Array<{ input: string; output: string }> = [
     input: "sort events by response_time descending",
     output: "| sort - response_time",
   },
+  {
+    input: "show only the url and status fields",
+    output: "| fields url, status",
+  },
+  {
+    input: "create five sample events with a running id and static message",
+    output:
+      '| makeresults count=5\n| streamstats count as id\n| eval message="sample"',
+  },
 ];
 
 function makePlanInput({
@@ -106,7 +115,7 @@ function makePlanInput({
           ]),
           "",
           `AVAILABLE FIELDS: ${fields.join(", ")}`,
-          "AVAILABLE COMMANDS: search, where, rex, stats, sort",
+          "AVAILABLE COMMANDS: search, where, rex, stats, sort, eval, fields, makeresults, streamstats",
           "",
           "The user will make a request. Make a plan and implement the request.",
           "Do not include an index. Do not include a sourcetype.",
