@@ -41,7 +41,7 @@ export function GenerateTab({
   const [plan, setPlan] = useState("");
   const [generated, setGenerated] = useState("");
   const [modelID, setModelID] = useState(
-    "Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC",
+    "Qwen2.5-Coder-3B-Instruct-q4f32_1-MLC",
   );
 
   const engineModel = useRef<string | null>(null);

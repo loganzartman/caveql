@@ -62,32 +62,64 @@ export async function generateQuery({
 const fewShotExamples: Array<{ input: string; output: string }> = [
   {
     input: "find events where status equals 404",
-    output: "| search status=404",
-  },
-  {
-    input: "count the number of requests with 2xx status",
-    output: "| search status>=200 status<300\n| stats count",
-  },
-  {
-    input: "extract the path from the url field",
-    output: '| rex field=url "[a-z]+:/+[^/]+/(?<path>[^?]+)"',
-  },
-  {
-    input: "calculate average DB and CPU duration of requests",
-    output: "| stats avg(db_duration), avg(cpu_duration)",
-  },
-  {
-    input: "sort events by response_time descending",
-    output: "| sort - response_time",
-  },
-  {
-    input: "show only the url and status fields",
-    output: "| fields url, status",
-  },
-  {
-    input: "create five sample events with a running id and static message",
     output:
-      '| makeresults count=5\n| streamstats count as id\n| eval message="sample"',
+      "Thinking: Simple equality filter. Use search command with a single comparison.\n\n| search status=404",
+  },
+  {
+    input: "count events grouped by status code",
+    output:
+      "Thinking: Need to count occurrences per status. In Splunk stats, listing a field without an aggregation function acts as a grouping dimension. Plan: Use stats with count, and include status field to group by it.\n\n| stats count by status",
+  },
+  {
+    input: "show requests with duration between 30 and 70 milliseconds",
+    output:
+      "Thinking: Range filter requires two conditions. Use search with AND logic: duration >= 30 AND duration <= 70.\n\n| search duration>=30 duration<=70",
+  },
+  {
+    input: "calculate total and average duration for all requests",
+    output:
+      "Thinking: Multiple aggregations on the same field. Use stats with both sum and avg functions in one command.\n\n| stats sum(duration), avg(duration)",
+  },
+  {
+    input: "find errors or warnings (status >= 400 or status equals 300)",
+    output:
+      "Thinking: Multiple conditions with OR logic. Use search command with explicit OR operator between two comparisons.\n\n| search status>=400 OR status=300",
+  },
+  {
+    input: "add a field is_slow that's true when duration exceeds 100",
+    output:
+      "Thinking: Conditional logic to create a boolean field. Use eval with an if() function: if duration > 100 return true, else false.\n\n| eval is_slow=if(duration>100, true(), false())",
+  },
+  {
+    input: "filter successful requests and sort by duration descending",
+    output:
+      "Thinking: Two-stage pipeline - filter then sort. Plan: 1) Use search to filter status=200, 2) Use sort with minus prefix for descending order.\n\n| search status=200\n| sort - duration",
+  },
+  {
+    input: "extract username before @ symbol from email addresses",
+    output:
+      'Thinking: Regex extraction to capture text before @. Use rex with field parameter and a capture group named "username" that matches non-@ characters.\n\n| rex field=email "(?<username>[^@]+)@"',
+  },
+  {
+    input: "calculate score as duration divided by 100, then show top scores",
+    output:
+      "Thinking: Three-stage pipeline. Plan: 1) Use eval to compute score field with division, 2) Sort by score descending, 3) Use fields to show only relevant columns.\n\n| eval score=duration/100\n| sort - score\n| fields request_id, duration, score",
+  },
+  {
+    input: "find requests where method is not GET and status isn't 200",
+    output:
+      "Thinking: Multiple negation conditions with AND. Use search with NOT operators: NOT method=GET AND NOT status=200.\n\n| search NOT method=GET NOT status=200",
+  },
+  {
+    input:
+      "filter by expression: keep events where duration times 2 exceeds 150",
+    output:
+      "Thinking: Complex expression-based filtering. Search only handles simple comparisons, so use where command which supports arithmetic expressions.\n\n| where duration*2>150",
+  },
+  {
+    input: "sort by status ascending then by duration descending",
+    output:
+      "Thinking: Multi-field sort with different directions. Use sort with + for ascending status (or no prefix since ascending is default), then - for descending duration.\n\n| sort + status, - duration",
   },
 ];
 
@@ -107,21 +139,28 @@ function makePlanInput({
           "Remember that Splunk queries are a sequence of commands. Each command starts with a |",
           "Commands go in this order: filter, transform, aggregate/sort.",
           "",
-          "EXAMPLES:",
-          ...fewShotExamples.flatMap((example) => [
-            `Goal: ${example.input}`,
-            `Query: ${example.output}`,
-            "",
-          ]),
+          "The user will request to analyze their data.",
+          "Think about each step required to manipulate the data using Splunk commands.",
+          "Do not include an index. Do not include a sourcetype.",
+          "Do no more than necessary to fulfill the request.",
           "",
           `AVAILABLE FIELDS: ${fields.join(", ")}`,
           "AVAILABLE COMMANDS: search, where, rex, stats, sort, eval, fields, makeresults, streamstats",
-          "",
-          "The user will make a request. Make a plan and implement the request.",
-          "Do not include an index. Do not include a sourcetype.",
-          "Do no more than necessary to fulfill the request.",
         ].join("\n"),
       },
+      ...fewShotExamples.flatMap(
+        (example) =>
+          [
+            {
+              role: "user",
+              content: example.input,
+            },
+            {
+              role: "assistant",
+              content: example.output,
+            },
+          ] as const,
+      ),
       {
         role: "user",
         content: request,
