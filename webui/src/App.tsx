@@ -5,6 +5,7 @@ import {
   CodeBracketIcon,
   LinkIcon,
   MagnifyingGlassIcon,
+  SparklesIcon,
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { PlayIcon } from "@heroicons/react/24/outline";
@@ -41,6 +42,7 @@ import { packString, unpackString } from "./lib/pack";
 import { useSortQuery } from "./lib/useSortQuery";
 import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
+import { GenerateTab } from "./tabs/generate/GenerateTab";
 
 const DEFAULT_RESULTS_LIMIT = 100_000;
 
@@ -269,6 +271,16 @@ export function App() {
     })();
   }, [editorRef, handleSourceChange]);
 
+  const handleAcceptGeneratedQuery = useCallback(
+    (query: string) => {
+      const value = editorRef?.getValue() ?? "";
+      const newValue = `${value}\n${query}`;
+      editorRef?.setValue(newValue);
+      handleSourceChange(newValue);
+    },
+    [editorRef, handleSourceChange],
+  );
+
   return (
     <div
       ref={scrollRef}
@@ -314,6 +326,7 @@ export function App() {
             <Tab icon={<TableCellsIcon />}>table</Tab>
             <Tab icon={<ChartBarIcon />}>chart</Tab>
             <Tab icon={<MagnifyingGlassIcon />}>inspect</Tab>
+            <Tab icon={<SparklesIcon />}>generate</Tab>
           </TabList>
           <div className="flex flex-row gap-2">
             {resultsLimited && (
@@ -398,6 +411,12 @@ export function App() {
                 </TabPanel>
               </TabPanels>
             </TabGroup>
+          </TabPanel>
+          <TabPanel>
+            <GenerateTab
+              onAcceptQuery={handleAcceptGeneratedQuery}
+              fieldSet={results.fieldSet}
+            />
           </TabPanel>
         </TabPanels>
       </TabGroup>
