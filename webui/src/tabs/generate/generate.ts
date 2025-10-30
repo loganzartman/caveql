@@ -33,7 +33,7 @@ export async function generatePlan({
   return { plan, usage };
 }
 
-export async function generateQuery({
+export async function transcribeQuery({
   engine,
   plan,
   onProgress,
@@ -42,21 +42,27 @@ export async function generateQuery({
   plan: string;
   onProgress?: (partialQuery: string) => void;
 }): Promise<{ query: string; usage: webllm.CompletionUsage | undefined }> {
-  const input = makeGenerateInput({ plan });
-  const chunks = await engine.chat.completions.create(input);
+  const input = makeTranscribeInput({ plan });
+  const chunks = (await engine.chat.completions.create(
+    input,
+  )) as AsyncIterable<webllm.ChatCompletionChunk>;
 
   let query = "";
   let usage: webllm.CompletionUsage | undefined;
 
+  const removeThink = (content: string) => {
+    return content.replace(/<think>[\s\S]*<\/think>/g, "").trim();
+  };
+
   for await (const chunk of chunks) {
     const content = chunk.choices[0]?.delta.content || "";
     query += content;
-    onProgress?.(query);
+    onProgress?.(removeThink(query));
     if (chunk.usage) {
       usage = chunk.usage;
     }
   }
-  return { query, usage };
+  return { query: removeThink(query), usage };
 }
 
 const fewShotExamples: Array<{ input: string; output: string }> = [
@@ -142,7 +148,7 @@ function makePlanInput({
           "The user will request to analyze their data.",
           "Think about each step required to manipulate the data using Splunk commands.",
           "Do not include an index. Do not include a sourcetype.",
-          "Do no more than necessary to fulfill the request.",
+          "Think about the user's intent, but do not doubt yourself.",
           "",
           `AVAILABLE FIELDS: ${fields.join(", ")}`,
           "AVAILABLE COMMANDS: search, where, rex, stats, sort, eval, fields, makeresults, streamstats",
@@ -170,16 +176,16 @@ function makePlanInput({
       type: "text",
     },
     presence_penalty: 0.5,
-    frequency_penalty: 0.5,
-    temperature: 0.5,
-    top_p: 0.9,
+    frequency_penalty: 1.5,
+    temperature: 0.3,
+    top_p: 0.3,
     max_tokens: 1024,
     stream: true,
     stream_options: { include_usage: true },
   } satisfies webllm.ChatCompletionRequest;
 }
 
-function makeGenerateInput({ plan }: { plan: string }) {
+function makeTranscribeInput({ plan }: { plan: string }) {
   return {
     messages: [
       {
@@ -202,9 +208,12 @@ function makeGenerateInput({ plan }: { plan: string }) {
       type: "grammar",
       grammar: grammarGBNF,
     },
+    extra_body: {
+      enable_thinking: false,
+    },
     presence_penalty: 0.3,
     frequency_penalty: 0.3,
-    temperature: 0.3,
+    temperature: 0,
     top_p: 0.95,
     max_tokens: 384,
     stream: true,
