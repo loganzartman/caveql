@@ -10,6 +10,7 @@ const variantClasses = {
   filled: "bg-stone-800 text-stone-100 hover:bg-stone-700 focus:ring-stone-600",
   quiet:
     "bg-transparent text-amber-400 hover:bg-amber-400/20 hover:text-amber-200 focus:ring-1 focus:ring-amber-400",
+  accent: "bg-amber-500 text-stone-900 hover:bg-amber-400 focus:ring-amber-500",
 };
 
 export type ButtonProps = HButtonProps & {

@@ -1,6 +1,6 @@
 export const grammarGBNF = String.raw`
 root ::= query
-query ::= ((("|" ws*)? "search" ws+)? search-expression?)? (ws* "|" ws* command ws*)*
+query ::= ((("|" ws*)? "search" ws+)? search-expression?)? (ws* "|" ws* command ws*)* ws*
 
 command ::= search-command | where-command | rex-command | stats-command | sort-command | eval-command | fields-command | makeresults-command | streamstats-command
 
