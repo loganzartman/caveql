@@ -1,4 +1,5 @@
 import type * as webllm from "@mlc-ai/web-llm";
+import { removeThink } from "../../lib/removeThink";
 import { grammarGBNF } from "./grammar";
 
 export async function generatePlan({
@@ -49,10 +50,6 @@ export async function transcribeQuery({
 
   let query = "";
   let usage: webllm.CompletionUsage | undefined;
-
-  const removeThink = (content: string) => {
-    return content.replace(/<think>[\s\S]*<\/think>/g, "").trim();
-  };
 
   for await (const chunk of chunks) {
     const content = chunk.choices[0]?.delta.content || "";

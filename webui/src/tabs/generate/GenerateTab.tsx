@@ -2,6 +2,7 @@ import * as webllm from "@mlc-ai/web-llm";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "../../components/Button";
 import { LoadingStrip } from "../../components/LoadingStrip";
+import { removeThink } from "../../lib/removeThink";
 import { ConfirmDownloadDialog } from "./ConfirmDownloadDialog";
 import { generatePlan, transcribeQuery } from "./generate";
 import { ModelDropdown } from "./ModelDropdown";
@@ -93,7 +94,7 @@ export function GenerateTab({
 
         const { query } = await transcribeQuery({
           engine: engineInstance,
-          plan: plan.replace(/<think>[\s\S]*<\/think>/g, "").trim(),
+          plan: removeThink(plan),
           onProgress: (partialQuery) => {
             setGenerated(partialQuery);
           },
