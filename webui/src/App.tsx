@@ -3,6 +3,7 @@ import {
   ArrowRightIcon,
   ChartBarIcon,
   CodeBracketIcon,
+  CloudUploadIcon,
   LinkIcon,
   MagnifyingGlassIcon,
   SparklesIcon,
@@ -36,12 +37,14 @@ import { TabList } from "./components/TabList";
 import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
+import { useDataSources } from "./contexts/DataSourceContext";
 import { Editor } from "./Editor";
 import { debounce } from "./lib/debounce";
 import { packString, unpackString } from "./lib/pack";
 import { useSortQuery } from "./lib/useSortQuery";
 import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
+import { DataSourceTab } from "./tabs/datasource/DataSourceTab";
 import { GenerateTab } from "./tabs/generate/GenerateTab";
 
 const DEFAULT_RESULTS_LIMIT = 100_000;
@@ -52,7 +55,11 @@ export function App() {
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   const [source, setSource] = useState<string>("");
-  const [fileInput, setFileInput] = useState<File[] | null>(null);
+  const { files: dataSources } = useDataSources();
+  const confirmedDataSources = useMemo(
+    () => dataSources.filter((ds) => ds.status === "confirmed"),
+    [dataSources],
+  );
 
   const [resultsLoading, setResultsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,14 +127,14 @@ export function App() {
       setAST(ast);
       setCompiled(worker.source);
 
-      // TODO: multi-file
-      const file = fileInput?.[0];
-      if (file) {
-        handle = worker.query({
-          type: "stream",
-          format: formatFromExtension(file.name),
-          stream: file.stream(),
-        });
+      if (confirmedDataSources.length) {
+        handle = worker.query(
+          ...confirmedDataSources.map((ds) => ({
+            type: "stream" as const,
+            format: ds.format,
+            stream: ds.file.stream(),
+          })),
+        );
       } else {
         handle = worker.query({
           type: "iterable",
@@ -145,7 +152,7 @@ export function App() {
     return () => {
       handle?.cancel();
     };
-  }, [source, fileInput]);
+  }, [source, confirmedDataSources]);
 
   useEffect(() => {
     if (!queryIterator) {
@@ -234,11 +241,6 @@ export function App() {
     [],
   );
 
-  const handleUpload = useCallback(({ files }: { files: FileList }) => {
-    const filesArray = Array.from(files);
-    setFileInput(filesArray);
-  }, []);
-
   const handleSourceChange = useCallback(
     (source: string) => {
       updateHash(source);
@@ -311,18 +313,16 @@ export function App() {
           >
             share
           </Button>
-          <Highlight enabled={!fileInput && !results?.length}>
-            <UploadButton label="load data" onChange={handleUpload} />
-          </Highlight>
         </div>
       </div>
       <div className="shrink-0 flex flex-col max-h-[35%]">
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
         <LoadingStrip isLoading={resultsLoading} />
       </div>
-      <TabGroup className="flex-1 flex flex-col">
+      <TabGroup defaultIndex={0} className="flex-1 flex flex-col">
         <div className="shrink-0 flex flex-row gap-4 items-stretch justify-between">
           <TabList>
+            <Tab icon={<CloudUploadIcon />}>data</Tab>
             <Tab icon={<TableCellsIcon />}>table</Tab>
             <Tab icon={<ChartBarIcon />}>chart</Tab>
             <Tab icon={<MagnifyingGlassIcon />}>inspect</Tab>
@@ -360,6 +360,9 @@ export function App() {
           </div>
         </div>
         <TabPanels>
+          <TabPanel>
+            <DataSourceTab />
+          </TabPanel>
           <TabPanel>
             {results && (
               <ResultsTable
