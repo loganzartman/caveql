@@ -1,10 +1,8 @@
-import { z } from "zod";
 import { Token } from "../tokens";
 import type { ParseContext } from "./ParseContext";
 import {
   type FieldNameAST,
-  fieldNameASTSchema,
-  numericASTSchema,
+  type NumericAST,
   parseFieldName,
   parseLiteral,
   parseNumeric,
@@ -13,28 +11,15 @@ import {
   parseString,
   parseWs,
   type StringAST,
-  stringASTSchema,
 } from "./parseCommon";
-import { type ExpressionAST, expressionASTSchema } from "./parseExpression";
+import type { ExpressionAST } from "./parseExpression";
 
-export const searchBinaryOpSchema = z.enum(["AND", "OR"]);
-export type SearchBinaryOp = z.infer<typeof searchBinaryOpSchema>;
+export type SearchBinaryOp = "AND" | "OR";
 
-export const searchUnaryOpSchema = z.enum(["NOT"]);
-export type SearchUnaryOp = z.infer<typeof searchUnaryOpSchema>;
+export type SearchUnaryOp = "NOT";
 
-export const compareOpSchema = z.enum(["=", ">", "<", ">=", "<=", "!="]);
-export type CompareOp = z.infer<typeof compareOpSchema>;
+export type CompareOp = "=" | ">" | "<" | ">=" | "<=" | "!=";
 
-export const compareExpressionASTSchema: z.ZodType<CompareExpressionAST> =
-  z.lazy(() =>
-    z.object({
-      type: z.literal("compare"),
-      left: fieldNameASTSchema,
-      op: compareOpSchema,
-      right: expressionASTSchema,
-    }),
-  );
 export type CompareExpressionAST = {
   type: "compare";
   left: FieldNameAST;
@@ -42,15 +27,6 @@ export type CompareExpressionAST = {
   right: ExpressionAST;
 };
 
-export const searchBinaryExpressionASTSchema: z.ZodType<SearchBinaryExpressionAST> =
-  z.lazy(() =>
-    z.object({
-      type: z.literal("search-binary-op"),
-      op: searchBinaryOpSchema,
-      left: searchExpressionASTSchema,
-      right: searchExpressionASTSchema,
-    }),
-  );
 export type SearchBinaryExpressionAST = {
   type: "search-binary-op";
   op: SearchBinaryOp;
@@ -58,30 +34,18 @@ export type SearchBinaryExpressionAST = {
   right: SearchExpressionAST;
 };
 
-export const searchUnaryExpressionASTSchema: z.ZodType<SearchUnaryExpressionAST> =
-  z.lazy(() =>
-    z.object({
-      type: z.literal("search-unary-op"),
-      op: searchUnaryOpSchema,
-      operand: searchExpressionASTSchema,
-    }),
-  );
 export type SearchUnaryExpressionAST = {
   type: "search-unary-op";
   op: SearchUnaryOp;
   operand: SearchExpressionAST;
 };
 
-export const searchExpressionASTSchema = z.lazy(() =>
-  z.union([
-    searchBinaryExpressionASTSchema,
-    searchUnaryExpressionASTSchema,
-    compareExpressionASTSchema,
-    stringASTSchema,
-    numericASTSchema,
-  ]),
-);
-export type SearchExpressionAST = z.infer<typeof searchExpressionASTSchema>;
+export type SearchExpressionAST =
+  | SearchBinaryExpressionAST
+  | SearchUnaryExpressionAST
+  | CompareExpressionAST
+  | StringAST
+  | NumericAST;
 
 export function parseSearchExpression(ctx: ParseContext): SearchExpressionAST {
   return parseSearchOrExpression(ctx);

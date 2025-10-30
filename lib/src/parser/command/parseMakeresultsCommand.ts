@@ -1,9 +1,7 @@
-import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import {
   type NumericAST,
-  numericASTSchema,
   parseLiteral,
   parseNumeric,
   parseOne,
@@ -11,24 +9,21 @@ import {
   parseString,
   parseWs,
   type StringAST,
-  stringASTSchema,
 } from "../parseCommon";
 
-export const makeresultsCommandASTSchema = z.union([
-  z.object({
-    type: z.literal("makeresults"),
-    count: numericASTSchema,
-    format: z.undefined().optional(),
-    data: z.undefined().optional(),
-  }),
-  z.object({
-    type: z.literal("makeresults"),
-    count: z.undefined().optional(),
-    format: z.enum(["csv", "json"]),
-    data: stringASTSchema,
-  }),
-]);
-export type MakeresultsCommandAST = z.infer<typeof makeresultsCommandASTSchema>;
+export type MakeresultsCommandAST =
+  | {
+      type: "makeresults";
+      count: NumericAST;
+      format?: undefined;
+      data?: undefined;
+    }
+  | {
+      type: "makeresults";
+      count?: undefined;
+      format: "csv" | "json";
+      data: StringAST;
+    };
 
 export function parseMakeresultsCommand(
   ctx: ParseContext,

@@ -1,14 +1,13 @@
-import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
-import { expressionASTSchema, parseExpression } from "../parseExpression";
+import type { ExpressionAST } from "../parseExpression";
+import { parseExpression } from "../parseExpression";
 
-export const whereCommandASTSchema = z.object({
-  type: z.literal("where"),
-  expr: expressionASTSchema,
-});
-export type WhereCommandAST = z.infer<typeof whereCommandASTSchema>;
+export type WhereCommandAST = {
+  type: "where";
+  expr: ExpressionAST;
+};
 
 export function parseWhereCommand(ctx: ParseContext): WhereCommandAST {
   parseWs(ctx);

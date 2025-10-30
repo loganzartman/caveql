@@ -52,7 +52,6 @@
     "@streamparser/json-whatwg": "^0.0.22",
     "@stricli/core": "^1.2.0",
     "tinyqueue": "^3.0.0",
-    "udsv": "^0.7.3",
-    "zod": "^4.1.12"
+    "udsv": "^0.7.3"
   }
 }

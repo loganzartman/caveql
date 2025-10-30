@@ -1,18 +1,15 @@
-import { z } from "zod";
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
 import { parseLiteral, parseWs } from "../parseCommon";
 import {
   parseSearchExpression,
   type SearchExpressionAST,
-  searchExpressionASTSchema,
 } from "../parseSearchExpression";
 
-export const searchCommandASTSchema = z.object({
-  type: z.literal("search"),
-  filters: z.array(searchExpressionASTSchema),
-});
-export type SearchCommandAST = z.infer<typeof searchCommandASTSchema>;
+export type SearchCommandAST = {
+  type: "search";
+  filters: SearchExpressionAST[];
+};
 
 export function parseSearchCommand(ctx: ParseContext): SearchCommandAST {
   parseWs(ctx);
