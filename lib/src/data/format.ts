@@ -1,11 +1,4 @@
-import * as z from "zod";
 import type { SourceFormat } from "./readRecords";
-
-export const formatTypeSchema = z.union([
-  z.literal("json"),
-  z.literal("csv"),
-  z.literal("text"),
-]);
 
 export function formatFromPath(uri: string): SourceFormat {
   const parts = uri.split("?");
@@ -21,7 +14,11 @@ export function formatFromPath(uri: string): SourceFormat {
 }
 
 export function formatFromQuery(query: URLSearchParams): SourceFormat {
-  const type = formatTypeSchema.parse(query.get("type"));
+  const typeParam = query.get("type");
+  if (typeParam !== "json" && typeParam !== "csv" && typeParam !== "text") {
+    throw new Error(`Invalid format type: ${typeParam}`);
+  }
+  const type = typeParam;
 
   if (type === "json") {
     const streaming =
