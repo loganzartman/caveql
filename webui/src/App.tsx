@@ -2,8 +2,8 @@ import CaveqlSvg from "jsx:./caveql.svg";
 import {
   ArrowRightIcon,
   ChartBarIcon,
+  CloudArrowUpIcon,
   CodeBracketIcon,
-  CloudUploadIcon,
   LinkIcon,
   MagnifyingGlassIcon,
   SparklesIcon,
@@ -16,7 +16,6 @@ import {
   createExecutionContext,
   createQueryWorker,
   type ExecutionContext,
-  formatFromExtension,
   formatJS,
   formatTree,
   iter,
@@ -28,7 +27,6 @@ import toast, { Toaster } from "react-hot-toast";
 import { Button } from "./components/Button";
 import { ChartTypeSelector } from "./components/ChartTypeSelector";
 import { ResultsChart } from "./components/chart/ResultsChart";
-import { Highlight } from "./components/Highlight";
 import { LoadingStrip } from "./components/LoadingStrip";
 import { ResultsTable } from "./components/ResultsTable";
 import { Tab } from "./components/Tab";
@@ -36,7 +34,6 @@ import { TabGroup } from "./components/TabGroup";
 import { TabList } from "./components/TabList";
 import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
-import { UploadButton } from "./components/UploadButton";
 import { useDataSources } from "./contexts/DataSourceContext";
 import { Editor } from "./Editor";
 import { debounce } from "./lib/debounce";
@@ -319,10 +316,10 @@ export function App() {
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
         <LoadingStrip isLoading={resultsLoading} />
       </div>
-      <TabGroup defaultIndex={0} className="flex-1 flex flex-col">
+      <TabGroup className="flex-1 flex flex-col">
         <div className="shrink-0 flex flex-row gap-4 items-stretch justify-between">
           <TabList>
-            <Tab icon={<CloudUploadIcon />}>data</Tab>
+            <Tab icon={<CloudArrowUpIcon />}>data</Tab>
             <Tab icon={<TableCellsIcon />}>table</Tab>
             <Tab icon={<ChartBarIcon />}>chart</Tab>
             <Tab icon={<MagnifyingGlassIcon />}>inspect</Tab>
