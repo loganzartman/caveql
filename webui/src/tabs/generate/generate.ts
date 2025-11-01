@@ -79,9 +79,9 @@ const fewShotExamples: Array<{ input: string; output: string }> = [
       "Thinking: Range filter requires two conditions. Use search with AND logic: duration >= 30 AND duration <= 70.\n\n| search duration>=30 duration<=70",
   },
   {
-    input: "calculate total and average duration for all requests",
+    input: "calculate total and average duration for each status code",
     output:
-      "Thinking: Multiple aggregations on the same field. Use stats with both sum and avg functions in one command.\n\n| stats sum(duration), avg(duration)",
+      "Thinking: Multiple aggregations on the same field, grouped by status. Use stats with both sum and avg functions, then add 'by status' to group results.\n\n| stats sum(duration), avg(duration) by status",
   },
   {
     input: "find errors or warnings (status >= 400 or status equals 300)",
