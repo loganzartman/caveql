@@ -29,7 +29,7 @@ sort-field-body ::= comparator-call | field-name
 comparator-call ::= comparator-name ws* "(" ws* field-name ws* ")"
 comparator-name ::= "auto" | "str" | "ip" | "num"
 
-stats-command ::= "stats" ws+ aggregation-list ws+ groupby-clause?
+stats-command ::= "stats" ws+ aggregation-list (ws+ groupby-clause)?
 streamstats-command ::= "streamstats" ws+ aggregation-list ws+ groupby-clause?
 aggregation-list ::= aggregation-term ((ws+ | ws* "," ws*) aggregation-term)*
 aggregation-term ::= aggregation-function-call
