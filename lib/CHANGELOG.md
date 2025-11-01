@@ -1,5 +1,11 @@
 # caveql
 
+## 0.4.0
+
+### Minor Changes
+
+- 0643ce0: Support 'by' clause for grouping in stats and streamstats
+
 ## 0.3.0
 
 ### Minor Changes
