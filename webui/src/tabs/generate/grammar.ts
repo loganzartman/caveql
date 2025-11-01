@@ -30,7 +30,7 @@ comparator-call ::= comparator-name ws* "(" ws* field-name ws* ")"
 comparator-name ::= "auto" | "str" | "ip" | "num"
 
 stats-command ::= "stats" ws+ aggregation-list (ws+ groupby-clause)?
-streamstats-command ::= "streamstats" ws+ aggregation-list ws+ groupby-clause?
+streamstats-command ::= "streamstats" ws+ aggregation-list (ws+ groupby-clause)?
 aggregation-list ::= aggregation-term ((ws+ | ws* "," ws*) aggregation-term)*
 aggregation-term ::= aggregation-function-call
 aggregation-function-call ::= aggregation-function (ws* "(" ws* field-name ws* ")")? (ws+ "as" ws+ field-name)?
