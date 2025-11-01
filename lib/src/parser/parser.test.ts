@@ -467,6 +467,152 @@ describe("parser", () => {
       });
     });
 
+    it("parses stats command with single grouping field", () => {
+      const result = parseQuery("stats count(events) as total by country").ast;
+      assert.partialDeepStrictEqual(result, {
+        type: "query",
+        pipeline: [
+          {
+            type: "stats",
+            aggregations: [
+              {
+                type: "count",
+                field: { type: "field-name", value: "events" },
+                asField: { type: "field-name", value: "total" },
+              },
+            ],
+            groupBy: [{ type: "field-name", value: "country" }],
+          },
+        ],
+      });
+    });
+
+    it("parses stats command with multiple grouping fields", () => {
+      const result = parseQuery(
+        "stats count(events) as total by country, state",
+      ).ast;
+      assert.partialDeepStrictEqual(result, {
+        type: "query",
+        pipeline: [
+          {
+            type: "stats",
+            aggregations: [
+              {
+                type: "count",
+                field: { type: "field-name", value: "events" },
+                asField: { type: "field-name", value: "total" },
+              },
+            ],
+            groupBy: [
+              { type: "field-name", value: "country" },
+              { type: "field-name", value: "state" },
+            ],
+          },
+        ],
+      });
+    });
+
+    it("parses stats command with multiple aggregations and grouping", () => {
+      const result = parseQuery(
+        "stats count(events) as total, avg(price) as avg_price by country",
+      ).ast;
+      assert.partialDeepStrictEqual(result, {
+        type: "query",
+        pipeline: [
+          {
+            type: "stats",
+            aggregations: [
+              {
+                type: "count",
+                field: { type: "field-name", value: "events" },
+                asField: { type: "field-name", value: "total" },
+              },
+              {
+                type: "avg",
+                field: { type: "field-name", value: "price" },
+                asField: { type: "field-name", value: "avg_price" },
+              },
+            ],
+            groupBy: [{ type: "field-name", value: "country" }],
+          },
+        ],
+      });
+    });
+
+    it("parses streamstats command with single grouping field", () => {
+      const result = parseQuery(
+        "streamstats count(events) as total by country",
+      ).ast;
+      assert.partialDeepStrictEqual(result, {
+        type: "query",
+        pipeline: [
+          {
+            type: "streamstats",
+            aggregations: [
+              {
+                type: "count",
+                field: { type: "field-name", value: "events" },
+                asField: { type: "field-name", value: "total" },
+              },
+            ],
+            groupBy: [{ type: "field-name", value: "country" }],
+          },
+        ],
+      });
+    });
+
+    it("parses streamstats command with multiple grouping fields", () => {
+      const result = parseQuery(
+        "streamstats count(events) as total by country, state",
+      ).ast;
+      assert.partialDeepStrictEqual(result, {
+        type: "query",
+        pipeline: [
+          {
+            type: "streamstats",
+            aggregations: [
+              {
+                type: "count",
+                field: { type: "field-name", value: "events" },
+                asField: { type: "field-name", value: "total" },
+              },
+            ],
+            groupBy: [
+              { type: "field-name", value: "country" },
+              { type: "field-name", value: "state" },
+            ],
+          },
+        ],
+      });
+    });
+
+    it("parses streamstats command with multiple aggregations and grouping", () => {
+      const result = parseQuery(
+        "streamstats count(events) as total, avg(price) as avg_price by country",
+      ).ast;
+      assert.partialDeepStrictEqual(result, {
+        type: "query",
+        pipeline: [
+          {
+            type: "streamstats",
+            aggregations: [
+              {
+                type: "count",
+                field: { type: "field-name", value: "events" },
+                asField: { type: "field-name", value: "total" },
+              },
+              {
+                type: "avg",
+                field: { type: "field-name", value: "price" },
+                asField: { type: "field-name", value: "avg_price" },
+              },
+            ],
+            groupBy: [{ type: "field-name", value: "country" }],
+          },
+        ],
+      });
+    });
+
     it("parses where command with comparison", () => {
       const result = parseQuery("where a >= 5").ast;
       const whereCmd = result.pipeline[0] as WhereCommandAST;

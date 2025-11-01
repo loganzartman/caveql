@@ -1,13 +1,17 @@
 import { impossible } from "../impossible";
-import type { AggregationTermAST } from "../parser";
+import type { AggregationTermAST, FieldNameAST } from "../parser";
 import { compileExpression } from "./compileExpression";
-import { must } from "./utils";
+import { compilePathGet, must } from "./utils";
 
 export function aggKey(agg: AggregationTermAST) {
   if (agg.field === undefined) {
     return JSON.stringify(agg.type);
   }
   return JSON.stringify(`${agg.type}(${agg.field.value})`);
+}
+
+export function compileAggregationGroupKeyFn(groupBy: FieldNameAST[]): string {
+  return `((record) => JSON.stringify([${groupBy.map((g) => compilePathGet("record", g.value)).join(", ")}]))`;
 }
 
 export function compileAggregationInit(agg: AggregationTermAST): string {
@@ -28,25 +32,27 @@ export function compileAggregationInit(agg: AggregationTermAST): string {
   }
 }
 
-export function compileAggregationCollect(agg: AggregationTermAST): string {
-  const k = aggKey(agg);
+export function compileAggregationReduce(
+  agg: AggregationTermAST,
+  accumulator: string,
+): string {
   switch (agg.type) {
     case "avg": {
       const recordValue = compileExpression(
         must(agg.field, "avg() aggregation requires a field name"),
       );
-      return `agg[${k}] += (${recordValue})`;
+      return `${accumulator} += (${recordValue})`;
     }
     case "count":
-      return `++agg[${k}]`;
+      return `${accumulator} += 1`;
     case "max": {
       const recordValue = compileExpression(
         must(agg.field, "max() aggregation requires a field name"),
       );
       return `
-        agg[${k}] = agg[${k}] === undefined 
+        ${accumulator} = ${accumulator} === undefined 
           ? (${recordValue})
-          : Math.max(agg[${k}], (${recordValue}))
+          : Math.max(${accumulator}, (${recordValue}))
       `;
     }
     case "min": {
@@ -54,16 +60,16 @@ export function compileAggregationCollect(agg: AggregationTermAST): string {
         must(agg.field, "min() aggregation requires a field name"),
       );
       return `
-        agg[${k}] = agg[${k}] === undefined 
+        ${accumulator} = ${accumulator} === undefined 
           ? (${recordValue})
-          : Math.min(agg[${k}], (${recordValue}))
+          : Math.min(${accumulator}, (${recordValue}))
       `;
     }
     case "sum": {
       const recordValue = compileExpression(
         must(agg.field, "sum() aggregation requires a field name"),
       );
-      return `agg[${k}] += (${recordValue})`;
+      return `${accumulator} += (${recordValue})`;
     }
     case "distinct":
     case "median":
@@ -77,16 +83,16 @@ export function compileAggregationCollect(agg: AggregationTermAST): string {
 
 export function compileAggregationFinal(
   agg: AggregationTermAST,
+  accumulator: string,
 ): string | undefined {
-  const k = aggKey(agg);
   switch (agg.type) {
     case "avg":
-      return `agg[${k}] / n`;
+      return `${accumulator} / n`;
     case "count":
     case "max":
     case "min":
     case "sum":
-      return `agg[${k}]`;
+      return `${accumulator}`;
     case "distinct":
     case "median":
     case "mode":
