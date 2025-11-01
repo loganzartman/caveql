@@ -433,6 +433,64 @@ describe("compiler", () => {
 
       assert.partialDeepStrictEqual(results, [{ renamed: 3 }]);
     });
+
+    it("groups by a single field", async () => {
+      const run = compileQuery(
+        parseQuery("stats count(events) as total by country").ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { events: 1, country: "US" },
+          { events: 2, country: "CA" },
+          { events: 3, country: "US" },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { country: "US", total: 2 },
+        { country: "CA", total: 1 },
+      ]);
+    });
+
+    it("groups by multiple fields", async () => {
+      const run = compileQuery(
+        parseQuery("stats count(events) as total by country, state").ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { events: 1, country: "US", state: "CA" },
+          { events: 2, country: "US", state: "WA" },
+          { events: 3, country: "US", state: "CA" },
+          { events: 4, country: "CA", state: "BC" },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { country: "US", state: "CA", total: 2 },
+        { country: "US", state: "WA", total: 1 },
+        { country: "CA", state: "BC", total: 1 },
+      ]);
+    });
+
+    it("groups with multiple aggregations", async () => {
+      const run = compileQuery(
+        parseQuery(
+          "stats count(events) as total, avg(price) as avg_price by country",
+        ).ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { events: 1, price: 10, country: "US" },
+          { events: 2, price: 20, country: "CA" },
+          { events: 3, price: 30, country: "US" },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { country: "US", total: 2, avg_price: 20 },
+        { country: "CA", total: 1, avg_price: 20 },
+      ]);
+    });
   });
 
   describe("streamstats", () => {
@@ -492,6 +550,73 @@ describe("compiler", () => {
         { "field(with)parens": 1, id: "a", running_count: 1 },
         { "field(with)parens": 2, id: "b", running_count: 2 },
         { "field(with)parens": 3, id: "c", running_count: 3 },
+      ]);
+    });
+
+    it("groups by a single field with running aggregation", async () => {
+      const run = compileQuery(
+        parseQuery("streamstats count(events) as total by country").ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { events: 1, country: "US" },
+          { events: 2, country: "CA" },
+          { events: 3, country: "US" },
+          { events: 4, country: "CA" },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { events: 1, country: "US", total: 1 },
+        { events: 2, country: "CA", total: 1 },
+        { events: 3, country: "US", total: 2 },
+        { events: 4, country: "CA", total: 2 },
+      ]);
+    });
+
+    it("groups by multiple fields with running aggregation", async () => {
+      const run = compileQuery(
+        parseQuery("streamstats count(events) as total by country, state").ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { events: 1, country: "US", state: "CA" },
+          { events: 2, country: "US", state: "WA" },
+          { events: 3, country: "US", state: "CA" },
+          { events: 4, country: "CA", state: "BC" },
+          { events: 5, country: "US", state: "CA" },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { events: 1, country: "US", state: "CA", total: 1 },
+        { events: 2, country: "US", state: "WA", total: 1 },
+        { events: 3, country: "US", state: "CA", total: 2 },
+        { events: 4, country: "CA", state: "BC", total: 1 },
+        { events: 5, country: "US", state: "CA", total: 3 },
+      ]);
+    });
+
+    it("groups with multiple running aggregations", async () => {
+      const run = compileQuery(
+        parseQuery(
+          "streamstats count(events) as total, avg(price) as avg_price by country",
+        ).ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { events: 1, price: 10, country: "US" },
+          { events: 2, price: 20, country: "CA" },
+          { events: 3, price: 30, country: "US" },
+          { events: 4, price: 40, country: "CA" },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { events: 1, price: 10, country: "US", total: 1, avg_price: 10 },
+        { events: 2, price: 20, country: "CA", total: 1, avg_price: 20 },
+        { events: 3, price: 30, country: "US", total: 2, avg_price: 20 },
+        { events: 4, price: 40, country: "CA", total: 2, avg_price: 30 },
       ]);
     });
   });

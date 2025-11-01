@@ -1,6 +1,12 @@
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
-import { parseLiteral, parseWs } from "../parseCommon";
+import {
+  type FieldNameAST,
+  parseFieldName,
+  parseLiteral,
+  parseOptional,
+  parseWs,
+} from "../parseCommon";
 import {
   type AggregationTermAST,
   parseAggregationTerm,
@@ -9,6 +15,7 @@ import {
 export type StreamstatsCommandAST = {
   type: "streamstats";
   aggregations: AggregationTermAST[];
+  groupBy: FieldNameAST[];
 };
 
 export function parseStreamstatsCommand(
@@ -33,5 +40,21 @@ export function parseStreamstatsCommand(
       break;
     }
   }
-  return { type: "streamstats", aggregations: terms };
+
+  const groupBy: FieldNameAST[] = [];
+  parseOptional(ctx, (ctx) => {
+    parseWs(ctx);
+    parseLiteral(ctx, [Token.keyword, "by"]);
+    while (true) {
+      try {
+        parseWs(ctx);
+        groupBy.push(parseFieldName(ctx));
+        parseOptional(ctx, (c) => parseLiteral(c, [Token.comma, ","]));
+      } catch {
+        break;
+      }
+    }
+  });
+
+  return { type: "streamstats", aggregations: terms, groupBy };
 }
