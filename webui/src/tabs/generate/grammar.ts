@@ -2,7 +2,7 @@ export const grammarGBNF = String.raw`
 root ::= query
 query ::= ((("|" ws*)? "search" ws+)? search-expression?)? (ws* "|" ws* command ws*)* ws*
 
-command ::= search-command | where-command | rex-command | stats-command | sort-command | eval-command | fields-command | makeresults-command | streamstats-command
+command ::= search-command | where-command | rex-command | stats-command | sort-command | eval-command | fields-command | head-command | makeresults-command | streamstats-command
 
 rex-command ::= "rex" (ws+ rex-option)* ws+ quoted-string
 rex-option ::= "field" ws* "=" ws* field-name | "mode" ws* "=" ws* "sed"
@@ -69,6 +69,9 @@ group ::= "(" ws* expression ws* ")"
 function-call ::= builtin-function ws* "(" ws* argument-list? ws* ")"
 argument-list ::= expression (ws* "," ws* expression)*
 builtin-function ::= "case" | "coalesce" | "false" | "if" | "isnull" | "isnum" | "len" | "match" | "null" | "random" | "replace" | "round" | "true" | "$lit"
+
+head-command ::= "head" (ws+ head-arg)* (ws+ (group | number))?
+head-arg ::= ("limit" ws* "=" ws* number) | ("keeplast" ws* "=" ws* ("true" | "false")) | ("null" ws* "=" ws* ("true" | "false"))
 
 field-name ::= bare-field-name | quoted-string
 bare-field-name ::= [A-Za-z0-9_$][A-Za-z0-9_$\-.]*
