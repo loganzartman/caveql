@@ -11,18 +11,21 @@ import {
 } from "../parseCommon";
 import { type ExpressionAST, parseGroup } from "../parseExpression";
 
-export type HeadCommandAST = {
+export type HeadCommandBase = {
   type: "head";
   allowNull: boolean | undefined;
   keepLast: boolean | undefined;
-} & (
-  | {
-      limit: NumericAST;
-    }
-  | {
-      expr: ExpressionAST;
-    }
-);
+};
+
+export type HeadCommandLimitAST = HeadCommandBase & {
+  limit: NumericAST;
+};
+
+export type HeadCommandExprAST = HeadCommandBase & {
+  expr: ExpressionAST;
+};
+
+export type HeadCommandAST = HeadCommandLimitAST | HeadCommandExprAST;
 
 export function parseHeadCommand(ctx: ParseContext): HeadCommandAST {
   parseLiteral(ctx, [Token.command, "head"]);

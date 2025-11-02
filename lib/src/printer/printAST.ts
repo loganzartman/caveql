@@ -47,6 +47,16 @@ export function printAST(
       }
       return `${ast.name}(\n${indent.repeat(depth + 1)}${args.join(`,\n${indent.repeat(depth + 1)}`)})`;
     }
+    case "head": {
+      return [
+        "head",
+        ast.allowNull !== undefined ? `allowNull=${ast.allowNull}` : "",
+        ast.keepLast !== undefined ? `keepLast=${ast.keepLast}` : "",
+        "limit" in ast ? printAST(ast.limit) : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+    }
     case "makeresults": {
       if (ast.count) {
         return `makeresults count=${printAST(ast.count)}`;
