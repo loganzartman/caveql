@@ -124,6 +124,11 @@ const fewShotExamples: Array<{ input: string; output: string }> = [
     output:
       "Thinking: Multi-field sort with different directions. Use sort with + for ascending status (or no prefix since ascending is default), then - for descending duration.\n\n| sort + status, - duration",
   },
+  {
+    input: "show the first 10 events where x is positive",
+    output:
+      "Thinking: First N events with positive x. Use head with an expression and a limit.\n\n| head limit=10 (x > 0)",
+  },
 ];
 
 function makePlanInput({

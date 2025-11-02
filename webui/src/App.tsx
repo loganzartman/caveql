@@ -115,9 +115,8 @@ export function App() {
 
     try {
       const { ast } = parseQuery(source);
-      const worker = createQueryWorker(ast);
-
       setAST(ast);
+      const worker = createQueryWorker(ast);
       setCompiled(worker.source);
 
       // TODO: multi-file

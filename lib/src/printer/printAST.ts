@@ -47,6 +47,18 @@ export function printAST(
       }
       return `${ast.name}(\n${indent.repeat(depth + 1)}${args.join(`,\n${indent.repeat(depth + 1)}`)})`;
     }
+    case "head": {
+      return [
+        "head",
+        ast.allowNull !== undefined ? `null=${ast.allowNull}` : "",
+        ast.keepLast !== undefined ? `keeplast=${ast.keepLast}` : "",
+        ast.limit !== undefined ? `limit=${printAST(ast.limit)}` : "",
+        "n" in ast && ast.n !== undefined ? `${printAST(ast.n)}` : "",
+        "expr" in ast ? printAST(ast.expr) : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+    }
     case "makeresults": {
       if (ast.count) {
         return `makeresults count=${printAST(ast.count)}`;
@@ -99,12 +111,23 @@ export function printAST(
     case "streamstats":
     case "stats": {
       const aggregations = ast.aggregations.map((agg) => {
+        let aggString: string = agg.type;
         if (agg.field) {
-          return `${agg.type}(${printAST(agg.field, depth)})`;
+          aggString = `${aggString}(${printAST(agg.field, depth)})`;
         }
-        return agg.type;
+        if (agg.asField) {
+          aggString = `${aggString} as ${printAST(agg.asField, depth)}`;
+        }
+        return aggString;
       });
-      return `${ast.type} ${aggregations.join(", ")}`;
+
+      const groupBy = ast.groupBy
+        ? `by ${ast.groupBy.map((field) => printAST(field, depth)).join(", ")}`
+        : null;
+
+      return [ast.type, aggregations.join(", "), groupBy]
+        .filter(Boolean)
+        .join(" ");
     }
     case "string":
       return JSON.stringify(ast.value);

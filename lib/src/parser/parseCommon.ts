@@ -259,6 +259,14 @@ export function parseLiteral<const T extends [Token, string][]>(
   throw new Error(`Expected ${match}`);
 }
 
+export function parseLiteralBoolean(ctx: ParseContext): boolean {
+  return (
+    parseOne(ctx, (c) =>
+      parseLiteral(c, [Token.keyword, "true"], [Token.keyword, "false"]),
+    ) === "true"
+  );
+}
+
 function collectLiteralCompletions(
   ctx: ParseContext,
   match: [Token, string][],

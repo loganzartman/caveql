@@ -7,6 +7,10 @@ import {
   parseFieldsCommand,
 } from "./command/parseFieldsCommand";
 import {
+  type HeadCommandAST,
+  parseHeadCommand,
+} from "./command/parseHeadCommand";
+import {
   type MakeresultsCommandAST,
   parseMakeresultsCommand,
 } from "./command/parseMakeresultsCommand";
@@ -37,6 +41,7 @@ import { parseOne } from "./parseCommon";
 export type CommandAST =
   | EvalCommandAST
   | FieldsCommandAST
+  | HeadCommandAST
   | MakeresultsCommandAST
   | RexCommandAST
   | SearchCommandAST
@@ -49,6 +54,7 @@ export function parseCommand(ctx: ParseContext): CommandAST {
   return parseOne(
     ctx,
     parseEvalCommand,
+    parseHeadCommand,
     parseFieldsCommand,
     parseMakeresultsCommand,
     parseRexCommand,

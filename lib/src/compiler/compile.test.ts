@@ -898,4 +898,159 @@ describe("compiler", () => {
       ]);
     });
   });
+
+  describe("head", () => {
+    it("defaults to 10 records when no arguments provided", async () => {
+      const run = compileQuery(parseQuery("| head").ast);
+      const results = await Array.fromAsync(
+        run([
+          { id: 1 },
+          { id: 2 },
+          { id: 3 },
+          { id: 4 },
+          { id: 5 },
+          { id: 6 },
+          { id: 7 },
+          { id: 8 },
+          { id: 9 },
+          { id: 10 },
+          { id: 11 },
+          { id: 12 },
+        ]),
+      );
+
+      assert.equal(results.length, 10);
+      assert.partialDeepStrictEqual(results[0], { id: 1 });
+      assert.partialDeepStrictEqual(results[9], { id: 10 });
+    });
+
+    it("returns first N records with numeric limit", async () => {
+      const run = compileQuery(parseQuery("| head 3").ast);
+      const results = await Array.fromAsync(
+        run([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [{ id: 1 }, { id: 2 }, { id: 3 }]);
+    });
+
+    it("returns first N records with limit parameter", async () => {
+      const run = compileQuery(parseQuery("| head limit=2").ast);
+      const results = await Array.fromAsync(
+        run([{ id: 1 }, { id: 2 }, { id: 3 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [{ id: 1 }, { id: 2 }]);
+    });
+
+    it("throws error when both limit and n are specified", () => {
+      assert.throws(
+        () => compileQuery(parseQuery("| head limit=5 10").ast),
+        /limit and n cannot be specified together/,
+      );
+    });
+
+    it("returns all records if limit is greater than count", async () => {
+      const run = compileQuery(parseQuery("| head 10").ast);
+      const results = await Array.fromAsync(run([{ id: 1 }, { id: 2 }]));
+
+      assert.partialDeepStrictEqual(results, [{ id: 1 }, { id: 2 }]);
+    });
+
+    it("handles empty input", async () => {
+      const run = compileQuery(parseQuery("| head 5").ast);
+      const results = await Array.fromAsync(run([]));
+
+      assert.partialDeepStrictEqual(results, []);
+    });
+
+    it("works in a pipeline", async () => {
+      const run = compileQuery(parseQuery("search country='US' | head 2").ast);
+      const results = await Array.fromAsync(
+        run([
+          { country: "US", value: 1 },
+          { country: "CA", value: 2 },
+          { country: "US", value: 3 },
+          { country: "US", value: 4 },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { country: "US", value: 1 },
+        { country: "US", value: 3 },
+      ]);
+    });
+
+    it("stops at first record when expression is falsy", async () => {
+      const run = compileQuery(parseQuery("| head (value)").ast);
+      const results = await Array.fromAsync(
+        run([
+          { id: 1, value: 0 },
+          { id: 2, value: 30 },
+          { id: 3, value: 60 },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, []);
+    });
+
+    it("includes first falsy record with keeplast=true", async () => {
+      const run = compileQuery(parseQuery("| head keeplast=true (value)").ast);
+      const results = await Array.fromAsync(
+        run([
+          { id: 1, value: 0 },
+          { id: 2, value: 30 },
+          { id: 3, value: 60 },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [{ id: 1, value: 0 }]);
+    });
+
+    it("yields all truthy records before stopping at first falsy", async () => {
+      const run = compileQuery(parseQuery("| head (value)").ast);
+      const results = await Array.fromAsync(
+        run([
+          { id: 1, value: 10 },
+          { id: 2, value: 30 },
+          { id: 3, value: 0 },
+          { id: 4, value: 60 },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { id: 1, value: 10 },
+        { id: 2, value: 30 },
+      ]);
+    });
+
+    it("treats null as falsy and stops with null=false", async () => {
+      const run = compileQuery(parseQuery("| head (value)").ast);
+      const results = await Array.fromAsync(
+        run([
+          { id: 1, value: 10 },
+          { id: 2, value: null },
+          { id: 3, value: 30 },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [{ id: 1, value: 10 }]);
+    });
+
+    it("continues past null with null=true", async () => {
+      const run = compileQuery(parseQuery("| head null=true (value)").ast);
+      const results = await Array.fromAsync(
+        run([
+          { id: 1, value: 10 },
+          { id: 2, value: null },
+          { id: 3, value: 0 },
+          { id: 4, value: 30 },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { id: 1, value: 10 },
+        { id: 2, value: null },
+      ]);
+    });
+  });
 });

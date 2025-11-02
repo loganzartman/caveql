@@ -1016,4 +1016,130 @@ describe("parser", () => {
       });
     });
   });
+
+  describe("head command", () => {
+    it("parses head command with no arguments", () => {
+      const result = parseQuery("| head").ast;
+      const headCmd = result.pipeline[1];
+
+      assert.partialDeepStrictEqual(headCmd, {
+        type: "head",
+        limit: undefined,
+        allowNull: undefined,
+        keepLast: undefined,
+      });
+    });
+
+    it("parses head command with numeric limit", () => {
+      const result = parseQuery("| head 10").ast;
+      const headCmd = result.pipeline[1];
+
+      assert.partialDeepStrictEqual(headCmd, {
+        type: "head",
+        n: { type: "number", value: 10n },
+        limit: undefined,
+        allowNull: undefined,
+        keepLast: undefined,
+      });
+    });
+
+    it("parses head command with limit parameter", () => {
+      const result = parseQuery("| head limit=5").ast;
+      const headCmd = result.pipeline[1];
+
+      assert.partialDeepStrictEqual(headCmd, {
+        type: "head",
+        limit: { type: "number", value: 5n },
+        allowNull: undefined,
+        keepLast: undefined,
+      });
+    });
+
+    it("parses head command with both limit parameter and bare number", () => {
+      const result = parseQuery("| head limit=5 10").ast;
+      const headCmd = result.pipeline[1];
+
+      assert.partialDeepStrictEqual(headCmd, {
+        type: "head",
+        limit: { type: "number", value: 5n },
+        n: { type: "number", value: 10n },
+        allowNull: undefined,
+        keepLast: undefined,
+      });
+    });
+
+    it("parses head command with expression", () => {
+      const result = parseQuery("| head (value > 100)").ast;
+      const headCmd = result.pipeline[1];
+
+      assert.partialDeepStrictEqual(headCmd, {
+        type: "head",
+        limit: undefined,
+        allowNull: undefined,
+        keepLast: undefined,
+        expr: {
+          type: "binary-op",
+          op: ">",
+          left: { type: "field-name", value: "value" },
+          right: { type: "number", value: 100n },
+        },
+      });
+    });
+
+    it("parses head command with expression and null parameter", () => {
+      const result = parseQuery("| head null=true (value > 100)").ast;
+      const headCmd = result.pipeline[1];
+
+      assert.partialDeepStrictEqual(headCmd, {
+        type: "head",
+        limit: undefined,
+        allowNull: true,
+        keepLast: undefined,
+        expr: {
+          type: "binary-op",
+          op: ">",
+          left: { type: "field-name", value: "value" },
+          right: { type: "number", value: 100n },
+        },
+      });
+    });
+
+    it("parses head command with expression and keeplast parameter", () => {
+      const result = parseQuery("| head keeplast=true (value > 100)").ast;
+      const headCmd = result.pipeline[1];
+
+      assert.partialDeepStrictEqual(headCmd, {
+        type: "head",
+        limit: undefined,
+        allowNull: undefined,
+        keepLast: true,
+        expr: {
+          type: "binary-op",
+          op: ">",
+          left: { type: "field-name", value: "value" },
+          right: { type: "number", value: 100n },
+        },
+      });
+    });
+
+    it("parses head command with expression, limit, and boolean parameters", () => {
+      const result = parseQuery(
+        "| head limit=10 null=false keeplast=true (value > 100)",
+      ).ast;
+      const headCmd = result.pipeline[1];
+
+      assert.partialDeepStrictEqual(headCmd, {
+        type: "head",
+        limit: { type: "number", value: 10n },
+        allowNull: false,
+        keepLast: true,
+        expr: {
+          type: "binary-op",
+          op: ">",
+          left: { type: "field-name", value: "value" },
+          right: { type: "number", value: 100n },
+        },
+      });
+    });
+  });
 });

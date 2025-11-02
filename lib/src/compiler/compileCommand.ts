@@ -2,6 +2,7 @@ import { impossible } from "../impossible";
 import type { CommandAST } from "../parser/parseCommand";
 import { compileEvalCommand } from "./command/compileEvalCommand";
 import { compileFieldsCommand } from "./command/compileFieldsCommand";
+import { compileHeadCommand } from "./command/compileHeadCommand";
 import { compileMakeresultsCommand } from "./command/compileMakeresultsCommand";
 import { compileRexCommand } from "./command/compileRexCommand";
 import { compileSearchCommand } from "./command/compileSearchCommand";
@@ -18,6 +19,8 @@ export function compileCommand(command: CommandAST): string {
       return compileEvalCommand(command);
     case "fields":
       return compileFieldsCommand(command);
+    case "head":
+      return compileHeadCommand(command);
     case "makeresults":
       return compileMakeresultsCommand(command);
     case "rex":
