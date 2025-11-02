@@ -27,18 +27,33 @@ function compileHeadLimitCommand(command: HeadCommandLimitAST): string {
 }
 
 function compileHeadExprCommand(command: HeadCommandExprAST): string {
-  const condition = (() => {
-    const expr = compileExpression(command.expr);
-    if (command.allowNull) {
-      return `!${expr} && ${expr} !== null`;
-    }
-    return `!${expr}`;
-  })();
+  let exprCondition = compileExpression(command.expr);
+  if (command.allowNull) {
+    exprCondition = `!${exprCondition} && ${exprCondition} !== null`;
+  } else {
+    exprCondition = `!${exprCondition}`;
+  }
+
+  let limitInit = "";
+  if (command.limit) {
+    limitInit = `let i = 0;`;
+  }
+
+  let limitCheck = "";
+  if (command.limit) {
+    limitCheck = `
+      if (i++ >= ${command.limit.value}) {
+        break;
+      }
+    `;
+  }
 
   return `
     async function* headCommand(records) {
+      ${limitInit}
       for await (const record of records) {
-        if (${condition}) {
+        ${limitCheck}
+        if (${exprCondition}) {
           ${command.keepLast ? "yield record;" : ""}
           break;
         }
