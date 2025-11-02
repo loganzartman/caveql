@@ -14,7 +14,7 @@ export function compileHeadCommand(command: HeadCommandAST): string {
 
 function compileHeadLimitCommand(command: HeadCommandCountAST): string {
   if (command.n !== undefined && command.limit !== undefined) {
-    throw new Error("limit and n cannot be specified together");
+    throw new Error("head: limit and n cannot be specified together");
   }
 
   const limit = (command.n ?? command.limit)?.value ?? 10;
