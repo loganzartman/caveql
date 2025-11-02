@@ -11,22 +11,22 @@ import {
 } from "../parseCommon";
 import { type ExpressionAST, parseGroup } from "../parseExpression";
 
-export type HeadCommandBase = {
+export type HeadCommandBaseAST = {
   type: "head";
   limit: NumericAST | undefined;
   allowNull: boolean | undefined;
   keepLast: boolean | undefined;
 };
 
-export type HeadCommandLimitAST = HeadCommandBase & {
-  limit: NumericAST;
+export type HeadCommandCountAST = HeadCommandBaseAST & {
+  n: NumericAST | undefined;
 };
 
-export type HeadCommandExprAST = HeadCommandBase & {
+export type HeadCommandExprAST = HeadCommandBaseAST & {
   expr: ExpressionAST;
 };
 
-export type HeadCommandAST = HeadCommandLimitAST | HeadCommandExprAST;
+export type HeadCommandAST = HeadCommandCountAST | HeadCommandExprAST;
 
 export function parseHeadCommand(ctx: ParseContext): HeadCommandAST {
   parseLiteral(ctx, [Token.command, "head"]);
@@ -67,23 +67,26 @@ export function parseHeadCommand(ctx: ParseContext): HeadCommandAST {
   return parseOne(
     ctx,
     (c) => {
-      if (params.limit) {
-        throw new Error("limit already specified");
-      }
-      const limit = parseNumeric(c);
-      return {
-        type: "head",
-        ...params,
-        limit,
-      } as const;
-    },
-    (c) => {
       const expr = parseGroup(c);
       return {
         type: "head",
         ...params,
         expr,
-      } as const;
+      } as const satisfies HeadCommandExprAST;
     },
+    (c) => {
+      const n = parseNumeric(c);
+      return {
+        type: "head",
+        ...params,
+        n,
+      } as const satisfies HeadCommandCountAST;
+    },
+    () =>
+      ({
+        type: "head",
+        ...params,
+        n: undefined,
+      }) as const satisfies HeadCommandCountAST,
   );
 }

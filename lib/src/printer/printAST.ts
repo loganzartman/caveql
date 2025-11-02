@@ -52,11 +52,8 @@ export function printAST(
         "head",
         ast.allowNull !== undefined ? `null=${ast.allowNull}` : "",
         ast.keepLast !== undefined ? `keeplast=${ast.keepLast}` : "",
-        ast.limit
-          ? "expr" in ast
-            ? `limit=${printAST(ast.limit)}`
-            : printAST(ast.limit)
-          : "",
+        ast.limit !== undefined ? `limit=${printAST(ast.limit)}` : "",
+        "n" in ast && ast.n !== undefined ? `${printAST(ast.n)}` : "",
         "expr" in ast ? printAST(ast.expr) : "",
       ]
         .filter(Boolean)

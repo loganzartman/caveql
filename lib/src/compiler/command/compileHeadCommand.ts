@@ -1,7 +1,7 @@
 import type {
   HeadCommandAST,
+  HeadCommandCountAST,
   HeadCommandExprAST,
-  HeadCommandLimitAST,
 } from "../../parser/command/parseHeadCommand";
 import { compileExpression } from "../compileExpression";
 
@@ -12,13 +12,19 @@ export function compileHeadCommand(command: HeadCommandAST): string {
   return compileHeadLimitCommand(command);
 }
 
-function compileHeadLimitCommand(command: HeadCommandLimitAST): string {
+function compileHeadLimitCommand(command: HeadCommandCountAST): string {
+  if (command.n !== undefined && command.limit !== undefined) {
+    throw new Error("limit and n cannot be specified together");
+  }
+
+  const limit = (command.n ?? command.limit)?.value ?? 10;
+
   return `
     async function* headCommand(records) {
       let i = 0;
       for await (const record of records) {
         yield record;
-        if (++i >= ${command.limit.value}) {
+        if (++i >= ${limit}) {
           break;
         }
       }
