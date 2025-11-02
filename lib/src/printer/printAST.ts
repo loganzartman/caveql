@@ -50,9 +50,14 @@ export function printAST(
     case "head": {
       return [
         "head",
-        ast.allowNull !== undefined ? `allowNull=${ast.allowNull}` : "",
-        ast.keepLast !== undefined ? `keepLast=${ast.keepLast}` : "",
-        "limit" in ast ? printAST(ast.limit) : "",
+        ast.allowNull !== undefined ? `null=${ast.allowNull}` : "",
+        ast.keepLast !== undefined ? `keeplast=${ast.keepLast}` : "",
+        ast.limit
+          ? "expr" in ast
+            ? `limit=${printAST(ast.limit)}`
+            : printAST(ast.limit)
+          : "",
+        "expr" in ast ? printAST(ast.expr) : "",
       ]
         .filter(Boolean)
         .join(" ");
@@ -109,12 +114,23 @@ export function printAST(
     case "streamstats":
     case "stats": {
       const aggregations = ast.aggregations.map((agg) => {
+        let aggString: string = agg.type;
         if (agg.field) {
-          return `${agg.type}(${printAST(agg.field, depth)})`;
+          aggString = `${aggString}(${printAST(agg.field, depth)})`;
         }
-        return agg.type;
+        if (agg.asField) {
+          aggString = `${aggString} as ${printAST(agg.asField, depth)}`;
+        }
+        return aggString;
       });
-      return `${ast.type} ${aggregations.join(", ")}`;
+
+      const groupBy = ast.groupBy
+        ? `by ${ast.groupBy.map((field) => printAST(field, depth)).join(", ")}`
+        : null;
+
+      return [ast.type, aggregations.join(", "), groupBy]
+        .filter(Boolean)
+        .join(" ");
     }
     case "string":
       return JSON.stringify(ast.value);
