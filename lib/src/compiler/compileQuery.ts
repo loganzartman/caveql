@@ -1,7 +1,7 @@
 import type { QueryAST } from "../parser";
 import { compileCommand } from "./compileCommand";
 import { compileInstrumentInput } from "./compileInstrumentInput";
-import { getRuntimeDeps, type InjectedDeps } from "./runtime";
+import { getRuntimeDeps, type InjectedDeps } from "./runtime/runtime";
 
 type InputIterable = Iterable<unknown> | AsyncIterable<unknown>;
 

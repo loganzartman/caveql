@@ -3,7 +3,8 @@ import {
   compareFieldAuto,
   compareFieldNumber,
   compareFieldString,
-} from "./command/compileSortCommand";
+} from "../command/compileSortCommand";
+import { StreamingPerc } from "./StreamingPerc";
 
 // runtime dependencies required by the compiled function, which should be
 // injected as a parameter rather than compiled into the function itself.
@@ -16,6 +17,7 @@ export function getRuntimeDeps() {
     looseEq,
     randomInt,
     TinyQueue,
+    StreamingPerc,
     mod,
     add,
     sub,

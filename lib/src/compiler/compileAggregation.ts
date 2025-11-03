@@ -4,10 +4,15 @@ import { compileExpression } from "./compileExpression";
 import { compilePathGet, must } from "./utils";
 
 export function aggKey(agg: AggregationTermAST) {
-  if (agg.field === undefined) {
-    return JSON.stringify(agg.type);
+  let type: string = agg.type;
+  if (agg.type === "perc") {
+    type = `${type}${agg.percentile}`;
   }
-  return JSON.stringify(`${agg.type}(${agg.field.value})`);
+
+  if (agg.field === undefined) {
+    return JSON.stringify(type);
+  }
+  return JSON.stringify(`${type}(${agg.field.value})`);
 }
 
 export function compileAggregationGroupKeyFn(groupBy: FieldNameAST[]): string {
@@ -25,10 +30,11 @@ export function compileAggregationInit(agg: AggregationTermAST): string {
     case "min":
     case "median":
     case "mode":
-    case "perc":
       return "undefined";
+    case "perc":
+      return "new StreamingPerc()";
     default:
-      impossible(agg.type);
+      impossible(agg);
   }
 }
 
@@ -71,13 +77,18 @@ export function compileAggregationReduce(
       );
       return `${accumulator} += (${recordValue})`;
     }
+    case "perc": {
+      const recordValue = compileExpression(
+        must(agg.field, "perc() aggregation requires a field name"),
+      );
+      return `${accumulator}.add(${recordValue})`;
+    }
     case "distinct":
     case "median":
     case "mode":
-    case "perc":
       throw new Error("Aggregation not implemented");
     default:
-      impossible(agg.type);
+      impossible(agg);
   }
 }
 
@@ -93,12 +104,13 @@ export function compileAggregationFinal(
     case "min":
     case "sum":
       return `${accumulator}`;
+    case "perc":
+      return `${accumulator}.getPercentile(${agg.percentile})`;
     case "distinct":
     case "median":
     case "mode":
-    case "perc":
       throw new Error("Aggregation not implemented");
     default:
-      impossible(agg.type);
+      impossible(agg);
   }
 }

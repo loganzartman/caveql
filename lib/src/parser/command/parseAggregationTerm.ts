@@ -4,6 +4,7 @@ import {
   type FieldNameAST,
   parseFieldName,
   parseLiteral,
+  parseRex,
   parseWs,
 } from "../parseCommon";
 
@@ -18,15 +19,22 @@ export type AggregationTermType =
   | "median"
   | "perc";
 
-export type AggregationTermAST = {
-  type: AggregationTermType;
-  field?: FieldNameAST;
-  asField?: FieldNameAST;
-};
+export type AggregationTermAST =
+  | {
+      type: Exclude<AggregationTermType, "perc">;
+      field?: FieldNameAST;
+      asField?: FieldNameAST;
+    }
+  | {
+      type: "perc";
+      percentile: number;
+      field?: FieldNameAST;
+      asField?: FieldNameAST;
+    };
 
 export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
   parseWs(ctx);
-  const type = parseLiteral(
+  let type = parseLiteral(
     ctx,
     [Token.function, "count"],
     [Token.function, "distinct"],
@@ -37,7 +45,19 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     [Token.function, "mode"],
     [Token.function, "median"],
     [Token.function, "perc"],
+    [Token.function, "p"],
   );
+
+  if (type === "p") {
+    type = "perc";
+  }
+
+  // special case for percentile aggregation; e.g. perc75(), p75()
+  let percentile: number | undefined;
+  if (type === "perc") {
+    const percentileStr = parseRex(ctx, Token.function, /\d{0,2}(\.\d*)?/);
+    percentile = Number.parseFloat(percentileStr);
+  }
 
   // optional field
   let field: FieldNameAST | undefined;
@@ -58,6 +78,13 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     parseWs(ctx);
     asField = parseFieldName(ctx);
   } catch {}
+
+  if (type === "perc") {
+    if (!percentile) {
+      throw new Error("perc() aggregation requires a percentile");
+    }
+    return { type, percentile, field, asField };
+  }
 
   return { type, field, asField };
 }
