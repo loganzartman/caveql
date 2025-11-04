@@ -48,13 +48,13 @@ class TDigest {
     let i = 0;
     let cumulativeWeight = 0;
     for (const [mean, weight] of this.centroids) {
-      if (cumulativeWeight >= targetWeight) {
+      if (cumulativeWeight + weight >= targetWeight) {
         if (i === 0) {
           return mean;
         }
 
-        const [prevMean, prevWeight] = this.centroids[i - 1];
-        const deltaFraction = (targetWeight - cumulativeWeight) / prevWeight;
+        const [prevMean] = this.centroids[i - 1];
+        const deltaFraction = (targetWeight - cumulativeWeight) / weight;
         return prevMean + (mean - prevMean) * deltaFraction;
       }
       cumulativeWeight += weight;
