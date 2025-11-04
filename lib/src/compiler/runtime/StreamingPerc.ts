@@ -11,7 +11,7 @@ export class StreamingPerc {
     this.values.push(value);
 
     if (this.values.length > 1000) {
-      this.tDigest = new TDigest(100);
+      this.tDigest = new TDigest(1000);
       for (const value of this.values) {
         this.tDigest.add(value);
       }
@@ -73,6 +73,13 @@ class TDigest {
     for (const [mean, weight] of this.centroids) {
       cumulativeWeight += weight;
 
+      const isExtreme =
+        cumulativeWeight <= 1 || cumulativeWeight >= this.count - 1;
+      if (isExtreme) {
+        compressed.push([mean, weight]);
+        continue;
+      }
+
       const q = cumulativeWeight / this.count;
       const k = this.scaleFn(q) * this.compression;
 
@@ -90,7 +97,8 @@ class TDigest {
   }
 
   private scaleFn(q: number): number {
-    return Math.asin(2 * q - 1) / Math.PI + 0.5;
+    // k2 scale function
+    return q <= 0.5 ? 2 * q * q : 1 - 2 * (1 - q) * (1 - q);
   }
 }
 
