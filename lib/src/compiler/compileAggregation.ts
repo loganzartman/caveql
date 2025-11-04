@@ -28,9 +28,9 @@ export function compileAggregationInit(agg: AggregationTermAST): string {
       return "0";
     case "max":
     case "min":
-    case "median":
     case "mode":
       return "undefined";
+    case "median":
     case "perc":
       return "new StreamingPerc()";
     default:
@@ -77,14 +77,14 @@ export function compileAggregationReduce(
       );
       return `${accumulator} += (${recordValue})`;
     }
+    case "median":
     case "perc": {
       const recordValue = compileExpression(
-        must(agg.field, "perc() aggregation requires a field name"),
+        must(agg.field, `${agg.type}() aggregation requires a field name`),
       );
       return `${accumulator}.add(${recordValue})`;
     }
     case "distinct":
-    case "median":
     case "mode":
       throw new Error("Aggregation not implemented");
     default:
@@ -104,10 +104,11 @@ export function compileAggregationFinal(
     case "min":
     case "sum":
       return `${accumulator}`;
+    case "median":
+      return `${accumulator}.getPercentile(50)`;
     case "perc":
       return `${accumulator}.getPercentile(${agg.percentile})`;
     case "distinct":
-    case "median":
     case "mode":
       throw new Error("Aggregation not implemented");
     default:
