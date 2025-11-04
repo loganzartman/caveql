@@ -10,8 +10,8 @@ export class StreamingPerc {
 
     this.values.push(value);
 
-    if (this.values.length > 1000) {
-      this.tDigest = new TDigest(1000);
+    if (this.values.length > 10000) {
+      this.tDigest = new TDigest({ compression: 10000 });
       for (const value of this.values) {
         this.tDigest.add(value);
       }
@@ -22,18 +22,30 @@ export class StreamingPerc {
     if (this.tDigest) {
       return this.tDigest.getPercentile(percentile);
     }
-    return nearestRank(this.values, percentile);
+    return this.nearestRank(this.values, percentile);
+  }
+
+  private nearestRank(values: number[], percentile: number): number {
+    const sorted = values.sort((a, b) => a - b);
+    const index = Math.ceil(sorted.length * (percentile / 100));
+    return sorted[Math.max(index - 1, 0)];
   }
 }
 
 class TDigest {
+  private readonly compression: number;
   private centroids: [number, number][] = [];
   private count = 0;
-  constructor(public readonly compression: number) {}
+  private dirty = true;
+
+  constructor({ compression }: { compression: number }) {
+    this.compression = compression;
+  }
 
   add(value: number) {
     this.count++;
     this.centroids.push([value, 1]);
+    this.dirty = true;
 
     if (this.centroids.length > this.compression * 10) {
       this.compress();
@@ -65,6 +77,11 @@ class TDigest {
   }
 
   private compress() {
+    if (!this.dirty) {
+      return;
+    }
+    this.dirty = false;
+
     this.centroids.sort((a, b) => a[0] - b[0]);
 
     const compressed: [number, number][] = [];
@@ -100,10 +117,4 @@ class TDigest {
     // k2 scale function
     return q <= 0.5 ? 2 * q * q : 1 - 2 * (1 - q) * (1 - q);
   }
-}
-
-function nearestRank(values: number[], percentile: number): number {
-  const sorted = values.sort((a, b) => a - b);
-  const index = Math.ceil(sorted.length * (percentile / 100));
-  return sorted[Math.max(index - 1, 0)];
 }
