@@ -4,6 +4,7 @@ import {
   compareFieldNumber,
   compareFieldString,
 } from "../command/compileSortCommand";
+import { StreamingMode } from "./StreamingMode";
 import { StreamingPerc } from "./StreamingPerc";
 
 // runtime dependencies required by the compiled function, which should be
@@ -17,6 +18,7 @@ export function getRuntimeDeps() {
     looseEq,
     randomInt,
     TinyQueue,
+    StreamingMode,
     StreamingPerc,
     mod,
     add,
