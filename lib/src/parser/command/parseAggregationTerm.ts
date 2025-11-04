@@ -17,16 +17,17 @@ export type AggregationTermType =
   | "max"
   | "mode"
   | "median"
+  | "exactperc"
   | "perc";
 
 export type AggregationTermAST =
   | {
-      type: Exclude<AggregationTermType, "perc">;
+      type: Exclude<AggregationTermType, "exactperc" | "perc">;
       field?: FieldNameAST;
       asField?: FieldNameAST;
     }
   | {
-      type: "perc";
+      type: "exactperc" | "perc";
       percentile: number;
       field?: FieldNameAST;
       asField?: FieldNameAST;
@@ -44,6 +45,7 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     [Token.function, "max"],
     [Token.function, "mode"],
     [Token.function, "median"],
+    [Token.function, "exactperc"],
     [Token.function, "perc"],
     [Token.function, "p"],
   );
@@ -54,7 +56,7 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
 
   // special case for percentile aggregation; e.g. perc75(), p75()
   let percentile: number | undefined;
-  if (type === "perc") {
+  if (type === "perc" || type === "exactperc") {
     const percentileStr = parseRex(ctx, Token.function, /\d{0,2}(\.\d*)?/);
     percentile = Number.parseFloat(percentileStr);
   }
@@ -79,9 +81,9 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     asField = parseFieldName(ctx);
   } catch {}
 
-  if (type === "perc") {
+  if (type === "perc" || type === "exactperc") {
     if (!percentile) {
-      throw new Error("perc() aggregation requires a percentile");
+      throw new Error(`${type}() aggregation requires a percentile`);
     }
     return { type, percentile, field, asField };
   }

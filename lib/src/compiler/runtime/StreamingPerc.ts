@@ -1,6 +1,11 @@
 export class StreamingPerc {
   private values: number[] = [];
   private tDigest: TDigest | undefined;
+  private exact: boolean = false;
+
+  constructor({ exact }: { exact?: boolean } = {}) {
+    this.exact = exact ?? false;
+  }
 
   add(value: number) {
     if (this.tDigest) {
@@ -9,6 +14,10 @@ export class StreamingPerc {
     }
 
     this.values.push(value);
+
+    if (this.exact) {
+      return;
+    }
 
     if (this.values.length > 10000) {
       this.tDigest = new TDigest({ compression: 10000 });

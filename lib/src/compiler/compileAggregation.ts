@@ -5,7 +5,7 @@ import { compilePathGet, must } from "./utils";
 
 export function aggKey(agg: AggregationTermAST) {
   let type: string = agg.type;
-  if (agg.type === "perc") {
+  if (agg.type === "perc" || agg.type === "exactperc") {
     type = `${type}${agg.percentile}`;
   }
 
@@ -34,6 +34,8 @@ export function compileAggregationInit(agg: AggregationTermAST): string {
     case "median":
     case "perc":
       return "new StreamingPerc()";
+    case "exactperc":
+      return "new StreamingPerc({ exact: true })";
     default:
       impossible(agg);
   }
@@ -85,7 +87,8 @@ export function compileAggregationReduce(
       return `${accumulator}.add(${recordValue})`;
     }
     case "median":
-    case "perc": {
+    case "perc":
+    case "exactperc": {
       const recordValue = compileExpression(
         must(agg.field, `${agg.type}() aggregation requires a field name`),
       );
@@ -115,6 +118,7 @@ export function compileAggregationFinal(
     case "median":
       return `${accumulator}.getPercentile(50)`;
     case "perc":
+    case "exactperc":
       return `${accumulator}.getPercentile(${agg.percentile})`;
     case "distinct":
       throw new Error("Aggregation not implemented");
