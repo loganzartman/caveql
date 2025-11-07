@@ -1,4 +1,6 @@
 export class StreamingPerc {
+  public minValuesForTDigest = 1000;
+  public compression = 1000;
   private values: number[] = [];
   private tDigest: TDigest | undefined;
   private exact: boolean = false;
@@ -19,8 +21,8 @@ export class StreamingPerc {
       return;
     }
 
-    if (this.values.length > 10000) {
-      this.tDigest = new TDigest({ compression: 10000 });
+    if (this.values.length > this.minValuesForTDigest) {
+      this.tDigest = new TDigest({ compression: this.compression });
       for (const value of this.values) {
         this.tDigest.add(value);
       }
