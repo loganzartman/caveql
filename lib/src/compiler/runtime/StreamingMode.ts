@@ -4,12 +4,12 @@ export class StreamingMode {
   private counts: Map<string, number> = new Map();
 
   add(value: string) {
-    const count = this.counts.get(value) ?? 0;
-    if (count > this.modeCount) {
+    const newCount = (this.counts.get(value) ?? 0) + 1;
+    this.counts.set(value, newCount);
+    if (newCount > this.modeCount) {
       this.modeValue = value;
-      this.modeCount = count;
+      this.modeCount = newCount;
     }
-    this.counts.set(value, count + 1);
   }
 
   getMode(): unknown {
