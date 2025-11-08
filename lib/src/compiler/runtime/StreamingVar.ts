@@ -12,7 +12,7 @@ export class StreamingVar {
   }
 
   getVariance() {
-    return this.M2 / (this.n - 1);
+    return this.n > 1 ? this.M2 / (this.n - 1) : 0;
   }
 
   getStdev() {
