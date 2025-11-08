@@ -376,6 +376,25 @@ describe("parser", () => {
       });
     });
 
+    it("parses perc shorthand syntax", () => {
+      const result = parseQuery("stats p50(field1)").ast;
+      assert.partialDeepStrictEqual(result, {
+        type: "query",
+        pipeline: [
+          {
+            type: "stats",
+            aggregations: [
+              {
+                type: "perc",
+                field: { type: "field-name", value: "field1" },
+                percentile: 50,
+              },
+            ],
+          },
+        ],
+      });
+    });
+
     it("parses stats command with field renaming using 'as' keyword", () => {
       const result = parseQuery("stats count(events) as total_events").ast;
       assert.partialDeepStrictEqual(result, {
