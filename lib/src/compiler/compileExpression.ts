@@ -117,7 +117,7 @@ export const builtinFuncs = {
   if: (args) =>
     `${compileExpression(args[0])} ? ${compileExpression(args[1])} : ${compileExpression(args[2])}`,
 
-  isnull: (args) => `((${compileExpression(args[0])}) == null)`,
+  isnull: (args) => `(isnull(${compileExpression(args[0])}))`,
 
   isnum: (args) => {
     const value = compileExpression(args[0]);
@@ -128,6 +128,12 @@ export const builtinFuncs = {
 
   match: (args) =>
     `new RegExp(${compileExpression(args[1])}, 'gu').test(${compileExpression(args[0])})`,
+
+  min: (args) =>
+    `min(${compileExpression(args[0])}, ${compileExpression(args[1])})`,
+
+  max: (args) =>
+    `max(${compileExpression(args[0])}, ${compileExpression(args[1])})`,
 
   null: () => `null`,
 

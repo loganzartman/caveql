@@ -29,6 +29,11 @@ export function compileAggregationInit(agg: AggregationTermAST): string {
     case "max":
     case "min":
       return "undefined";
+    case "range":
+      return "[null, null]";
+    case "var":
+    case "stdev":
+      return "new StreamingVar()";
     case "mode":
       return "new StreamingMode()";
     case "median":
@@ -58,21 +63,29 @@ export function compileAggregationReduce(
       const recordValue = compileExpression(
         must(agg.field, "max() aggregation requires a field name"),
       );
-      return `
-        ${accumulator} = ${accumulator} === undefined 
-          ? (${recordValue})
-          : Math.max(${accumulator}, (${recordValue}))
-      `;
+      return `${accumulator} = max(${recordValue}, ${accumulator})`;
     }
     case "min": {
       const recordValue = compileExpression(
         must(agg.field, "min() aggregation requires a field name"),
       );
+      return `${accumulator} = min(${recordValue}, ${accumulator})`;
+    }
+    case "range": {
+      const recordValue = compileExpression(
+        must(agg.field, "range() aggregation requires a field name"),
+      );
       return `
-        ${accumulator} = ${accumulator} === undefined 
-          ? (${recordValue})
-          : Math.min(${accumulator}, (${recordValue}))
+        ${accumulator}[0] = min(${recordValue}, ${accumulator}[0]);
+        ${accumulator}[1] = max(${recordValue}, ${accumulator}[1]);
       `;
+    }
+    case "var":
+    case "stdev": {
+      const recordValue = compileExpression(
+        must(agg.field, `${agg.type}() aggregation requires a field name`),
+      );
+      return `${accumulator}.add(${recordValue})`;
     }
     case "sum": {
       const recordValue = compileExpression(
@@ -111,6 +124,13 @@ export function compileAggregationFinal(
     case "count":
     case "max":
     case "min":
+      return `${accumulator}`;
+    case "range":
+      return `${accumulator}[0] !== null ? (${accumulator}[1] - ${accumulator}[0]) : null`;
+    case "var":
+      return `${accumulator}.getVariance()`;
+    case "stdev":
+      return `${accumulator}.getStdev()`;
     case "sum":
       return `${accumulator}`;
     case "mode":

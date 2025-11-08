@@ -15,6 +15,9 @@ export type AggregationTermType =
   | "avg"
   | "min"
   | "max"
+  | "range"
+  | "var"
+  | "stdev"
   | "mode"
   | "median"
   | "exactperc"
@@ -44,6 +47,9 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
     [Token.function, "min"],
     [Token.function, "max"],
     [Token.function, "mode"],
+    [Token.function, "range"],
+    [Token.function, "var"],
+    [Token.function, "stdev"],
     [Token.function, "median"],
     [Token.function, "exactperc"],
     [Token.function, "perc"],
