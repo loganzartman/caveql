@@ -641,7 +641,7 @@ describe("compiler", () => {
       assert.partialDeepStrictEqual(results, [{ p95: 10 }]);
     });
 
-    it("calcules exact percentile for large dataset", async () => {
+    it("calculates exact percentile for large dataset", async () => {
       const run = compileQuery(
         parseQuery("stats exactperc90(value) as p90").ast,
       );
