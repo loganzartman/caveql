@@ -1,5 +1,12 @@
 # caveql
 
+## 0.5.0
+
+### Minor Changes
+
+- 3ad3efc: Add stats functions perc, exactperc, median, mode, range, var, stdev
+- 1311389: Implement head command
+
 ## 0.4.0
 
 ### Minor Changes
