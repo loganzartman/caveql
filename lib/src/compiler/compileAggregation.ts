@@ -4,10 +4,15 @@ import { compileExpression } from "./compileExpression";
 import { compilePathGet, must } from "./utils";
 
 export function aggKey(agg: AggregationTermAST) {
-  if (agg.field === undefined) {
-    return JSON.stringify(agg.type);
+  let type: string = agg.type;
+  if (agg.type === "perc" || agg.type === "exactperc") {
+    type = `${type}${agg.percentile}`;
   }
-  return JSON.stringify(`${agg.type}(${agg.field.value})`);
+
+  if (agg.field === undefined) {
+    return JSON.stringify(type);
+  }
+  return JSON.stringify(`${type}(${agg.field.value})`);
 }
 
 export function compileAggregationGroupKeyFn(groupBy: FieldNameAST[]): string {
@@ -23,12 +28,21 @@ export function compileAggregationInit(agg: AggregationTermAST): string {
       return "0";
     case "max":
     case "min":
-    case "median":
-    case "mode":
-    case "perc":
       return "undefined";
+    case "range":
+      return "[null, null]";
+    case "var":
+    case "stdev":
+      return "new StreamingVar()";
+    case "mode":
+      return "new StreamingMode()";
+    case "median":
+    case "perc":
+      return "new StreamingPerc()";
+    case "exactperc":
+      return "new StreamingPerc({ exact: true })";
     default:
-      impossible(agg.type);
+      impossible(agg);
   }
 }
 
@@ -49,21 +63,29 @@ export function compileAggregationReduce(
       const recordValue = compileExpression(
         must(agg.field, "max() aggregation requires a field name"),
       );
-      return `
-        ${accumulator} = ${accumulator} === undefined 
-          ? (${recordValue})
-          : Math.max(${accumulator}, (${recordValue}))
-      `;
+      return `${accumulator} = max(${recordValue}, ${accumulator})`;
     }
     case "min": {
       const recordValue = compileExpression(
         must(agg.field, "min() aggregation requires a field name"),
       );
+      return `${accumulator} = min(${recordValue}, ${accumulator})`;
+    }
+    case "range": {
+      const recordValue = compileExpression(
+        must(agg.field, "range() aggregation requires a field name"),
+      );
       return `
-        ${accumulator} = ${accumulator} === undefined 
-          ? (${recordValue})
-          : Math.min(${accumulator}, (${recordValue}))
+        ${accumulator}[0] = min(${recordValue}, ${accumulator}[0]);
+        ${accumulator}[1] = max(${recordValue}, ${accumulator}[1]);
       `;
+    }
+    case "var":
+    case "stdev": {
+      const recordValue = compileExpression(
+        must(agg.field, `${agg.type}() aggregation requires a field name`),
+      );
+      return `${accumulator}.add(${recordValue})`;
     }
     case "sum": {
       const recordValue = compileExpression(
@@ -71,13 +93,24 @@ export function compileAggregationReduce(
       );
       return `${accumulator} += (${recordValue})`;
     }
-    case "distinct":
+    case "mode": {
+      const recordValue = compileExpression(
+        must(agg.field, "mode() aggregation requires a field name"),
+      );
+      return `${accumulator}.add(${recordValue})`;
+    }
     case "median":
-    case "mode":
     case "perc":
+    case "exactperc": {
+      const recordValue = compileExpression(
+        must(agg.field, `${agg.type}() aggregation requires a field name`),
+      );
+      return `${accumulator}.add(${recordValue})`;
+    }
+    case "distinct":
       throw new Error("Aggregation not implemented");
     default:
-      impossible(agg.type);
+      impossible(agg);
   }
 }
 
@@ -91,14 +124,25 @@ export function compileAggregationFinal(
     case "count":
     case "max":
     case "min":
+      return `${accumulator}`;
+    case "range":
+      return `${accumulator}[0] !== null ? (${accumulator}[1] - ${accumulator}[0]) : null`;
+    case "var":
+      return `${accumulator}.getVariance()`;
+    case "stdev":
+      return `${accumulator}.getStdev()`;
     case "sum":
       return `${accumulator}`;
-    case "distinct":
-    case "median":
     case "mode":
+      return `${accumulator}.getMode()`;
+    case "median":
+      return `${accumulator}.getPercentile(50)`;
     case "perc":
+    case "exactperc":
+      return `${accumulator}.getPercentile(${agg.percentile})`;
+    case "distinct":
       throw new Error("Aggregation not implemented");
     default:
-      impossible(agg.type);
+      impossible(agg);
   }
 }

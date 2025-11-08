@@ -491,6 +491,197 @@ describe("compiler", () => {
         { country: "CA", total: 1, avg_price: 20 },
       ]);
     });
+
+    it("calculates median", async () => {
+      const run = compileQuery(parseQuery("stats median(value)").ast);
+      const results = await Array.fromAsync(
+        run([
+          { value: 1 },
+          { value: 2 },
+          { value: 3 },
+          { value: 4 },
+          { value: 5 },
+        ]),
+      );
+
+      // median of [1,2,3,4,5] is the middle value: 3
+      assert.partialDeepStrictEqual(results, [{ "median(value)": 3 }]);
+    });
+
+    it("calculates median with even number of values", async () => {
+      const run = compileQuery(parseQuery("stats median(value) as med").ast);
+      const results = await Array.fromAsync(
+        run([{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }]),
+      );
+
+      // Median implementation uses upper middle value for even counts
+      assert.partialDeepStrictEqual(results, [{ med: 3 }]);
+    });
+
+    it("calculates mode", async () => {
+      const run = compileQuery(
+        parseQuery("stats mode(value) as most_common").ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { value: 2 },
+          { value: 3 },
+          { value: 1 },
+          { value: 2 },
+          { value: 3 },
+          { value: 2 },
+          { value: 3 },
+        ]),
+      );
+
+      // Returns first mode encountered (2 appears 3 times)
+      assert.partialDeepStrictEqual(results, [{ most_common: 2 }]);
+    });
+
+    it("calculates mode with strings", async () => {
+      const run = compileQuery(parseQuery("stats mode(category)").ast);
+      const results = await Array.fromAsync(
+        run([
+          { category: "A" },
+          { category: "B" },
+          { category: "A" },
+          { category: "C" },
+          { category: "A" },
+        ]),
+      );
+
+      // Returns first mode encountered (A appears 3 times)
+      assert.partialDeepStrictEqual(results, [{ "mode(category)": "A" }]);
+    });
+
+    it("calculates range", async () => {
+      const run = compileQuery(
+        parseQuery("stats range(value) as val_range").ast,
+      );
+      const results = await Array.fromAsync(
+        run([{ value: 10 }, { value: 50 }, { value: 30 }, { value: 20 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [{ val_range: 40 }]);
+    });
+
+    it("calculates variance", async () => {
+      const run = compileQuery(parseQuery("stats var(value) as variance").ast);
+      const results = await Array.fromAsync(
+        run([{ value: 1 }, { value: 3 }, { value: 5 }]),
+      );
+
+      // Sample variance of [1, 3, 5] = 4
+      assert.partialDeepStrictEqual(results, [{ variance: 4 }]);
+    });
+
+    it("calculates standard deviation", async () => {
+      const run = compileQuery(parseQuery("stats stdev(value) as std").ast);
+      const results = await Array.fromAsync(
+        run([{ value: 1 }, { value: 3 }, { value: 5 }]),
+      );
+
+      // Sample stdev of [1, 3, 5] = 2
+      assert.partialDeepStrictEqual(results, [{ std: 2 }]);
+    });
+
+    it("calculates percentile", async () => {
+      const run = compileQuery(parseQuery("stats perc50(value) as p50").ast);
+      const results = await Array.fromAsync(
+        run([
+          { value: 1 },
+          { value: 2 },
+          { value: 3 },
+          { value: 4 },
+          { value: 5 },
+        ]),
+      );
+
+      // 50th percentile of [1,2,3,4,5] is 3
+      assert.partialDeepStrictEqual(results, [{ p50: 3 }]);
+    });
+
+    it("calculates approximate percentile for large dataset", async () => {
+      const run = compileQuery(parseQuery("stats perc90(value) as p90").ast);
+      const results = await Array.fromAsync(
+        run(Array.from({ length: 10000 }, (_, i) => ({ value: i }))),
+      );
+
+      // expect roughly 9000
+      const p90 = results[0].p90;
+      if (typeof p90 !== "number") {
+        throw new Error("p90 is not a number");
+      }
+      assert.ok(
+        p90 >= 8950 && p90 <= 9050,
+        `p90 is ${p90}, expected between 8950 and 9050`,
+      );
+    });
+
+    it("calculates exact percentile", async () => {
+      const run = compileQuery(
+        parseQuery("stats exactperc95(value) as p95").ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { value: 1 },
+          { value: 2 },
+          { value: 3 },
+          { value: 4 },
+          { value: 5 },
+          { value: 6 },
+          { value: 7 },
+          { value: 8 },
+          { value: 9 },
+          { value: 10 },
+        ]),
+      );
+
+      // 95th percentile of [1..10]
+      assert.partialDeepStrictEqual(results, [{ p95: 10 }]);
+    });
+
+    it("calculates exact percentile for large dataset", async () => {
+      const run = compileQuery(
+        parseQuery("stats exactperc90(value) as p90").ast,
+      );
+      const results = await Array.fromAsync(
+        run(Array.from({ length: 10000 }, (_, i) => ({ value: i }))),
+      );
+
+      // expect roughly 9000
+      const p90 = results[0].p90;
+      if (typeof p90 !== "number") {
+        throw new Error("p90 is not a number");
+      }
+      assert.strictEqual(p90, 9000);
+    });
+
+    it("calculates median, mode, range, and stdev", async () => {
+      const run = compileQuery(
+        parseQuery(
+          "stats median(value) as med, mode(value) as mod, range(value) as rng, stdev(value) as sd",
+        ).ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { value: 1 },
+          { value: 2 },
+          { value: 2 },
+          { value: 3 },
+          { value: 5 },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        {
+          med: 2, // median of [1,2,2,3,5] is the middle value: 2
+          mod: 2,
+          rng: 4,
+          sd: 1.51657508881031, // sample stdev
+        },
+      ]);
+    });
   });
 
   describe("streamstats", () => {
@@ -617,6 +808,151 @@ describe("compiler", () => {
         { events: 2, price: 20, country: "CA", total: 1, avg_price: 20 },
         { events: 3, price: 30, country: "US", total: 2, avg_price: 20 },
         { events: 4, price: 40, country: "CA", total: 2, avg_price: 30 },
+      ]);
+    });
+
+    it("calculates running median", async () => {
+      const run = compileQuery(
+        parseQuery("streamstats median(value) as running_median").ast,
+      );
+      const results = await Array.fromAsync(
+        run([{ value: 1 }, { value: 5 }, { value: 3 }, { value: 2 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { value: 1, running_median: 1 },
+        { value: 5, running_median: 5 },
+        { value: 3, running_median: 3 },
+        { value: 2, running_median: 3 },
+      ]);
+    });
+
+    it("calculates running mode", async () => {
+      const run = compileQuery(
+        parseQuery("streamstats mode(value) as running_mode").ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { value: 2 },
+          { value: 1 },
+          { value: 2 },
+          { value: 3 },
+          { value: 3 },
+          { value: 3 },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { value: 2, running_mode: 2 },
+        { value: 1, running_mode: 2 },
+        { value: 2, running_mode: 2 },
+        { value: 3, running_mode: 2 },
+        { value: 3, running_mode: 2 },
+        { value: 3, running_mode: 3 },
+      ]);
+    });
+
+    it("calculates running range", async () => {
+      const run = compileQuery(
+        parseQuery("streamstats range(value) as running_range").ast,
+      );
+      const results = await Array.fromAsync(
+        run([{ value: 5 }, { value: 2 }, { value: 8 }, { value: 1 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { value: 5, running_range: 0 },
+        { value: 2, running_range: 3 },
+        { value: 8, running_range: 6 },
+        { value: 1, running_range: 7 },
+      ]);
+    });
+
+    it("calculates running variance", async () => {
+      const run = compileQuery(
+        parseQuery("streamstats var(value) as running_var").ast,
+      );
+      const results = await Array.fromAsync(
+        run([{ value: 1 }, { value: 3 }, { value: 5 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { value: 1, running_var: 0 },
+        { value: 3, running_var: 2 },
+        { value: 5, running_var: 4 },
+      ]);
+    });
+
+    it("calculates running standard deviation", async () => {
+      const run = compileQuery(
+        parseQuery("streamstats stdev(value) as running_stdev").ast,
+      );
+      const results = await Array.fromAsync(
+        run([{ value: 1 }, { value: 3 }, { value: 5 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { value: 1, running_stdev: 0 },
+        { value: 3, running_stdev: Math.SQRT2 },
+        { value: 5, running_stdev: 2 },
+      ]);
+    });
+
+    it("calculates running percentiles", async () => {
+      const run = compileQuery(
+        parseQuery(
+          "streamstats perc50(value) as p50, exactperc75(value) as p75",
+        ).ast,
+      );
+      const results = await Array.fromAsync(
+        run([{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { value: 1, p50: 1, p75: 1 },
+        { value: 2, p50: 2, p75: 2 }, // rounds up for even counts
+        { value: 3, p50: 2, p75: 3 }, // median of [1,2,3] is 2
+        { value: 4, p50: 3, p75: 4 }, // rounds up for even counts
+      ]);
+    });
+
+    it("calculates running aggregations with grouping", async () => {
+      const run = compileQuery(
+        parseQuery("streamstats median(value) as med by country").ast,
+      );
+      const results = await Array.fromAsync(
+        run([
+          { value: 1, country: "US" },
+          { value: 2, country: "CA" },
+          { value: 5, country: "US" },
+          { value: 4, country: "CA" },
+          { value: 3, country: "US" },
+        ]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { value: 1, country: "US", med: 1 },
+        { value: 2, country: "CA", med: 2 },
+        { value: 5, country: "US", med: 5 }, // median of [1, 5] rounds up to 5
+        { value: 4, country: "CA", med: 4 }, // median of [2, 4] rounds up to 4
+        { value: 3, country: "US", med: 3 }, // median of [1, 3, 5] is 3
+      ]);
+    });
+
+    it("calculates multiple running new aggregations", async () => {
+      const run = compileQuery(
+        parseQuery(
+          "streamstats median(value) as med, stdev(value) as sd, range(value) as rng",
+        ).ast,
+      );
+      const results = await Array.fromAsync(
+        run([{ value: 1 }, { value: 3 }, { value: 5 }]),
+      );
+
+      assert.partialDeepStrictEqual(results, [
+        { value: 1, med: 1, sd: 0, rng: 0 },
+        { value: 3, med: 3, sd: Math.SQRT2, rng: 2 }, // median of [1, 3] rounds up to 3
+        { value: 5, med: 3, sd: 2, rng: 4 }, // median of [1, 3, 5] is 3
       ]);
     });
   });

@@ -112,6 +112,9 @@ export function printAST(
     case "stats": {
       const aggregations = ast.aggregations.map((agg) => {
         let aggString: string = agg.type;
+        if (agg.type === "exactperc" || agg.type === "perc") {
+          aggString = `${aggString}${agg.percentile}`;
+        }
         if (agg.field) {
           aggString = `${aggString}(${printAST(agg.field, depth)})`;
         }
@@ -121,7 +124,7 @@ export function printAST(
         return aggString;
       });
 
-      const groupBy = ast.groupBy
+      const groupBy = ast.groupBy.length
         ? `by ${ast.groupBy.map((field) => printAST(field, depth)).join(", ")}`
         : null;
 

@@ -1,7 +1,7 @@
 import type { QueryAST } from "../parser";
 import { compileCommand } from "./compileCommand";
 import { compileInstrumentInput } from "./compileInstrumentInput";
-import { getRuntimeDeps, type InjectedDeps } from "./runtime";
+import { getRuntimeDeps, type InjectedDeps } from "./runtime/runtime";
 
 type InputIterable = Iterable<unknown> | AsyncIterable<unknown>;
 
@@ -59,26 +59,16 @@ export function bindCompiledQuery(source: QuerySource): QueryFunction {
  * with a `source` string.
  */
 export function compileQueryRaw(query: QueryAST): QuerySource {
-  let result = "records";
-  result = `(${compileInstrumentInput()})(${result}, context)`;
-  for (const command of query.pipeline) {
-    result = `
-      (
-        ${compileCommand(command)}
-      )(
-        ${result},
-        context,
-      )
-    `;
-  }
   return `
     const {
       ${Object.keys(getRuntimeDeps()).join(", ")}
     } = deps;
 
-    yield* await (
-      ${result}
-    );
+    let result = (${compileInstrumentInput()})(records, context);
+
+    ${query.pipeline.map((command) => `result = (${compileCommand(command)})(result, context);`).join("\n\n")}
+
+    yield* await result;
   ` as QuerySource;
 }
 

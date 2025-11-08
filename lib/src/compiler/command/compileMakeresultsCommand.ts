@@ -44,9 +44,10 @@ export function compileMakeresultsCommand(
   return `
     async function* makeresultsCommand(records, context) {
       yield* records;
+      const _time = new Date().toISOString();
       for (let i = 0; i < ${command.count.value}; ++i) {
         context.recordsRead += 1;
-        yield { _time: new Date().toISOString() };
+        yield { _time };
       }
     }
   `;

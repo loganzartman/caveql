@@ -3,7 +3,10 @@ import {
   compareFieldAuto,
   compareFieldNumber,
   compareFieldString,
-} from "./command/compileSortCommand";
+} from "../command/compileSortCommand";
+import { StreamingMode } from "./StreamingMode";
+import { StreamingPerc } from "./StreamingPerc";
+import { StreamingVar } from "./StreamingVar";
 
 // runtime dependencies required by the compiled function, which should be
 // injected as a parameter rather than compiled into the function itself.
@@ -16,12 +19,18 @@ export function getRuntimeDeps() {
     looseEq,
     randomInt,
     TinyQueue,
+    StreamingMode,
+    StreamingPerc,
+    StreamingVar,
     mod,
     add,
     sub,
     mul,
     div,
     concat,
+    min,
+    max,
+    isnull,
   } as const;
 }
 
@@ -118,4 +127,50 @@ function concat(a: unknown, b: unknown): string {
   }
 
   return String(a) + String(b);
+}
+
+function min(a: unknown, b: unknown): unknown {
+  if (isnull(a) && isnull(b)) {
+    return null;
+  }
+  if (isnull(a)) {
+    return b;
+  }
+  if (isnull(b)) {
+    return a;
+  }
+
+  if (typeof a !== "number" && typeof a !== "bigint" && typeof a !== "string") {
+    throw new Error(`Expected number, bigint, or string, got ${typeof a}`);
+  }
+  if (typeof b !== "number" && typeof b !== "bigint" && typeof b !== "string") {
+    throw new Error(`Expected number, bigint, or string, got ${typeof b}`);
+  }
+
+  return a < b ? a : b;
+}
+
+function max(a: unknown, b: unknown): unknown {
+  if (isnull(a) && isnull(b)) {
+    return null;
+  }
+  if (isnull(a)) {
+    return b;
+  }
+  if (isnull(b)) {
+    return a;
+  }
+
+  if (typeof a !== "number" && typeof a !== "bigint" && typeof a !== "string") {
+    throw new Error(`Expected number, bigint, or string, got ${typeof a}`);
+  }
+  if (typeof b !== "number" && typeof b !== "bigint" && typeof b !== "string") {
+    throw new Error(`Expected number, bigint, or string, got ${typeof b}`);
+  }
+
+  return a > b ? a : b;
+}
+
+function isnull(a: unknown): boolean {
+  return a === null || a === undefined;
 }

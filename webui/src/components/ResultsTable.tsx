@@ -88,7 +88,7 @@ export function ResultsTable({
               role="button"
               tabIndex={0}
               className={clsx(
-                "absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none bg-red-300/20 hover:bg-red-300/50",
+                "absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none bg-amber-300/20 hover:bg-amber-300/50",
               )}
             />
           </th>
@@ -113,10 +113,10 @@ export function ResultsTable({
       <div className="min-w-full inline-block">
         <table className="w-full block">
           <thead
-            className="flex flex-row text-red-300 font-mono font-bold sticky top-0 z-20"
+            className="flex flex-row text-amber-300 font-mono font-bold sticky top-0 z-20"
             style={{
               background:
-                "color-mix(in srgb, var(--color-red-500), var(--color-stone-800) 90%)",
+                "color-mix(in srgb, var(--color-amber-500), var(--color-stone-800) 90%)",
             }}
           >
             <tr className="flex flex-row">{headerElems}</tr>
