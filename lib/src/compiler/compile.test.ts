@@ -832,7 +832,14 @@ describe("compiler", () => {
         parseQuery("streamstats mode(value) as running_mode").ast,
       );
       const results = await Array.fromAsync(
-        run([{ value: 2 }, { value: 1 }, { value: 2 }, { value: 3 }]),
+        run([
+          { value: 2 },
+          { value: 1 },
+          { value: 2 },
+          { value: 3 },
+          { value: 3 },
+          { value: 3 },
+        ]),
       );
 
       assert.partialDeepStrictEqual(results, [
