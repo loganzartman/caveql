@@ -6,6 +6,7 @@ import {
   parseNumeric,
   parseOne,
   parseParam,
+  parseStar,
   parseString,
   parseWs,
   type StringAST,
@@ -29,34 +30,29 @@ export type MakeresultsCommandAST = {
 export function parseMakeresultsCommand(
   ctx: ParseContext,
 ): MakeresultsCommandAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.command, "makeresults"]);
 
   let count: NumericAST = { type: "number", value: 1n };
   let format: "csv" | "json" | undefined;
   let data: StringAST | undefined;
 
-  while (true) {
-    try {
-      parseWs(ctx);
-      parseOne(
-        ctx,
-        (c) => {
-          count = parseParam(c, "count", parseNumeric);
-        },
-        (c) => {
-          format = parseParam(c, "format", (c) =>
-            parseLiteral(c, [Token.string, "csv"], [Token.string, "json"]),
-          );
-        },
-        (c) => {
-          data = parseParam(c, "data", parseString);
-        },
-      );
-    } catch {
-      break;
-    }
-  }
+  parseStar(ctx, (ctx) => {
+    parseWs(ctx);
+    parseOne(
+      ctx,
+      (c) => {
+        count = parseParam(c, "count", parseNumeric);
+      },
+      (c) => {
+        format = parseParam(c, "format", (c) =>
+          parseLiteral(c, [Token.string, "csv"], [Token.string, "json"]),
+        );
+      },
+      (c) => {
+        data = parseParam(c, "data", parseString);
+      },
+    );
+  });
 
   if (format !== undefined || data !== undefined) {
     if (format === undefined || data === undefined) {

@@ -69,6 +69,10 @@ monaco.editor.defineTheme("caveql", {
       token: "number",
       foreground: "#dab2ff", // purple-300
     },
+    {
+      token: "comment",
+      foreground: "#008236", // green-700
+    },
   ],
 });
 

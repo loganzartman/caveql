@@ -4,6 +4,7 @@ import {
   type FieldNameAST,
   parseFieldName,
   parseLiteral,
+  parseOptional,
   parseRex,
   parseWs,
 } from "../parseCommon";
@@ -37,7 +38,6 @@ export type AggregationTermAST =
     };
 
 export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
-  parseWs(ctx);
   let type = parseLiteral(
     ctx,
     [Token.function, "count"],
@@ -69,23 +69,23 @@ export function parseAggregationTerm(ctx: ParseContext): AggregationTermAST {
 
   // optional field
   let field: FieldNameAST | undefined;
-  try {
-    parseWs(ctx);
-    parseLiteral(ctx, [Token.paren, "("]);
-    parseWs(ctx);
-    field = parseFieldName(ctx);
-    parseWs(ctx);
-    parseLiteral(ctx, [Token.paren, ")"]);
-  } catch {}
+  parseOptional(ctx, (c) => {
+    parseOptional(c, parseWs);
+    parseLiteral(c, [Token.paren, "("]);
+    parseOptional(c, parseWs);
+    field = parseFieldName(c);
+    parseOptional(c, parseWs);
+    parseLiteral(c, [Token.paren, ")"]);
+  });
 
   // optional as clause
   let asField: FieldNameAST | undefined;
-  try {
-    parseWs(ctx);
-    parseLiteral(ctx, [Token.keyword, "as"]);
-    parseWs(ctx);
-    asField = parseFieldName(ctx);
-  } catch {}
+  parseOptional(ctx, (c) => {
+    parseWs(c);
+    parseLiteral(c, [Token.keyword, "as"]);
+    parseWs(c);
+    asField = parseFieldName(c);
+  });
 
   if (type === "perc" || type === "exactperc") {
     if (!percentile) {

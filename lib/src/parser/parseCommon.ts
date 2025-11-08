@@ -19,11 +19,10 @@ export function parseParam<T>(
   param: string,
   parseValue: (ctx: ParseContext) => T,
 ): T {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.parameter, param]);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   parseLiteral(ctx, [Token.operator, "="]);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   return parseValue(ctx);
 }
 
@@ -182,7 +181,13 @@ export function parseNumeric(ctx: ParseContext): NumericAST {
 }
 
 export function parseWs(ctx: ParseContext): string {
-  return parseRex(ctx, Token.whitespace, /\s*/);
+  return parsePlus(ctx, (c) =>
+    parseOne(
+      c,
+      (c) => parseRex(c, Token.whitespace, /\s+/),
+      (c) => parseRex(c, Token.comment, /```([^`]|`[^`]|``[^`])*```/),
+    ),
+  ).join("");
 }
 
 export function parseOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
@@ -198,6 +203,32 @@ export function parseOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
     }
   }
   throw new Error("No matching members");
+}
+
+export function parseStar<T>(
+  ctx: ParseContext,
+  parseFn: (ctx: ParseContext) => T,
+): T[] {
+  const results: T[] = [];
+  while (true) {
+    try {
+      results.push(parseFn(ctx));
+    } catch {
+      break;
+    }
+  }
+  return results;
+}
+
+export function parsePlus<T>(
+  ctx: ParseContext,
+  parseFn: (ctx: ParseContext) => T,
+): T[] {
+  const results = parseStar(ctx, parseFn);
+  if (results.length === 0) {
+    throw new Error("Expected at least one match");
+  }
+  return results;
 }
 
 export function parseOptional<T>(

@@ -1,6 +1,7 @@
 export enum Token {
   comma,
   command,
+  comment,
   field,
   function,
   keyword,

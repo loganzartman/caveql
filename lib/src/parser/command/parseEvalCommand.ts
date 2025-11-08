@@ -4,6 +4,7 @@ import {
   type FieldNameAST,
   parseFieldName,
   parseLiteral,
+  parseOptional,
   parseWs,
 } from "../parseCommon";
 import { type ExpressionAST, parseExpression } from "../parseExpression";
@@ -14,26 +15,29 @@ export type EvalCommandAST = {
 };
 
 export function parseEvalCommand(ctx: ParseContext): EvalCommandAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.command, "eval"]);
 
   const bindings: [FieldNameAST, ExpressionAST][] = [];
-  while (true) {
-    try {
-      parseWs(ctx);
-      const name = parseFieldName(ctx);
-      parseWs(ctx);
-      parseLiteral(ctx, [Token.operator, "="]);
-      parseWs(ctx);
-      const expr = parseExpression(ctx);
-      bindings.push([name, expr]);
+  parseOptional(ctx, (ctx) => {
+    parseWs(ctx);
 
-      parseWs(ctx);
-      parseLiteral(ctx, [Token.comma, ","]);
-    } catch {
-      break;
+    while (true) {
+      try {
+        const name = parseFieldName(ctx);
+        parseOptional(ctx, parseWs);
+        parseLiteral(ctx, [Token.operator, "="]);
+        parseOptional(ctx, parseWs);
+        const expr = parseExpression(ctx);
+        bindings.push([name, expr]);
+
+        parseOptional(ctx, parseWs);
+        parseLiteral(ctx, [Token.comma, ","]);
+        parseOptional(ctx, parseWs);
+      } catch {
+        break;
+      }
     }
-  }
+  });
 
   return { type: "eval", bindings };
 }

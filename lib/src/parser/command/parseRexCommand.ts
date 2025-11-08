@@ -6,6 +6,7 @@ import {
   parseLiteral,
   parseOne,
   parseParam,
+  parseStar,
   parseString,
   parseWs,
   type StringAST,
@@ -21,30 +22,25 @@ export type RexCommandAST = {
 };
 
 export function parseRexCommand(ctx: ParseContext): RexCommandAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.command, "rex"]);
 
   let field: FieldNameAST | undefined;
   let mode: RexMode | undefined;
 
-  while (true) {
-    try {
-      parseWs(ctx);
-      parseOne(
-        ctx,
-        (c) => {
-          field = parseParam(c, "field", parseFieldName);
-        },
-        (c) => {
-          mode = parseParam(c, "mode", (c) =>
-            parseLiteral(c, [Token.string, "sed"]),
-          );
-        },
-      );
-    } catch {
-      break;
-    }
-  }
+  parseStar(ctx, (ctx) => {
+    parseWs(ctx);
+    parseOne(
+      ctx,
+      (c) => {
+        field = parseParam(c, "field", parseFieldName);
+      },
+      (c) => {
+        mode = parseParam(c, "mode", (c) =>
+          parseLiteral(c, [Token.string, "sed"]),
+        );
+      },
+    );
+  });
 
   const regex = parseString(ctx, { token: Token.regex });
 

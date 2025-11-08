@@ -96,12 +96,12 @@ function parseBinaryLevel(
 
   while (true) {
     try {
-      parseWs(ctx);
+      parseOptional(ctx, parseWs);
       const op = parseLiteral(
         ctx,
         ...operators.map((o) => [Token.operator, o] as [Token, BinaryOp]),
       );
-      parseWs(ctx);
+      parseOptional(ctx, parseWs);
       const right = nextLevel(ctx);
       left = {
         type: "binary-op",
@@ -127,10 +127,9 @@ export type UnaryOpAST = {
 
 export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
   try {
-    parseWs(ctx);
     const op = parseLiteral(ctx, [Token.operator, "not"]);
 
-    parseWs(ctx);
+    parseOptional(ctx, parseWs);
     const operand = parseExpression(ctx);
     return {
       type: "unary-op",
@@ -143,11 +142,10 @@ export function parseUnaryExpr(ctx: ParseContext): ExpressionAST {
 }
 
 export function parseGroup(ctx: ParseContext): ExpressionAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.paren, "("]);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   const expr = parseExpression(ctx);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   parseLiteral(ctx, [Token.paren, ")"]);
   return expr;
 }
@@ -159,7 +157,6 @@ export type FunctionCallAST = {
 };
 
 export function parseFunctionCall(ctx: ParseContext): ExpressionAST {
-  parseWs(ctx);
   const fnName = parseLiteral(
     ctx,
     ...Object.keys(builtinFuncs).map(
@@ -167,25 +164,24 @@ export function parseFunctionCall(ctx: ParseContext): ExpressionAST {
     ),
   );
 
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   parseLiteral(ctx, [Token.paren, "("]);
-  parseWs(ctx);
 
   const args: ExpressionAST[] = [];
   while (true) {
     try {
-      parseWs(ctx);
+      parseOptional(ctx, parseWs);
       args.push(parseExpression(ctx));
     } catch {
       break;
     }
 
-    parseWs(ctx);
+    parseOptional(ctx, parseWs);
     const next = parseOptional(ctx, (c) => parseLiteral(c, [Token.comma, ","]));
     if (!next) break;
   }
 
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   parseLiteral(ctx, [Token.paren, ")"]);
 
   return {

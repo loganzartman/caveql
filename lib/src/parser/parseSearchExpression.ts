@@ -7,6 +7,7 @@ import {
   parseLiteral,
   parseNumeric,
   parseOne,
+  parseOptional,
   parseRex,
   parseString,
   parseWs,
@@ -53,17 +54,16 @@ function parseBooleanBinaryLevel(
   parseNextLevel: (ctx: ParseContext) => SearchExpressionAST,
   ops: SearchBinaryOp[],
 ): SearchExpressionAST {
-  parseWs(ctx);
   let left = parseNextLevel(ctx);
 
   while (true) {
     try {
-      parseWs(ctx);
+      parseOptional(ctx, parseWs);
       const op = parseLiteral(
         ctx,
         ...ops.map((op) => [Token.operator, op] as [Token, SearchBinaryOp]),
       );
-      parseWs(ctx);
+      parseOptional(ctx, parseWs);
       const right = parseNextLevel(ctx);
       left = {
         type: "search-binary-op",
@@ -81,10 +81,9 @@ function parseBooleanBinaryLevel(
 
 function parseSearchUnaryOp(ctx: ParseContext): SearchExpressionAST {
   try {
-    parseWs(ctx);
     const op = parseLiteral(ctx, [Token.operator, "NOT"]);
 
-    parseWs(ctx);
+    parseOptional(ctx, parseWs);
     const operand = parseSearchOrExpression(ctx);
     return {
       type: "search-unary-op",
@@ -107,11 +106,10 @@ function parseSearchTerm(ctx: ParseContext): SearchExpressionAST {
 }
 
 function parseSearchGroup(ctx: ParseContext): SearchExpressionAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.paren, "("]);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   const expr = parseSearchExpression(ctx);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   parseLiteral(ctx, [Token.paren, ")"]);
   return expr;
 }
@@ -126,9 +124,8 @@ export type CompareExpressionAST = {
 };
 
 function parseCompareExpression(ctx: ParseContext): CompareExpressionAST {
-  parseWs(ctx);
   const left = parseFieldName(ctx);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   const op = parseLiteral(
     ctx,
     [Token.operator, ">="],
@@ -138,7 +135,7 @@ function parseCompareExpression(ctx: ParseContext): CompareExpressionAST {
     [Token.operator, ">"],
     [Token.operator, "<"],
   );
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   const right = parseOne(ctx, parseSearchString, parseNumeric);
 
   return {
