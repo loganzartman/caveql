@@ -38,8 +38,9 @@ export class StreamingPerc {
 
   private nearestRank(values: number[], percentile: number): number {
     const sorted = values.sort((a, b) => a - b);
-    const index = Math.ceil(sorted.length * (percentile / 100));
-    return sorted[Math.max(index - 1, 0)];
+    const position = sorted.length * (percentile / 100);
+    const index = Math.floor(position);
+    return sorted[Math.min(index, sorted.length - 1)];
   }
 }
 
