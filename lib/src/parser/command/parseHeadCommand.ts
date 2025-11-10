@@ -6,7 +6,6 @@ import {
   parseLiteralBoolean,
   parseNumeric,
   parseOne,
-  parseOptional,
   parseParam,
   parseStar,
   parseWs,
@@ -61,18 +60,18 @@ export function parseHeadCommand(ctx: ParseContext): HeadCommandAST {
 
   return parseOne(
     ctx,
-    (c) => {
+    (ctx) => {
       parseWs(ctx);
-      const expr = parseGroup(c);
+      const expr = parseGroup(ctx);
       return {
         type: "head",
         ...params,
         expr,
       } as const satisfies HeadCommandExprAST;
     },
-    (c) => {
+    (ctx) => {
       parseWs(ctx);
-      const n = parseNumeric(c);
+      const n = parseNumeric(ctx);
       return {
         type: "head",
         ...params,

@@ -197,6 +197,7 @@ export function parseNumeric(ctx: ParseContext): NumericAST {
   );
 }
 
+/** Parse whitespace and comments */
 export function parseWs(ctx: ParseContext): string {
   return parsePlus(ctx, (c) =>
     parseOne(
