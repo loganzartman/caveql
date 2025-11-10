@@ -8,6 +8,7 @@ import {
   parseOne,
   parseOptional,
   parseParam,
+  parseStar,
   parseWs,
 } from "../parseCommon";
 import { type ExpressionAST, parseGroup } from "../parseExpression";
@@ -38,29 +39,25 @@ export function parseHeadCommand(ctx: ParseContext): HeadCommandAST {
     keepLast: undefined as boolean | undefined,
   };
 
-  while (true) {
-    try {
-      parseWs(ctx);
-      parseOne(
-        ctx,
-        (c) => {
-          params.limit = parseParam(c, "limit", (c) => parseNumeric(c));
-        },
-        (c) => {
-          params.allowNull = parseParam(c, "null", (c) =>
-            parseLiteralBoolean(c),
-          );
-        },
-        (c) => {
-          params.keepLast = parseParam(c, "keeplast", (c) =>
-            parseLiteralBoolean(c),
-          );
-        },
-      );
-    } catch {
-      break;
-    }
-  }
+  parseStar(ctx, (ctx) => {
+    parseWs(ctx);
+    parseOne(
+      ctx,
+      (ctx) => {
+        params.limit = parseParam(ctx, "limit", (ctx) => parseNumeric(ctx));
+      },
+      (ctx) => {
+        params.allowNull = parseParam(ctx, "null", (ctx) =>
+          parseLiteralBoolean(ctx),
+        );
+      },
+      (ctx) => {
+        params.keepLast = parseParam(ctx, "keeplast", (ctx) =>
+          parseLiteralBoolean(ctx),
+        );
+      },
+    );
+  });
 
   return parseOne(
     ctx,

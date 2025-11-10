@@ -9,7 +9,6 @@ export type WhereCommandAST = {
 };
 
 export function parseWhereCommand(ctx: ParseContext): WhereCommandAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.command, "where"]);
   parseWs(ctx);
   const expr = parseExpression(ctx);

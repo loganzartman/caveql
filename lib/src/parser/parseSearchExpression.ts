@@ -9,6 +9,7 @@ import {
   parseOne,
   parseOptional,
   parseRex,
+  parseStar,
   parseString,
   parseWs,
   type StringAST,
@@ -56,43 +57,41 @@ function parseBooleanBinaryLevel(
 ): SearchExpressionAST {
   let left = parseNextLevel(ctx);
 
-  while (true) {
-    try {
-      parseOptional(ctx, parseWs);
-      const op = parseLiteral(
-        ctx,
-        ...ops.map((op) => [Token.operator, op] as [Token, SearchBinaryOp]),
-      );
-      parseOptional(ctx, parseWs);
-      const right = parseNextLevel(ctx);
-      left = {
-        type: "search-binary-op",
-        op,
-        left,
-        right,
-      };
-    } catch {
-      break;
-    }
-  }
+  parseStar(ctx, (ctx) => {
+    parseOptional(ctx, parseWs);
+    const op = parseLiteral(
+      ctx,
+      ...ops.map((op) => [Token.operator, op] as [Token, SearchBinaryOp]),
+    );
+    parseOptional(ctx, parseWs);
+    const right = parseNextLevel(ctx);
+    left = {
+      type: "search-binary-op",
+      op,
+      left,
+      right,
+    };
+  });
 
   return left;
 }
 
 function parseSearchUnaryOp(ctx: ParseContext): SearchExpressionAST {
-  try {
-    const op = parseLiteral(ctx, [Token.operator, "NOT"]);
+  return parseOne(
+    ctx,
+    (ctx) => {
+      const op = parseLiteral(ctx, [Token.operator, "NOT"]);
 
-    parseOptional(ctx, parseWs);
-    const operand = parseSearchOrExpression(ctx);
-    return {
-      type: "search-unary-op",
-      op,
-      operand,
-    };
-  } catch {
-    return parseSearchTerm(ctx);
-  }
+      parseOptional(ctx, parseWs);
+      const operand = parseSearchOrExpression(ctx);
+      return {
+        type: "search-unary-op",
+        op,
+        operand,
+      } as const;
+    },
+    parseSearchTerm,
+  );
 }
 
 function parseSearchTerm(ctx: ParseContext): SearchExpressionAST {

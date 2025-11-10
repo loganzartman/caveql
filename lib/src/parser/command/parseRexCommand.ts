@@ -31,17 +31,18 @@ export function parseRexCommand(ctx: ParseContext): RexCommandAST {
     parseWs(ctx);
     parseOne(
       ctx,
-      (c) => {
-        field = parseParam(c, "field", parseFieldName);
+      (ctx) => {
+        field = parseParam(ctx, "field", parseFieldName);
       },
-      (c) => {
-        mode = parseParam(c, "mode", (c) =>
-          parseLiteral(c, [Token.string, "sed"]),
+      (ctx) => {
+        mode = parseParam(ctx, "mode", (ctx) =>
+          parseLiteral(ctx, [Token.string, "sed"]),
         );
       },
     );
   });
 
+  parseWs(ctx);
   const regex = parseString(ctx, { token: Token.regex });
 
   return {

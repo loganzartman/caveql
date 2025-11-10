@@ -36,11 +36,13 @@ export function parseSortCommand(ctx: ParseContext): SortCommandAST {
   const fields: SortFieldAST[] = [];
   parseOptional(ctx, (ctx) => {
     parseWs(ctx);
-    parsePlus(ctx, (ctx) => {
-      parseOptional(ctx, parseWs);
+    parsePlus(ctx, (ctx, { first }) => {
+      if (!first) {
+        parseOptional(ctx, parseWs);
+        parseLiteral(ctx, [Token.comma, ","]);
+        parseOptional(ctx, parseWs);
+      }
       fields.push(parseSortField(ctx));
-      parseOptional(ctx, parseWs);
-      parseLiteral(ctx, [Token.comma, ","]);
     });
   });
 

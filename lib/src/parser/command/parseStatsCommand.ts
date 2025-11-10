@@ -7,7 +7,6 @@ import {
   parseOne,
   parseOptional,
   parsePlus,
-  parseStar,
   parseWs,
 } from "../parseCommon";
 import {
@@ -27,20 +26,22 @@ export function parseStatsCommand(ctx: ParseContext): StatsCommandAST {
   const terms: AggregationTermAST[] = [];
   parseOptional(ctx, (ctx) => {
     parseWs(ctx);
-    parsePlus(ctx, (ctx) => {
+    parsePlus(ctx, (ctx, { first }) => {
+      if (!first) {
+        // commas optional
+        parseOne(
+          ctx,
+          (ctx) => {
+            parseOptional(ctx, parseWs);
+            parseLiteral(ctx, [Token.operator, ","]);
+            parseOptional(ctx, parseWs);
+          },
+          parseWs,
+        );
+      }
+
       const term = parseAggregationTerm(ctx);
       terms.push(term);
-
-      // commas optional
-      parseOne(
-        ctx,
-        (ctx) => {
-          parseOptional(ctx, parseWs);
-          parseLiteral(ctx, [Token.operator, ","]);
-          parseOptional(ctx, parseWs);
-        },
-        parseWs,
-      );
     });
   });
 
@@ -48,15 +49,11 @@ export function parseStatsCommand(ctx: ParseContext): StatsCommandAST {
   parseOptional(ctx, (ctx) => {
     parseWs(ctx);
     parseLiteral(ctx, [Token.keyword, "by"]);
-    while (true) {
-      try {
-        parseWs(ctx);
-        groupBy.push(parseFieldName(ctx));
-        parseOptional(ctx, (c) => parseLiteral(c, [Token.comma, ","]));
-      } catch {
-        break;
-      }
-    }
+    parsePlus(ctx, (ctx) => {
+      parseWs(ctx);
+      groupBy.push(parseFieldName(ctx));
+      parseOptional(ctx, (c) => parseLiteral(c, [Token.comma, ","]));
+    });
   });
 
   return { type: "stats", aggregations: terms, groupBy };
