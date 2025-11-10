@@ -4,6 +4,36 @@ import {
 } from "caveql";
 import * as monaco from "monaco-editor";
 
+self.MonacoEnvironment = {
+  getWorker: (_moduleId, label) => {
+    if (label === "json") {
+      return new Worker(
+        new URL(
+          "npm:monaco-editor/esm/vs/language/json/json.worker.js",
+          import.meta.url,
+        ),
+        { type: "module" },
+      );
+    }
+    if (label === "typescript" || label === "javascript") {
+      return new Worker(
+        new URL(
+          "npm:monaco-editor/esm/vs/language/typescript/ts.worker.js",
+          import.meta.url,
+        ),
+        { type: "module" },
+      );
+    }
+    return new Worker(
+      new URL(
+        "npm:monaco-editor/esm/vs/editor/editor.worker.js",
+        import.meta.url,
+      ),
+      { type: "module" },
+    );
+  },
+};
+
 monaco.languages.register({ id: "caveql" });
 monaco.languages.registerDocumentSemanticTokensProvider(
   "caveql",
