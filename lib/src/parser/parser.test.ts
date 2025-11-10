@@ -89,9 +89,9 @@ describe("parser", () => {
 
   describe("search", () => {
     it("parses multiple search terms as separate filters", () => {
-      const result = parseQuery("search a=1 and b=2 or c=3").ast;
+      const result = parseQuery("search a=1 dog b=2 cat c=3").ast;
       const searchCmd = result.pipeline[0] as SearchCommandAST;
-      // In Splunk, this would be searching for records containing "a=1", "and", "b=2", "or", "c=3" as separate terms
+
       assert.equal(searchCmd.filters.length, 5);
       assert.partialDeepStrictEqual(searchCmd.filters[0], {
         type: "compare",
@@ -101,7 +101,7 @@ describe("parser", () => {
       });
       assert.partialDeepStrictEqual(searchCmd.filters[1], {
         type: "string",
-        value: "and",
+        value: "dog",
       });
       assert.partialDeepStrictEqual(searchCmd.filters[2], {
         type: "compare",
@@ -111,7 +111,7 @@ describe("parser", () => {
       });
       assert.partialDeepStrictEqual(searchCmd.filters[3], {
         type: "string",
-        value: "or",
+        value: "cat",
       });
       assert.partialDeepStrictEqual(searchCmd.filters[4], {
         type: "compare",

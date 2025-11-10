@@ -8,6 +8,7 @@ import {
   parseNumeric,
   parseOne,
   parseOptional,
+  parsePlus,
   parseWs,
 } from "../parseCommon";
 
@@ -25,30 +26,30 @@ export type SortFieldAST = {
 };
 
 export function parseSortCommand(ctx: ParseContext): SortCommandAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.command, "sort"]);
 
-  parseWs(ctx);
-  const count = parseOptional(ctx, (c) => parseNumeric(c));
+  const count = parseOptional(ctx, (ctx) => {
+    parseWs(ctx);
+    return parseNumeric(ctx);
+  });
 
   const fields: SortFieldAST[] = [];
-  while (true) {
-    try {
-      parseWs(ctx);
+  parseOptional(ctx, (ctx) => {
+    parseWs(ctx);
+    parsePlus(ctx, (ctx, { first }) => {
+      if (!first) {
+        parseOptional(ctx, parseWs);
+        parseLiteral(ctx, [Token.comma, ","]);
+        parseOptional(ctx, parseWs);
+      }
       fields.push(parseSortField(ctx));
-      parseWs(ctx);
-      parseLiteral(ctx, [Token.comma, ","]);
-    } catch {
-      break;
-    }
-  }
+    });
+  });
 
   return { type: "sort", count, fields };
 }
 
 export function parseSortField(ctx: ParseContext): SortFieldAST {
-  parseWs(ctx);
-
   const prefix = parseOptional(ctx, (c) =>
     parseLiteral(c, [Token.operator, "+"], [Token.operator, "-"]),
   );
@@ -56,7 +57,7 @@ export function parseSortField(ctx: ParseContext): SortFieldAST {
   if (prefix === "+") desc = false;
   if (prefix === "-") desc = true;
 
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   const { field, comparator } = parseOne(
     ctx,
     // explicit comparator
@@ -68,11 +69,11 @@ export function parseSortField(ctx: ParseContext): SortFieldAST {
         [Token.function, "ip"],
         [Token.function, "num"],
       );
-      parseWs(c);
+      parseOptional(c, parseWs);
       parseLiteral(c, [Token.paren, "("]);
-      parseWs(c);
+      parseOptional(c, parseWs);
       const field = parseFieldName(c);
-      parseWs(c);
+      parseOptional(c, parseWs);
       parseLiteral(c, [Token.paren, ")"]);
       return { field, comparator };
     },

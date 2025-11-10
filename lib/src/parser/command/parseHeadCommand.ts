@@ -7,6 +7,7 @@ import {
   parseNumeric,
   parseOne,
   parseParam,
+  parseStar,
   parseWs,
 } from "../parseCommon";
 import { type ExpressionAST, parseGroup } from "../parseExpression";
@@ -30,7 +31,6 @@ export type HeadCommandAST = HeadCommandCountAST | HeadCommandExprAST;
 
 export function parseHeadCommand(ctx: ParseContext): HeadCommandAST {
   parseLiteral(ctx, [Token.command, "head"]);
-  parseWs(ctx);
 
   const params = {
     limit: undefined as NumericAST | undefined,
@@ -38,44 +38,40 @@ export function parseHeadCommand(ctx: ParseContext): HeadCommandAST {
     keepLast: undefined as boolean | undefined,
   };
 
-  while (true) {
-    try {
-      parseWs(ctx);
-      parseOne(
-        ctx,
-        (c) => {
-          params.limit = parseParam(c, "limit", (c) => parseNumeric(c));
-        },
-        (c) => {
-          params.allowNull = parseParam(c, "null", (c) =>
-            parseLiteralBoolean(c),
-          );
-        },
-        (c) => {
-          params.keepLast = parseParam(c, "keeplast", (c) =>
-            parseLiteralBoolean(c),
-          );
-        },
-      );
-    } catch {
-      break;
-    }
-  }
-
-  parseWs(ctx);
+  parseStar(ctx, (ctx) => {
+    parseWs(ctx);
+    parseOne(
+      ctx,
+      (ctx) => {
+        params.limit = parseParam(ctx, "limit", (ctx) => parseNumeric(ctx));
+      },
+      (ctx) => {
+        params.allowNull = parseParam(ctx, "null", (ctx) =>
+          parseLiteralBoolean(ctx),
+        );
+      },
+      (ctx) => {
+        params.keepLast = parseParam(ctx, "keeplast", (ctx) =>
+          parseLiteralBoolean(ctx),
+        );
+      },
+    );
+  });
 
   return parseOne(
     ctx,
-    (c) => {
-      const expr = parseGroup(c);
+    (ctx) => {
+      parseWs(ctx);
+      const expr = parseGroup(ctx);
       return {
         type: "head",
         ...params,
         expr,
       } as const satisfies HeadCommandExprAST;
     },
-    (c) => {
-      const n = parseNumeric(c);
+    (ctx) => {
+      parseWs(ctx);
+      const n = parseNumeric(ctx);
       return {
         type: "head",
         ...params,

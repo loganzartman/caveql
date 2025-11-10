@@ -15,28 +15,33 @@ export type FieldsCommandAST = {
 };
 
 export function parseFieldsCommand(ctx: ParseContext): FieldsCommandAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.command, "fields"]);
 
-  parseWs(ctx);
+  const fields: FieldNameAST[] = [];
   let remove: boolean | undefined;
-  const plusMinus = parseOptional(ctx, (c) =>
-    parseLiteral(c, [Token.operator, "+"], [Token.operator, "-"]),
-  );
-  if (plusMinus === "-") remove = true;
-  if (plusMinus === "+") remove = false;
 
-  const fields = [];
-  while (true) {
-    try {
-      parseWs(ctx);
-      fields.push(parseFieldName(ctx));
-      parseWs(ctx);
-      parseLiteral(ctx, [Token.comma, ","]);
-    } catch {
-      break;
+  parseOptional(ctx, (ctx) => {
+    parseWs(ctx);
+
+    const plusMinus = parseOptional(ctx, (c) =>
+      parseLiteral(c, [Token.operator, "+"], [Token.operator, "-"]),
+    );
+    if (plusMinus === "-") remove = true;
+    if (plusMinus === "+") remove = false;
+
+    parseOptional(ctx, parseWs);
+
+    while (true) {
+      try {
+        fields.push(parseFieldName(ctx));
+        parseOptional(ctx, parseWs);
+        parseLiteral(ctx, [Token.comma, ","]);
+        parseOptional(ctx, parseWs);
+      } catch {
+        break;
+      }
     }
-  }
+  });
 
   return { type: "fields", fields, remove };
 }

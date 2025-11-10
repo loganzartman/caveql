@@ -1,6 +1,6 @@
 import { Token } from "../../tokens";
 import type { ParseContext } from "../ParseContext";
-import { parseLiteral, parseWs } from "../parseCommon";
+import { parseLiteral, parseOne, parseStar, parseWs } from "../parseCommon";
 import {
   parseSearchExpression,
   type SearchExpressionAST,
@@ -12,23 +12,29 @@ export type SearchCommandAST = {
 };
 
 export function parseSearchCommand(ctx: ParseContext): SearchCommandAST {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.command, "search"]);
-  parseWs(ctx);
-  return parseBareSearch(ctx);
+  return parseOne(
+    ctx,
+    (ctx) => {
+      parseWs(ctx);
+      return parseBareSearch(ctx);
+    },
+    () =>
+      ({
+        type: "search",
+        filters: [],
+      }) satisfies SearchCommandAST,
+  );
 }
 
 export function parseBareSearch(ctx: ParseContext): SearchCommandAST {
-  const filters: SearchExpressionAST[] = [];
-  while (true) {
-    try {
+  const filters = parseStar(ctx, (ctx, { first }) => {
+    if (!first) {
       parseWs(ctx);
-      const filter = parseSearchExpression(ctx);
-      filters.push(filter);
-    } catch {
-      break;
     }
-  }
+    return parseSearchExpression(ctx);
+  });
+
   return {
     type: "search",
     filters,

@@ -1,17 +1,34 @@
 import { Token } from "../tokens";
 import {
+  addCompletion,
   type ParseContext,
   tokenToCompletionItemKind,
   tokenToDetail,
 } from "./ParseContext";
 
+const DEBUG = false;
+let depth = 0;
+
 function save(ctx: ParseContext): () => void {
+  const depth0 = depth;
   const index0 = ctx.index;
-  const tokensLen0 = ctx.tokens.length;
   return () => {
+    depth = depth0;
     ctx.index = index0;
-    ctx.tokens.length = tokensLen0;
   };
+}
+
+function debug(ctx: ParseContext, name: string, ...args: unknown[]): void {
+  if (!DEBUG) {
+    return;
+  }
+  ++depth;
+  console.log(
+    "  ".repeat(depth),
+    name,
+    ...args,
+    `"${ctx.source.substring(ctx.index, ctx.index + 10)}"`,
+  );
 }
 
 export function parseParam<T>(
@@ -19,11 +36,10 @@ export function parseParam<T>(
   param: string,
   parseValue: (ctx: ParseContext) => T,
 ): T {
-  parseWs(ctx);
   parseLiteral(ctx, [Token.parameter, param]);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   parseLiteral(ctx, [Token.operator, "="]);
-  parseWs(ctx);
+  parseOptional(ctx, parseWs);
   return parseValue(ctx);
 }
 
@@ -154,7 +170,7 @@ function collectionFieldNameCompletions(
       continue;
     }
 
-    ctx.completions.push({
+    addCompletion(ctx, {
       label: fieldName,
       detail: tokenToDetail(Token.field),
       insertText: fieldName,
@@ -181,14 +197,22 @@ export function parseNumeric(ctx: ParseContext): NumericAST {
   );
 }
 
+/** Parse whitespace and comments */
 export function parseWs(ctx: ParseContext): string {
-  return parseRex(ctx, Token.whitespace, /\s*/);
+  return parsePlus(ctx, (c) =>
+    parseOne(
+      c,
+      (c) => parseRex(c, Token.whitespace, /\s+/),
+      (c) => parseRex(c, Token.comment, /```([^`]|`[^`]|``[^`])*```/),
+    ),
+  ).join("");
 }
 
 export function parseOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
   ctx: ParseContext,
   ...members: TMembers
 ): ReturnType<TMembers[number]> {
+  debug(ctx, "one");
   const restore = save(ctx);
   for (const member of members) {
     try {
@@ -200,13 +224,61 @@ export function parseOne<TMembers extends ((ctx: ParseContext) => unknown)[]>(
   throw new Error("No matching members");
 }
 
+export function parseStar<T>(
+  ctx: ParseContext,
+  parseFn: (ctx: ParseContext, params: { first: boolean }) => T,
+): T[] {
+  debug(ctx, "star");
+  const results: T[] = [];
+  let first = true;
+  while (true) {
+    let restore = save(ctx);
+    try {
+      restore = save(ctx);
+      results.push(parseFn(ctx, { first }));
+      first = false;
+    } catch {
+      restore();
+      break;
+    }
+  }
+  return results;
+}
+
+export function parsePlus<T>(
+  ctx: ParseContext,
+  parseFn: (ctx: ParseContext, params: { first: boolean }) => T,
+): T[] {
+  debug(ctx, "plus");
+  const results: T[] = [];
+  let first = true;
+  while (true) {
+    let restore = save(ctx);
+    try {
+      restore = save(ctx);
+      results.push(parseFn(ctx, { first }));
+      first = false;
+    } catch {
+      restore();
+      break;
+    }
+  }
+  if (results.length === 0) {
+    throw new Error("Expected at least one match");
+  }
+  return results;
+}
+
 export function parseOptional<T>(
   ctx: ParseContext,
   parseFn: (ctx: ParseContext) => T,
 ): T | undefined {
+  debug(ctx, "optional");
+  const restore = save(ctx);
   try {
     return parseFn(ctx);
   } catch {
+    restore();
     return undefined;
   }
 }
@@ -217,6 +289,7 @@ export function parseRex(
   rex: RegExp,
   group = 0,
 ): string {
+  debug(ctx, "rex", token, rex, group);
   const remaining = ctx.source.substring(ctx.index);
   const result = rex.exec(remaining);
   if (result?.index === 0) {
@@ -240,6 +313,7 @@ export function parseLiteral<const T extends [Token, string][]>(
   ctx: ParseContext,
   ...match: T
 ): T[number][1] {
+  debug(ctx, "literal", match);
   collectLiteralCompletions(ctx, match);
 
   const remaining = ctx.source.substring(ctx.index);
@@ -290,7 +364,7 @@ function collectLiteralCompletions(
       continue;
     }
 
-    ctx.completions.push({
+    addCompletion(ctx, {
       label: m,
       detail: tokenToDetail(token),
       insertText: m,

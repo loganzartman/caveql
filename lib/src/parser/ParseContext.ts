@@ -8,6 +8,7 @@ export type ParseContext = {
   // completions
   collectCompletionsAtIndex?: number;
   completions: Completion[];
+  completionsSet: Set<string>;
   definedFieldNames: Set<string>;
 };
 
@@ -49,6 +50,26 @@ export enum CompletionItemKind {
   User = 25,
   Issue = 26,
   Snippet = 27,
+}
+
+export function createParseContext(source: string): ParseContext {
+  return {
+    source,
+    index: 0,
+    tokens: [],
+    completions: [],
+    completionsSet: new Set(),
+    definedFieldNames: new Set(),
+  };
+}
+
+export function addCompletion(ctx: ParseContext, completion: Completion): void {
+  const key = `${completion.label}:${completion.start}:${completion.end}`;
+  if (ctx.completionsSet.has(key)) {
+    return;
+  }
+  ctx.completionsSet.add(key);
+  ctx.completions.push(completion);
 }
 
 export function tokenToCompletionItemKind(token: Token): CompletionItemKind {

@@ -1,4 +1,4 @@
-import type { ParseContext } from "./ParseContext";
+import { createParseContext, type ParseContext } from "./ParseContext";
 import type { CommandAST } from "./parseCommand";
 import { parsePipeline } from "./parsePipeline";
 
@@ -17,13 +17,7 @@ export function parseQuery(
   context?: Partial<Omit<ParseContext, "source">>,
 ): ParseQueryResult {
   const ctx = {
-    source: src,
-    index: 0,
-    tokens: [],
-
-    completions: [],
-    definedFieldNames: new Set(),
-
+    ...createParseContext(src),
     ...context,
   } satisfies ParseContext;
 
