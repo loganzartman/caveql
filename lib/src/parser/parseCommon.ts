@@ -1,5 +1,6 @@
 import { Token } from "../tokens";
 import {
+  addCompletion,
   type ParseContext,
   tokenToCompletionItemKind,
   tokenToDetail,
@@ -11,11 +12,9 @@ let depth = 0;
 function save(ctx: ParseContext): () => void {
   const depth0 = depth;
   const index0 = ctx.index;
-  const tokensLen0 = ctx.tokens.length;
   return () => {
     depth = depth0;
     ctx.index = index0;
-    // ctx.tokens.length = tokensLen0;
   };
 }
 
@@ -171,7 +170,7 @@ function collectionFieldNameCompletions(
       continue;
     }
 
-    ctx.completions.push({
+    addCompletion(ctx, {
       label: fieldName,
       detail: tokenToDetail(Token.field),
       insertText: fieldName,
@@ -364,7 +363,7 @@ function collectLiteralCompletions(
       continue;
     }
 
-    ctx.completions.push({
+    addCompletion(ctx, {
       label: m,
       detail: tokenToDetail(token),
       insertText: m,
