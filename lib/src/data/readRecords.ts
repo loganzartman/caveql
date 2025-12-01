@@ -1,3 +1,4 @@
+import type { ExecutionContext } from "../compiler";
 import { impossible } from "../impossible";
 import { type CSVFormat, getCSVParseTransform } from "./getCSVParseTransform";
 import {
@@ -15,8 +16,26 @@ export type DataSource<TFormat extends SourceFormat = SourceFormat> = {
 
 export function readRecords(
   source: DataSource<SourceFormat>,
+  context?: ExecutionContext,
 ): ReadableStream<unknown> {
-  return source.stream.pipeThrough(getParseTransform(source.format));
+  let stream = source.stream;
+
+  if (context) {
+    stream = stream.pipeThrough(createByteCountingTransform(context));
+  }
+
+  return stream.pipeThrough(getParseTransform(source.format));
+}
+
+function createByteCountingTransform(
+  context: ExecutionContext,
+): TransformStream<Uint8Array, Uint8Array> {
+  return new TransformStream({
+    transform(chunk, controller) {
+      context.bytesRead += chunk.byteLength;
+      controller.enqueue(chunk);
+    },
+  });
 }
 
 function getParseTransform(format: SourceFormat) {

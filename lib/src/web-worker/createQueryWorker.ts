@@ -8,6 +8,7 @@ import { impossible } from "../impossible";
 import type { QueryAST } from "../parser";
 import {
   hostMessage,
+  type Progress,
   type WorkerMessage,
   type WorkerRecordsInput,
 } from "./message";
@@ -22,12 +23,14 @@ export type QueryWorker = {
 };
 
 export type ContextHandler = (params: { context: ExecutionContext }) => void;
+export type ProgressHandler = (params: { progress: Progress }) => void;
 export type ResultsLimitedHandler = () => void;
 export type Off = () => void;
 
 export type AsyncQueryHandle = {
   records: AsyncIterable<Record<string, unknown>>;
   onContext(callback: ContextHandler): Off;
+  onProgress(callback: ProgressHandler): Off;
   onResultsLimited(callback: ResultsLimitedHandler): Off;
   loadMore(): void;
   cancel(): void;
@@ -64,12 +67,19 @@ export function createQueryWorker(
     let done = false;
 
     const contextHandlers = new Set<ContextHandler>();
+    const progressHandlers = new Set<ProgressHandler>();
     const resultsLimitedHandlers = new Set<ResultsLimitedHandler>();
     const handle = {
       onContext(callback) {
         contextHandlers.add(callback);
         return () => {
           contextHandlers.delete(callback);
+        };
+      },
+      onProgress(callback) {
+        progressHandlers.add(callback);
+        return () => {
+          progressHandlers.delete(callback);
         };
       },
       onResultsLimited(callback) {
@@ -111,6 +121,7 @@ export function createQueryWorker(
           case "sendRecords":
             bufferedRecords.pushAll(data.records);
             contextHandlers.forEach((cb) => cb({ context: data.context }));
+            progressHandlers.forEach((cb) => cb({ progress: data.progress }));
             if (data.limited) {
               resultsLimitedHandlers.forEach((cb) => cb());
             }

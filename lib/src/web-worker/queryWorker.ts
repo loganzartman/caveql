@@ -46,7 +46,7 @@ function startQuery(data: Extract<HostMessage, { type: "startQuery" }>) {
         return iter(run(data.input.value, data.context));
       }
       case "stream": {
-        return iter(run(readRecords(data.input), data.context));
+        return iter(run(readRecords(data.input, data.context), data.context));
       }
       default:
         impossible(data.input);
@@ -58,11 +58,13 @@ function startQuery(data: Extract<HostMessage, { type: "startQuery" }>) {
     if (!state) {
       throw new Error("Internal error: query not started");
     }
+    const { bytesRead, bytesTotal } = state.context;
     globalThis.postMessage(
       workerMessage({
         type: "sendRecords",
         records,
         context: state.context,
+        progress: bytesTotal != null ? bytesRead / bytesTotal : "indeterminate",
         done: state.done,
         limited,
       }),

@@ -9,7 +9,7 @@ import {
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { PlayIcon } from "@heroicons/react/24/outline";
-import type { QueryAST } from "caveql";
+import type { Progress, QueryAST } from "caveql";
 import {
   type AsyncQueryHandle,
   createExecutionContext,
@@ -67,6 +67,7 @@ export function App() {
   resultsRef.current = results;
   const [resultsLimited, setResultsLimited] = useState(false);
   const [handleLoadMore, setHandleLoadMore] = useState<() => void>(() => {});
+  const [progress, setProgress] = useState<Progress>("indeterminate");
 
   const [queryIterator, setQueryIterator] = useState<AsyncIterator<
     Record<string, unknown>
@@ -97,7 +98,12 @@ export function App() {
   }, [compiled]);
 
   useEffect(() => {
-    const context = createExecutionContext();
+    // TODO: multi-file
+    const file = fileInput?.[0];
+    const context = createExecutionContext({
+      bytesTotal: file?.size ?? null,
+    });
+
     setResults((r) => r.clear());
     setError(null);
     setResultsLoading(true);
@@ -105,6 +111,7 @@ export function App() {
     setCompiled(null);
     setExecutionContext(context);
     setResultsLimited(false);
+    setProgress("indeterminate");
 
     let handle: AsyncQueryHandle | undefined;
 
@@ -114,22 +121,26 @@ export function App() {
       const worker = createQueryWorker(ast);
       setCompiled(worker.source);
 
-      // TODO: multi-file
-      const file = fileInput?.[0];
       if (file) {
-        handle = worker.query({
-          type: "stream",
-          format: formatFromExtension(file.name),
-          stream: file.stream(),
-        });
+        handle = worker.query(
+          {
+            type: "stream",
+            format: formatFromExtension(file.name),
+            stream: file.stream(),
+            sizeBytes: file.size,
+          },
+          context,
+        );
       } else {
         handle = worker.query({
           type: "iterable",
           value: [],
+          approxCount: null,
         });
       }
 
       handle.onContext(({ context }) => setExecutionContext(context));
+      handle.onProgress(({ progress }) => setProgress(progress));
       handle.onResultsLimited(() => setResultsLimited(true));
       const { loadMore } = handle;
       setHandleLoadMore(() => loadMore);
@@ -310,7 +321,10 @@ export function App() {
       </div>
       <div className="shrink-0 flex flex-col max-h-[35%]">
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
-        <LoadingStrip isLoading={resultsLoading} />
+        <LoadingStrip
+          isLoading={resultsLoading}
+          progress={progress === "indeterminate" ? null : progress}
+        />
       </div>
       <TabGroup className="flex-1 flex flex-col">
         <div className="shrink-0 flex flex-row gap-4 items-stretch justify-between">

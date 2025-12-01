@@ -22,17 +22,22 @@ export type WorkerRecordsInput =
       value:
         | Iterable<Record<string, unknown>>
         | AsyncIterable<Record<string, unknown>>;
+      approxCount: number | null;
     }
   | {
       type: "stream";
       stream: ReadableStream<Uint8Array>;
       format: SourceFormat;
+      sizeBytes: number | null;
     };
+
+export type Progress = "indeterminate" | number;
 
 export type WorkerMessage = {
   type: "sendRecords";
   records: Record<string, unknown>[];
   context: ExecutionContext;
+  progress: Progress;
   done: boolean;
   limited: boolean;
 };
