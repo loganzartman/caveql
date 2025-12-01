@@ -9,7 +9,7 @@ import {
   TableCellsIcon,
 } from "@heroicons/react/20/solid";
 import { PlayIcon } from "@heroicons/react/24/outline";
-import type { QueryAST } from "caveql";
+import type { Progress, QueryAST } from "caveql";
 import {
   type AsyncQueryHandle,
   createExecutionContext,
@@ -44,8 +44,6 @@ import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
 import { GenerateTab } from "./tabs/generate/GenerateTab";
 
-const DEFAULT_RESULTS_LIMIT = 100_000;
-
 export function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [editorRef, setEditorRef] =
@@ -67,10 +65,9 @@ export function App() {
   );
   const resultsRef = useRef(results);
   resultsRef.current = results;
-  const [resultsLimit, setResultsLimit] = useState<number>(
-    DEFAULT_RESULTS_LIMIT,
-  );
   const [resultsLimited, setResultsLimited] = useState(false);
+  const [handleLoadMore, setHandleLoadMore] = useState<() => void>(() => {});
+  const [progress, setProgress] = useState<Progress>("indeterminate");
 
   const [queryIterator, setQueryIterator] = useState<AsyncIterator<
     Record<string, unknown>
@@ -101,15 +98,20 @@ export function App() {
   }, [compiled]);
 
   useEffect(() => {
-    const context = createExecutionContext();
+    // TODO: multi-file
+    const file = fileInput?.[0];
+    const context = createExecutionContext({
+      bytesTotal: file?.size ?? null,
+    });
+
     setResults((r) => r.clear());
     setError(null);
     setResultsLoading(true);
     setAST(null);
     setCompiled(null);
     setExecutionContext(context);
-    setResultsLimit(DEFAULT_RESULTS_LIMIT);
     setResultsLimited(false);
+    setProgress("indeterminate");
 
     let handle: AsyncQueryHandle | undefined;
 
@@ -119,22 +121,29 @@ export function App() {
       const worker = createQueryWorker(ast);
       setCompiled(worker.source);
 
-      // TODO: multi-file
-      const file = fileInput?.[0];
       if (file) {
-        handle = worker.query({
-          type: "stream",
-          format: formatFromExtension(file.name),
-          stream: file.stream(),
-        });
+        handle = worker.query(
+          {
+            type: "stream",
+            format: formatFromExtension(file.name),
+            stream: file.stream(),
+            sizeBytes: file.size,
+          },
+          context,
+        );
       } else {
         handle = worker.query({
           type: "iterable",
           value: [],
+          approxCount: null,
         });
       }
 
       handle.onContext(({ context }) => setExecutionContext(context));
+      handle.onProgress(({ progress }) => setProgress(progress));
+      handle.onResultsLimited(() => setResultsLimited(true));
+      const { loadMore } = handle;
+      setHandleLoadMore(() => loadMore);
       setQueryIterator(iter(handle.records));
     } catch (error) {
       console.error(error);
@@ -190,11 +199,6 @@ export function App() {
         }
 
         buffer.push(result.value);
-
-        if (resultsRef.current.length + buffer.length >= resultsLimit) {
-          setResultsLimited(true);
-          break;
-        }
       }
       flush();
 
@@ -213,7 +217,7 @@ export function App() {
         clearInterval(intv);
       }
     };
-  }, [queryIterator, resultsLimit]);
+  }, [queryIterator]);
 
   const updateHash = useMemo(
     () =>
@@ -317,7 +321,10 @@ export function App() {
       </div>
       <div className="shrink-0 flex flex-col max-h-[35%]">
         <Editor editorRef={setEditorRef} onChange={handleSourceChange} />
-        <LoadingStrip isLoading={resultsLoading} />
+        <LoadingStrip
+          isLoading={resultsLoading}
+          progress={progress === "indeterminate" ? null : progress}
+        />
       </div>
       <TabGroup className="flex-1 flex flex-col">
         <div className="shrink-0 flex flex-row gap-4 items-stretch justify-between">
@@ -333,9 +340,7 @@ export function App() {
                 variant="quiet"
                 className="shrink-0"
                 onClick={() => {
-                  setResultsLimit(
-                    (resultsLimit) => resultsLimit + DEFAULT_RESULTS_LIMIT,
-                  );
+                  handleLoadMore();
                   setResultsLimited(false);
                 }}
                 icon={<PlayIcon />}

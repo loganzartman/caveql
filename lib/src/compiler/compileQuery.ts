@@ -74,10 +74,18 @@ export function compileQueryRaw(query: QueryAST): QuerySource {
 
 export type ExecutionContext = {
   recordsRead: number;
+  bytesRead: number;
+  bytesTotal: number | null;
 };
 
-export function createExecutionContext(): ExecutionContext {
+export function createExecutionContext({
+  bytesTotal = null,
+}: {
+  bytesTotal?: number | null;
+} = {}): ExecutionContext {
   return {
     recordsRead: 0,
+    bytesRead: 0,
+    bytesTotal,
   };
 }
