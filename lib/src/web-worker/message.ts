@@ -7,11 +7,13 @@ export type HostMessage =
       source: QuerySource;
       input: WorkerRecordsInput;
       context: ExecutionContext;
+      limit: number;
+      maxChunkSize: number;
+      maxIntervalMs: number;
     }
   | {
-      type: "getRecords";
-      maxCount: number;
-      maxTimeMs: number;
+      type: "loadMore";
+      limit: number;
     };
 
 export type WorkerRecordsInput =
@@ -32,6 +34,7 @@ export type WorkerMessage = {
   records: Record<string, unknown>[];
   context: ExecutionContext;
   done: boolean;
+  limited: boolean;
 };
 
 export function hostMessage(payload: HostMessage): HostMessage {

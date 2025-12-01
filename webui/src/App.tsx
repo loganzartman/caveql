@@ -44,8 +44,6 @@ import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
 import { GenerateTab } from "./tabs/generate/GenerateTab";
 
-const DEFAULT_RESULTS_LIMIT = 100_000;
-
 export function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [editorRef, setEditorRef] =
@@ -67,10 +65,8 @@ export function App() {
   );
   const resultsRef = useRef(results);
   resultsRef.current = results;
-  const [resultsLimit, setResultsLimit] = useState<number>(
-    DEFAULT_RESULTS_LIMIT,
-  );
   const [resultsLimited, setResultsLimited] = useState(false);
+  const [handleLoadMore, setHandleLoadMore] = useState<() => void>(() => {});
 
   const [queryIterator, setQueryIterator] = useState<AsyncIterator<
     Record<string, unknown>
@@ -108,7 +104,6 @@ export function App() {
     setAST(null);
     setCompiled(null);
     setExecutionContext(context);
-    setResultsLimit(DEFAULT_RESULTS_LIMIT);
     setResultsLimited(false);
 
     let handle: AsyncQueryHandle | undefined;
@@ -135,6 +130,9 @@ export function App() {
       }
 
       handle.onContext(({ context }) => setExecutionContext(context));
+      handle.onResultsLimited(() => setResultsLimited(true));
+      const { loadMore } = handle;
+      setHandleLoadMore(() => loadMore);
       setQueryIterator(iter(handle.records));
     } catch (error) {
       console.error(error);
@@ -190,11 +188,6 @@ export function App() {
         }
 
         buffer.push(result.value);
-
-        if (resultsRef.current.length + buffer.length >= resultsLimit) {
-          setResultsLimited(true);
-          break;
-        }
       }
       flush();
 
@@ -213,7 +206,7 @@ export function App() {
         clearInterval(intv);
       }
     };
-  }, [queryIterator, resultsLimit]);
+  }, [queryIterator]);
 
   const updateHash = useMemo(
     () =>
@@ -333,9 +326,7 @@ export function App() {
                 variant="quiet"
                 className="shrink-0"
                 onClick={() => {
-                  setResultsLimit(
-                    (resultsLimit) => resultsLimit + DEFAULT_RESULTS_LIMIT,
-                  );
+                  handleLoadMore();
                   setResultsLimited(false);
                 }}
                 icon={<PlayIcon />}

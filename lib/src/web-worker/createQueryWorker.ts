@@ -22,15 +22,31 @@ export type QueryWorker = {
 };
 
 export type ContextHandler = (params: { context: ExecutionContext }) => void;
+export type ResultsLimitedHandler = () => void;
 export type Off = () => void;
 
 export type AsyncQueryHandle = {
   records: AsyncIterable<Record<string, unknown>>;
   onContext(callback: ContextHandler): Off;
+  onResultsLimited(callback: ResultsLimitedHandler): Off;
+  loadMore(): void;
   cancel(): void;
 };
 
-export function createQueryWorker(ast: QueryAST): QueryWorker {
+export type QueryWorkerOptions = {
+  limit: number;
+  maxChunkSize: number;
+  maxIntervalMs: number;
+};
+
+export function createQueryWorker(
+  ast: QueryAST,
+  {
+    limit = 100_000,
+    maxChunkSize = 10_000,
+    maxIntervalMs = 250,
+  }: Partial<QueryWorkerOptions> = {},
+): QueryWorker {
   // TODO: compile in a worker? most queries probably are not large.
   const source = compileQueryRaw(ast);
 
@@ -48,6 +64,7 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
     let done = false;
 
     const contextHandlers = new Set<ContextHandler>();
+    const resultsLimitedHandlers = new Set<ResultsLimitedHandler>();
     const handle = {
       onContext(callback) {
         contextHandlers.add(callback);
@@ -55,13 +72,19 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
           contextHandlers.delete(callback);
         };
       },
+      onResultsLimited(callback) {
+        resultsLimitedHandlers.add(callback);
+        return () => {
+          resultsLimitedHandlers.delete(callback);
+        };
+      },
+      loadMore() {
+        worker.postMessage(hostMessage({ type: "loadMore", limit }));
+      },
     } as AsyncQueryHandle;
 
     const records = (async function* () {
       while (!done) {
-        worker.postMessage(
-          hostMessage({ type: "getRecords", maxCount: 10000, maxTimeMs: 250 }),
-        );
         await bufferedRecords.wait();
 
         while (bufferedRecords.length) {
@@ -88,6 +111,9 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
           case "sendRecords":
             bufferedRecords.pushAll(data.records);
             contextHandlers.forEach((cb) => cb({ context: data.context }));
+            if (data.limited) {
+              resultsLimitedHandlers.forEach((cb) => cb());
+            }
             done = data.done;
             break;
           default:
@@ -102,6 +128,9 @@ export function createQueryWorker(ast: QueryAST): QueryWorker {
         source,
         input,
         context,
+        limit,
+        maxChunkSize,
+        maxIntervalMs,
       }),
       input.type === "stream" ? [input.stream] : [],
     );
