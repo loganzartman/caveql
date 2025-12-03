@@ -20,6 +20,8 @@ export function Editor({
   );
   const onChangeRef = useRef(onChange);
   const firstUpdateRef = useRef(false);
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   onChangeRef.current = onChange;
 
@@ -41,7 +43,7 @@ export function Editor({
       language,
       "semanticHighlighting.enabled": true,
 
-      value: value ?? "",
+      value: valueRef.current ?? "",
       minimap: {
         enabled: false,
       },
@@ -102,7 +104,7 @@ export function Editor({
     return () => {
       editor.dispose();
     };
-  }, [fontsLoaded, editorRef, language, readOnly, value]);
+  }, [fontsLoaded, editorRef, language, readOnly]);
 
   // Update value when it changes externally (for controlled read-only editors)
   useEffect(() => {

@@ -100,22 +100,25 @@ export function App() {
     try {
       const { ast } = parseQuery(source);
       setAST(ast);
-      formatAST(ast).then((formatted) => {
-        setASTString(formatted);
-      }).catch((err) => {
-        console.error("Failed to format AST:", err);
-        setASTString(JSON.stringify(ast, null, 2));
-      });
+      formatAST(ast)
+        .then((formatted) => {
+          setASTString(formatted);
+        })
+        .catch((err) => {
+          console.error("Failed to format AST:", err);
+          setASTString(JSON.stringify(ast, null, 2));
+        });
 
       const worker = createQueryWorker(ast);
-      setCompiled(worker.source);
 
-      formatQuerySource(worker.source).then((formatted) => {
-        setCompiled(formatted);
-      }).catch((err) => {
-        console.error("Failed to format compiled code:", err);
-        setCompiled(worker.source);
-      });
+      formatQuerySource(worker.source)
+        .then((formatted) => {
+          setCompiled(formatted);
+        })
+        .catch((err) => {
+          console.error("Failed to format compiled code:", err);
+          setCompiled(worker.source);
+        });
 
       if (file) {
         handle = worker.query(
