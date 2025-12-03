@@ -16,8 +16,6 @@ import {
   createQueryWorker,
   type ExecutionContext,
   formatFromExtension,
-  formatJS,
-  formatTree,
   iter,
   parseQuery,
   printAST,
@@ -37,6 +35,7 @@ import { TabPanel } from "./components/TabPanel";
 import { TabPanels } from "./components/TabPanels";
 import { UploadButton } from "./components/UploadButton";
 import { Editor } from "./Editor";
+import { formatAST, formatQuerySource } from "./format";
 import { debounce } from "./lib/debounce";
 import { packString, unpackString } from "./lib/pack";
 import { useSortQuery } from "./lib/useSortQuery";
@@ -56,6 +55,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
 
   const [ast, setAST] = useState<QueryAST | null>(null);
+  const [astString, setASTString] = useState<string | null>(null);
   const [compiled, setCompiled] = useState<string | null>(null);
   const [executionContext, setExecutionContext] = useState<ExecutionContext>(
     createExecutionContext(),
@@ -79,24 +79,6 @@ export function App() {
     return new Intl.NumberFormat(undefined, {});
   }, []);
 
-  const astString = useMemo(() => {
-    if (!ast) return null;
-    try {
-      return formatTree(ast);
-    } catch {
-      return null;
-    }
-  }, [ast]);
-
-  const compiledString = useMemo(() => {
-    if (!compiled) return null;
-    try {
-      return formatJS(compiled);
-    } catch {
-      return null;
-    }
-  }, [compiled]);
-
   useEffect(() => {
     // TODO: multi-file
     const file = fileInput?.[0];
@@ -118,8 +100,25 @@ export function App() {
     try {
       const { ast } = parseQuery(source);
       setAST(ast);
+      formatAST(ast)
+        .then((formatted) => {
+          setASTString(formatted);
+        })
+        .catch((err) => {
+          console.error("Failed to format AST:", err);
+          setASTString(JSON.stringify(ast, null, 2));
+        });
+
       const worker = createQueryWorker(ast);
-      setCompiled(worker.source);
+
+      formatQuerySource(worker.source)
+        .then((formatted) => {
+          setCompiled(formatted);
+        })
+        .catch((err) => {
+          console.error("Failed to format compiled code:", err);
+          setCompiled(worker.source);
+        });
 
       if (file) {
         handle = worker.query(
@@ -399,19 +398,25 @@ export function App() {
               </TabList>
               <TabPanels>
                 <TabPanel>
-                  <pre className="text-wrap break-all overflow-auto p-2">
-                    {astString ?? error}
-                  </pre>
+                  <Editor
+                    value={astString ?? error ?? "loading..."}
+                    language="json"
+                    readOnly
+                  />
                 </TabPanel>
                 <TabPanel>
-                  <pre className="text-wrap break-all overflow-auto p-2">
-                    {compiledString ?? error}
-                  </pre>
+                  <Editor
+                    value={compiled ?? error ?? "loading..."}
+                    language="javascript"
+                    readOnly
+                  />
                 </TabPanel>
                 <TabPanel>
-                  <pre className="text-wrap break-all overflow-auto p-2">
-                    {ast ? printAST(ast) : error}
-                  </pre>
+                  <Editor
+                    value={ast ? printAST(ast) : (error ?? "")}
+                    language="caveql"
+                    readOnly
+                  />
                 </TabPanel>
               </TabPanels>
             </TabGroup>
