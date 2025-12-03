@@ -4,9 +4,15 @@ import { monaco } from "./monaco";
 export function Editor({
   editorRef,
   onChange,
+  value,
+  language = "caveql",
+  readOnly = false,
 }: {
   editorRef?: React.Ref<monaco.editor.IStandaloneCodeEditor | null>;
   onChange?: (value: string) => void;
+  value?: string;
+  language?: string;
+  readOnly?: boolean;
 }) {
   const divEl = useRef<HTMLDivElement>(null);
   const internalEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(
@@ -32,10 +38,10 @@ export function Editor({
 
     firstUpdateRef.current = true;
     const editor = monaco.editor.create(divEl.current, {
-      language: "caveql",
+      language,
       "semanticHighlighting.enabled": true,
 
-      value: "",
+      value: value ?? "",
       minimap: {
         enabled: false,
       },
@@ -46,20 +52,23 @@ export function Editor({
       scrollbar: {
         alwaysConsumeMouseWheel: false,
       },
+      readOnly,
+      domReadOnly: readOnly,
 
       // visual
       theme: "caveql",
       overviewRulerLanes: 0,
       hideCursorInOverviewRuler: true,
       overviewRulerBorder: false,
-      lineNumbers: "off",
+      lineNumbers: readOnly ? "on" : "off",
       padding: {
         top: 8,
         bottom: 8,
       },
+      renderLineHighlight: readOnly ? "none" : "line",
 
       fontFamily: "Monaspace Neon Var",
-      fontSize: 18,
+      fontSize: readOnly ? 14 : 18,
     });
 
     internalEditorRef.current = editor;
@@ -86,12 +95,22 @@ export function Editor({
       onChangeRef.current?.(editor.getValue());
     });
 
-    editor.focus();
+    if (!readOnly) {
+      editor.focus();
+    }
 
     return () => {
       editor.dispose();
     };
-  }, [fontsLoaded, editorRef]);
+  }, [fontsLoaded, editorRef, language, readOnly, value]);
+
+  // Update value when it changes externally (for controlled read-only editors)
+  useEffect(() => {
+    const editor = internalEditorRef.current;
+    if (editor && value !== undefined && editor.getValue() !== value) {
+      editor.setValue(value);
+    }
+  }, [value]);
 
   return <div className="w-full h-full min-h-28" ref={divEl}></div>;
 }

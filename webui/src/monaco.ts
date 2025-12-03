@@ -4,6 +4,56 @@ import {
 } from "caveql";
 import * as monaco from "monaco-editor";
 
+self.MonacoEnvironment = {
+  getWorker: () => {
+    return new Worker(
+      new URL(
+        "npm:monaco-editor/esm/vs/editor/editor.worker.js",
+        import.meta.url,
+      ),
+      {
+        type: "module",
+      },
+    );
+  },
+};
+
+// Disable TypeScript worker features for JavaScript - just use basic syntax highlighting
+monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+  noSemanticValidation: true,
+  noSyntaxValidation: true,
+});
+monaco.languages.typescript.javascriptDefaults.setModeConfiguration({
+  diagnostics: false,
+  completionItems: false,
+  hovers: false,
+  documentSymbols: false,
+  definitions: false,
+  references: false,
+  documentHighlights: false,
+  rename: false,
+  signatureHelp: false,
+  codeActions: false,
+  inlayHints: false,
+});
+
+// Disable JSON worker features - just use basic syntax highlighting
+monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+  validate: false,
+});
+monaco.languages.json.jsonDefaults.setModeConfiguration({
+  documentFormattingEdits: false,
+  documentRangeFormattingEdits: false,
+  completionItems: false,
+  hovers: false,
+  documentSymbols: false,
+  tokens: true,
+  colors: false,
+  foldingRanges: false,
+  diagnostics: false,
+  selectionRanges: false,
+});
+
 monaco.languages.register({ id: "caveql" });
 monaco.languages.registerDocumentSemanticTokensProvider(
   "caveql",

@@ -389,19 +389,25 @@ export function App() {
               </TabList>
               <TabPanels>
                 <TabPanel>
-                  <pre className="text-wrap break-all overflow-auto p-2">
-                    {astString ?? error ?? "loading..."}
-                  </pre>
+                  <Editor
+                    value={astString ?? error ?? "loading..."}
+                    language="json"
+                    readOnly
+                  />
                 </TabPanel>
                 <TabPanel>
-                  <pre className="text-wrap break-all overflow-auto p-2">
-                    {compiled ?? error ?? "loading..."}
-                  </pre>
+                  <Editor
+                    value={compiled ?? error ?? "loading..."}
+                    language="javascript"
+                    readOnly
+                  />
                 </TabPanel>
                 <TabPanel>
-                  <pre className="text-wrap break-all overflow-auto p-2">
-                    {ast ? printAST(ast) : error}
-                  </pre>
+                  <Editor
+                    value={ast ? printAST(ast) : (error ?? "")}
+                    language="caveql"
+                    readOnly
+                  />
                 </TabPanel>
               </TabPanels>
             </TabGroup>

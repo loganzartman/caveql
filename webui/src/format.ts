@@ -12,9 +12,14 @@ export function formatQuerySource(source: string) {
 }
 
 export function formatAST(ast: QueryAST) {
-  const stringified = JSON.stringify(ast, null, 2);
+  const stringified = JSON.stringify(
+    ast,
+    (_, v) => (typeof v === "bigint" ? v.toString() : v),
+    2,
+  );
   return prettierFormat(stringified, {
     parser: "json",
     plugins: [prettierPluginBabel, prettierPluginEstree],
+    objectWrap: "collapse",
   });
 }
