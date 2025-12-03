@@ -112,6 +112,9 @@ export function App() {
 
       formatQuerySource(worker.source).then((formatted) => {
         setCompiled(formatted);
+      }).catch((err) => {
+        console.error("Failed to format compiled code:", err);
+        setCompiled(worker.source);
       });
 
       if (file) {
