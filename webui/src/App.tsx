@@ -102,6 +102,9 @@ export function App() {
       setAST(ast);
       formatAST(ast).then((formatted) => {
         setASTString(formatted);
+      }).catch((err) => {
+        console.error("Failed to format AST:", err);
+        setASTString(JSON.stringify(ast, null, 2));
       });
 
       const worker = createQueryWorker(ast);
