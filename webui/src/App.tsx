@@ -321,10 +321,12 @@ export function App() {
                 try {
                   const packed = await packString(source, "base2048-deflate");
                   const url = new URL(window.location.href);
+                  // searchParams URL-encodes the value, defeating the purpose of base2048 for URL shortening.
                   url.searchParams.set("q", "__PACKED__");
-                  await navigator.clipboard.writeText(
-                    url.toString().replace("__PACKED__", packed),
-                  );
+                  const urlString = url
+                    .toString()
+                    .replace("__PACKED__", packed);
+                  await navigator.clipboard.writeText(urlString);
                   toast.success("Copied short link to clipboard!", {
                     style: {
                       color: "var(--color-stone-100)",
