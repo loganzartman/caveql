@@ -1,5 +1,6 @@
 import * as webllm from "@mlc-ai/web-llm";
 import { useCallback, useRef, useState } from "react";
+import { useAppContext } from "../../AppContext";
 import { Button } from "../../components/Button";
 import { LoadingStrip } from "../../components/LoadingStrip";
 import { removeThink } from "../../lib/removeThink";
@@ -9,13 +10,9 @@ import { ModelDropdown } from "./ModelDropdown";
 
 const appConfig: webllm.AppConfig = webllm.prebuiltAppConfig;
 
-export function GenerateTab({
-  onAcceptQuery,
-  fieldSet,
-}: {
-  onAcceptQuery: (query: string) => void;
-  fieldSet: ReadonlySet<string>;
-}) {
+export function GenerateTab() {
+  const { onAcceptQuery, results } = useAppContext();
+  const fieldSet = results.fieldSet;
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const planContainerRef = useRef<HTMLPreElement | null>(null);
   const [isShowingConfirmDownload, setIsShowingConfirmDownload] =

@@ -10,7 +10,7 @@ export async function packString(
   const data = new TextEncoder().encode(str);
   switch (method) {
     case "base64-deflate":
-      return `a${btoa(String.fromCharCode(...(await compressBinary(data))))}`;
+      return `a${btoa(String.fromCharCode(...(await compressBinary(data)))).replaceAll("=", "")}`;
     case "base2048-deflate":
       return `b${encode2048(await compressBinary(data))}`;
     default:
