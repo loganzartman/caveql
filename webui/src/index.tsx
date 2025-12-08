@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { App } from "./App";
+import { createBrowserRouter, Navigate, RouterProvider } from "./router";
 import { ChartTab } from "./tabs/chart/ChartTab";
 import { GenerateTab } from "./tabs/generate/GenerateTab";
 import { InspectFormattedTab } from "./tabs/inspect/InspectFormattedTab";

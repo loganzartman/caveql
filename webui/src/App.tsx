@@ -33,13 +33,19 @@ import { packString, unpackString } from "./lib/pack";
 import { useSortQuery } from "./lib/useSortQuery";
 import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
-import { Outlet, useSearchParams } from "./router";
+import { Outlet, useLocation, useNavigate } from "./router";
 
 export function App() {
+  const location = useLocation();
+  const searchParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search],
+  );
+  const navigate = useNavigate();
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [editorRef, setEditorRef] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const [source, setSource] = useState<string>("");
   const [fileInput, setFileInput] = useState<File[] | null>(null);
@@ -218,7 +224,7 @@ export function App() {
           (async () => {
             try {
               const packed = await packString(source, "base64-deflate");
-              setSearchParams({ q: packed }, { replace: true });
+              navigate({ search: `q=${packed}` }, { replace: true });
             } catch (error) {
               console.error("Failed to update search params", error);
             }
@@ -226,7 +232,7 @@ export function App() {
         },
         { intervalMs: 500, leading: false },
       ),
-    [setSearchParams],
+    [navigate],
   );
 
   const handleUpload = useCallback(({ files }: { files: FileList }) => {
@@ -252,12 +258,12 @@ export function App() {
 
   const [sort, setSort] = useSortQuery(source, updateSource);
 
-  const onceRef = useRef(false);
-  if (!onceRef.current && editorRef) {
-    onceRef.current = true;
+  const initialQuery = useRef(searchParams.get("q"));
+  useEffect(() => {
+    if (!editorRef) return;
     (async () => {
       try {
-        const packed = searchParams.get("q");
+        const packed = initialQuery.current;
         if (!packed) return;
 
         const src = await unpackString(packed);
@@ -267,7 +273,7 @@ export function App() {
         console.error("Failed to load query from URL", error);
       }
     })();
-  }
+  }, [editorRef, handleSourceChange]);
 
   const handleAcceptGeneratedQuery = useCallback(
     (query: string) => {
