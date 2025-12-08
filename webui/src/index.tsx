@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
-import { createBrowserRouter, Navigate, RouterProvider } from "./router";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { createBrowserRouter, data, Navigate, RouterProvider } from "./router";
 import { ChartTab } from "./tabs/chart/ChartTab";
 import { GenerateTab } from "./tabs/generate/GenerateTab";
 import { InspectFormattedTab } from "./tabs/inspect/InspectFormattedTab";
@@ -11,46 +12,56 @@ import { TableTab } from "./tabs/table/TableTab";
 
 const router = createBrowserRouter([
   {
-    path: "/",
     Component: App,
     children: [
       {
-        index: true,
-        element: <Navigate to="/table" replace />,
-      },
-      {
-        path: "table",
-        Component: TableTab,
-      },
-      {
-        path: "chart",
-        Component: ChartTab,
-      },
-      {
-        path: "inspect",
-        Component: InspectTab,
+        ErrorBoundary,
         children: [
           {
             index: true,
-            element: <Navigate to="parsed" replace />,
+            element: <Navigate to="/table" replace />,
           },
           {
-            path: "parsed",
-            Component: InspectParsedTab,
+            path: "table",
+            Component: TableTab,
           },
           {
-            path: "generated",
-            Component: InspectGeneratedTab,
+            path: "chart",
+            Component: ChartTab,
           },
           {
-            path: "formatted",
-            Component: InspectFormattedTab,
+            path: "inspect",
+            Component: InspectTab,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="parsed" replace />,
+              },
+              {
+                path: "parsed",
+                Component: InspectParsedTab,
+              },
+              {
+                path: "generated",
+                Component: InspectGeneratedTab,
+              },
+              {
+                path: "formatted",
+                Component: InspectFormattedTab,
+              },
+            ],
+          },
+          {
+            path: "generate",
+            Component: GenerateTab,
+          },
+          {
+            path: "*",
+            loader: () => {
+              throw data(null, { status: 404 });
+            },
           },
         ],
-      },
-      {
-        path: "generate",
-        Component: GenerateTab,
       },
     ],
   },
