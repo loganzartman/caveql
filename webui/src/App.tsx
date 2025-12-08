@@ -18,7 +18,6 @@ import {
   iter,
   parseQuery,
 } from "caveql";
-import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { AppContext, type ResultsChartType } from "./AppContext";
