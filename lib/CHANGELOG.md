@@ -1,5 +1,13 @@
 # caveql
 
+## 0.6.0
+
+### Minor Changes
+
+- 05d677b: Add file bytes to ExecutionContext, rework query worker interface
+- 5e938ed: - Parser now requires whitespace where whitespace should be required (e.g. after command names)
+  - Add support for comments with triple-backtick (\`\`\` comment \`\`\`)
+
 ## 0.5.0
 
 ### Minor Changes
