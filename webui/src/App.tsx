@@ -322,9 +322,9 @@ export function App() {
                 try {
                   const packed = await packString(source, "base2048-deflate");
                   const url = new URL(window.location.href);
-                  url.searchParams.set("q", "<PACKED>");
+                  url.searchParams.set("q", "__PACKED__");
                   await navigator.clipboard.writeText(
-                    url.toString().replace("<PACKED>", packed),
+                    url.toString().replace("__PACKED__", packed),
                   );
                   toast.success("Copied short link to clipboard!", {
                     style: {
