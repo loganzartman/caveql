@@ -2,7 +2,6 @@ import CaveqlSvg from "jsx:./caveql.svg";
 import {
   ArrowRightIcon,
   ChartBarIcon,
-  CodeBracketIcon,
   LinkIcon,
   MagnifyingGlassIcon,
   SparklesIcon,
@@ -18,21 +17,14 @@ import {
   formatFromExtension,
   iter,
   parseQuery,
-  printAST,
 } from "caveql";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { AppContext, type ResultsChartType } from "./AppContext";
 import { Button } from "./components/Button";
-import { ChartTypeSelector } from "./components/ChartTypeSelector";
-import { ResultsChart } from "./components/chart/ResultsChart";
 import { Highlight } from "./components/Highlight";
 import { LoadingStrip } from "./components/LoadingStrip";
-import { ResultsTable } from "./components/ResultsTable";
-import { Tab } from "./components/Tab";
-import { TabGroup } from "./components/TabGroup";
-import { TabList } from "./components/TabList";
-import { TabPanel } from "./components/TabPanel";
-import { TabPanels } from "./components/TabPanels";
+import { TabLink } from "./components/TabLink";
 import { UploadButton } from "./components/UploadButton";
 import { Editor } from "./Editor";
 import { formatAST, formatQuerySource } from "./format";
@@ -41,9 +33,16 @@ import { packString, unpackString } from "./lib/pack";
 import { useSortQuery } from "./lib/useSortQuery";
 import { VirtualArray } from "./lib/VirtualArray";
 import type { monaco } from "./monaco";
-import { GenerateTab } from "./tabs/generate/GenerateTab";
+import { Outlet, useLocation, useNavigate } from "./router";
 
 export function App() {
+  const location = useLocation();
+  const searchParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search],
+  );
+  const navigate = useNavigate();
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [editorRef, setEditorRef] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -73,7 +72,7 @@ export function App() {
     Record<string, unknown>
   > | null>(null);
 
-  const [chartType, setChartType] = useState<"bar" | "line">("bar");
+  const [chartType, setChartType] = useState<ResultsChartType>("bar");
 
   const countFormatter = useMemo(() => {
     return new Intl.NumberFormat(undefined, {});
@@ -218,22 +217,22 @@ export function App() {
     };
   }, [queryIterator]);
 
-  const updateHash = useMemo(
+  const updateSearchParams = useMemo(
     () =>
       debounce(
         (source: string) => {
           (async () => {
             try {
               const packed = await packString(source, "base64-deflate");
-              history.replaceState(undefined, "", `#${packed}`);
+              navigate({ search: `q=${packed}` }, { replace: true });
             } catch (error) {
-              console.error("Failed to pack hash", error);
+              console.error("Failed to update search params", error);
             }
           })();
         },
         { intervalMs: 500, leading: false },
       ),
-    [],
+    [navigate],
   );
 
   const handleUpload = useCallback(({ files }: { files: FileList }) => {
@@ -243,10 +242,10 @@ export function App() {
 
   const handleSourceChange = useCallback(
     (source: string) => {
-      updateHash(source);
+      updateSearchParams(source);
       setSource(source);
     },
-    [updateHash],
+    [updateSearchParams],
   );
 
   const updateSource = useCallback(
@@ -259,16 +258,19 @@ export function App() {
 
   const [sort, setSort] = useSortQuery(source, updateSource);
 
+  const initialQuery = useRef(searchParams.get("q"));
   useEffect(() => {
     if (!editorRef) return;
     (async () => {
       try {
-        const packed = decodeURIComponent(window.location.hash.substring(1));
+        const packed = initialQuery.current;
+        if (!packed) return;
+
         const src = await unpackString(packed);
         handleSourceChange(src);
         editorRef.setValue(src);
       } catch (error) {
-        console.error("Failed to unpack hash", error);
+        console.error("Failed to load query from URL", error);
       }
     })();
   }, [editorRef, handleSourceChange]);
@@ -283,6 +285,34 @@ export function App() {
     [editorRef, handleSourceChange],
   );
 
+  const contextValue = useMemo(
+    () => ({
+      results,
+      resultsLoading,
+      sort,
+      onSortChange: setSort,
+      chartType,
+      setChartType,
+      ast,
+      astString,
+      compiled,
+      error,
+      onAcceptQuery: handleAcceptGeneratedQuery,
+    }),
+    [
+      results,
+      resultsLoading,
+      sort,
+      setSort,
+      chartType,
+      ast,
+      astString,
+      compiled,
+      error,
+      handleAcceptGeneratedQuery,
+    ],
+  );
+
   return (
     <div
       ref={scrollRef}
@@ -295,9 +325,14 @@ export function App() {
             onClick={() => {
               (async () => {
                 try {
-                  await navigator.clipboard.writeText(
-                    `${window.location.origin}${window.location.pathname}${window.location.search}#${await packString(source, "base2048-deflate")}`,
-                  );
+                  const packed = await packString(source, "base2048-deflate");
+                  const url = new URL(window.location.href);
+                  // searchParams URL-encodes the value, defeating the purpose of base2048 for URL shortening.
+                  url.searchParams.set("q", "__PACKED__");
+                  const urlString = url
+                    .toString()
+                    .replace("__PACKED__", packed);
+                  await navigator.clipboard.writeText(urlString);
                   toast.success("Copied short link to clipboard!", {
                     style: {
                       color: "var(--color-stone-100)",
@@ -325,110 +360,57 @@ export function App() {
           progress={progress === "indeterminate" ? null : progress}
         />
       </div>
-      <TabGroup className="flex-1 flex flex-col">
-        <div className="shrink-0 flex flex-row gap-4 items-stretch justify-between">
-          <TabList>
-            <Tab icon={<TableCellsIcon />}>table</Tab>
-            <Tab icon={<ChartBarIcon />}>chart</Tab>
-            <Tab icon={<MagnifyingGlassIcon />}>inspect</Tab>
-            <Tab icon={<SparklesIcon />}>generate</Tab>
-          </TabList>
-          <div className="flex flex-row gap-2">
-            {resultsLimited && (
-              <Button
-                variant="quiet"
-                className="shrink-0"
-                onClick={() => {
-                  handleLoadMore();
-                  setResultsLimited(false);
-                }}
-                icon={<PlayIcon />}
-              >
-                load more
-              </Button>
-            )}
-            {results && (
-              <div className="shrink-0 flex flex-row gap-1 items-center">
-                <span className="font-black tabular-nums">
-                  {countFormatter.format(executionContext.recordsRead)}
-                </span>{" "}
-                in
-                <ArrowRightIcon className="w-[1em]" />
-                <span className="font-black tabular-nums">
-                  {countFormatter.format(results.length)}
-                </span>{" "}
-                out
-              </div>
-            )}
+      <AppContext.Provider value={contextValue}>
+        <div className="flex-1 flex flex-col">
+          <div className="shrink-0 flex flex-row gap-4 items-stretch justify-between">
+            <nav className="shrink-0 flex flex-row">
+              <TabLink to="/table" icon={<TableCellsIcon />}>
+                table
+              </TabLink>
+              <TabLink to="/chart" icon={<ChartBarIcon />}>
+                chart
+              </TabLink>
+              <TabLink to="/inspect" icon={<MagnifyingGlassIcon />}>
+                inspect
+              </TabLink>
+              <TabLink to="/generate" icon={<SparklesIcon />}>
+                generate
+              </TabLink>
+            </nav>
+            <div className="flex flex-row gap-2">
+              {resultsLimited && (
+                <Button
+                  variant="quiet"
+                  className="shrink-0"
+                  onClick={() => {
+                    handleLoadMore();
+                    setResultsLimited(false);
+                  }}
+                  icon={<PlayIcon />}
+                >
+                  load more
+                </Button>
+              )}
+              {results && (
+                <div className="shrink-0 flex flex-row gap-1 items-center">
+                  <span className="font-black tabular-nums">
+                    {countFormatter.format(executionContext.recordsRead)}
+                  </span>{" "}
+                  in
+                  <ArrowRightIcon className="w-[1em]" />
+                  <span className="font-black tabular-nums">
+                    {countFormatter.format(results.length)}
+                  </span>{" "}
+                  out
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col bg-stone-800">
+            <Outlet />
           </div>
         </div>
-        <TabPanels>
-          <TabPanel>
-            {results && (
-              <ResultsTable
-                results={results.items}
-                fieldSet={results.fieldSet}
-                sort={sort}
-                onSortChange={setSort}
-              />
-            )}
-            {resultsLoading && (
-              <div className="flex flex-col items-center justify-center h-full">
-                <span>Loading results...</span>
-              </div>
-            )}
-          </TabPanel>
-          <TabPanel>
-            <div className="flex flex-col h-full p-2">
-              <ChartTypeSelector
-                chartType={chartType}
-                onChange={setChartType}
-              />
-              <div className="grow">
-                {results && <ResultsChart type={chartType} results={results} />}
-              </div>
-            </div>
-          </TabPanel>
-          <TabPanel>
-            <TabGroup>
-              <TabList>
-                <Tab icon={<CodeBracketIcon />}>parse tree</Tab>
-                <Tab icon={<CodeBracketIcon />}>generated</Tab>
-                <Tab icon={<CodeBracketIcon />}>formatted</Tab>
-              </TabList>
-              <TabPanels>
-                <TabPanel>
-                  <Editor
-                    value={astString ?? error ?? "loading..."}
-                    language="json"
-                    readOnly
-                  />
-                </TabPanel>
-                <TabPanel>
-                  <Editor
-                    value={compiled ?? error ?? "loading..."}
-                    language="javascript"
-                    readOnly
-                  />
-                </TabPanel>
-                <TabPanel>
-                  <Editor
-                    value={ast ? printAST(ast) : (error ?? "")}
-                    language="caveql"
-                    readOnly
-                  />
-                </TabPanel>
-              </TabPanels>
-            </TabGroup>
-          </TabPanel>
-          <TabPanel>
-            <GenerateTab
-              onAcceptQuery={handleAcceptGeneratedQuery}
-              fieldSet={results.fieldSet}
-            />
-          </TabPanel>
-        </TabPanels>
-      </TabGroup>
+      </AppContext.Provider>
       <Toaster />
     </div>
   );
