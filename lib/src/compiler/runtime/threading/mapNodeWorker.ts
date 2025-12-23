@@ -23,7 +23,8 @@ parentPort.on("message", (event: MapRecordsHostMessage) => {
 
   switch (event.type) {
     case "set-fn": {
-      fn = new AsyncGeneratorFunction("records", event.fnBody) as (
+      const yieldCallExpression = `yield* (${event.functionExpression})(records);`;
+      fn = new AsyncGeneratorFunction("records", yieldCallExpression) as (
         records: Record<string, unknown>[],
       ) => AsyncGenerator<Record<string, unknown>>;
       break;

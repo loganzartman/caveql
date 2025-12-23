@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 export type * from "./compiler";
 export * from "./compiler";
 export * from "./data/format";

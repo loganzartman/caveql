@@ -12,10 +12,10 @@ let fn:
   | undefined;
 
 globalThis.onmessage = (event: MessageEvent<MapRecordsHostMessage>) => {
-  console.log("onmessage", event.data);
   switch (event.data.type) {
     case "set-fn": {
-      fn = new AsyncGeneratorFunction("records", event.data.fnBody) as (
+      const yieldCallExpression = `yield* (${event.data.functionExpression})(records);`;
+      fn = new AsyncGeneratorFunction("records", yieldCallExpression) as (
         records: Record<string, unknown>[],
       ) => AsyncGenerator<Record<string, unknown>>;
       break;

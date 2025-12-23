@@ -7,15 +7,17 @@ export function compileDistribute({
   context: CompileContext;
   compileThread: (context: CompileContext) => string;
 }): string {
-  const fnBody = compileThread(context);
+  const functionExpression = compileThread(context);
+  // we need a string, but we include an unused function definition to make it formattable for debugging
+  const functionExpressionWithReadableSource = `${JSON.stringify(functionExpression)} ?? (${functionExpression})`;
   return `
     async function* distribute(records, context) {
       const slices = splitAsyncGenerator(records, ${context.concurrency});
-      const fnBody = ${JSON.stringify(fnBody)} ?? (${fnBody});
+      const functionExpression = ${functionExpressionWithReadableSource};
       const threads = await Promise.all([
         ${Array.from(
           { length: context.concurrency },
-          (_, i) => `mapRecords({records: slices[${i}], fnBody})`,
+          (_, i) => `mapRecords({records: slices[${i}], functionExpression})`,
         ).join(",\n")}
       ]);
       yield* joinAsyncGenerators(threads);

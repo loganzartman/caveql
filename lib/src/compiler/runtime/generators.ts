@@ -28,7 +28,6 @@ export async function* joinAsyncGenerators<T>(
   );
 
   while (pending.size > 0) {
-    console.log("yielding");
     const { i, result } = await Promise.race(pending.values());
     pending.delete(i);
     if (!result.done) {

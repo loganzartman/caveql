@@ -8,7 +8,7 @@ import {
 
 export async function mapRecordsNode({
   records,
-  fnBody,
+  functionExpression,
 }: MapRecordsParams): Promise<AsyncGenerator<Record<string, unknown>>> {
   const worker = new NodeWorker(new URL("./mapNodeWorker.ts", import.meta.url));
 
@@ -17,7 +17,9 @@ export async function mapRecordsNode({
     resultQueue.pushAll(event.records);
   });
 
-  worker.postMessage(mapRecordsHostMessage({ type: "set-fn", fnBody }));
+  worker.postMessage(
+    mapRecordsHostMessage({ type: "set-fn", functionExpression }),
+  );
 
   return (async function* () {
     for await (const record of records) {

@@ -5,7 +5,7 @@ export type MapRecordsHostMessage =
     }
   | {
       type: "set-fn";
-      fnBody: string;
+      functionExpression: string;
     };
 
 export type MapRecordsWorkerMessage = {
