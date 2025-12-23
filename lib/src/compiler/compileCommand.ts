@@ -10,13 +10,19 @@ import { compileSortCommand } from "./command/compileSortCommand";
 import { compileStatsCommand } from "./command/compileStatsCommand";
 import { compileStreamstatsCommand } from "./command/compileStreamstatsCommand";
 import { compileWhereCommand } from "./command/compileWhereCommand";
+import { createCompileContext } from "./context";
+import { compileDistribute } from "./distributed/compileDistributed";
 
 export function compileCommand(command: CommandAST): string {
+  const context = createCompileContext();
   switch (command.type) {
     case "search":
       return compileSearchCommand(command);
     case "eval":
-      return compileEvalCommand(command);
+      return compileDistribute({
+        context,
+        compileThread: () => compileEvalCommand(command),
+      });
     case "fields":
       return compileFieldsCommand(command);
     case "head":

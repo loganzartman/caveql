@@ -10,7 +10,7 @@ type Flags = {
   inputPath: string[] | undefined;
 };
 
-export const execCommand = buildCommand({
+export const commandExec = buildCommand({
   func: async (flags: Flags, query: string) => {
     if (!flags.inputPath && !query) {
       console.error("[warn] no query or inputs specified.");

@@ -1,7 +1,9 @@
 import type { QueryAST } from "../parser";
+import { AsyncGeneratorFunction } from "./AsyncGeneratorFunction";
 import { compileCommand } from "./compileCommand";
 import { compileInstrumentInput } from "./compileInstrumentInput";
 import { getRuntimeDeps, type InjectedDeps } from "./runtime/runtime";
+import "./runtime/threading/mapRecordsWeb";
 
 type InputIterable = Iterable<unknown> | AsyncIterable<unknown>;
 
@@ -12,11 +14,6 @@ export type QueryFunction = ((
 
 const querySourceTag: unique symbol = Symbol();
 export type QuerySource = string & { [querySourceTag]?: true };
-
-const AsyncGeneratorFunction = Object.getPrototypeOf(async function* () {})
-  .constructor as {
-  new (...args: string[]): AsyncGeneratorFunction;
-};
 
 /**
  * Compile a query AST into a generator function that processes records.

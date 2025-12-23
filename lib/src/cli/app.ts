@@ -1,9 +1,11 @@
 import { buildApplication, buildRouteMap } from "@stricli/core";
-import { execCommand } from "./commands/exec";
+import { commandCompile } from "./commands/compile";
+import { commandExec } from "./commands/exec";
 
 export const root = buildRouteMap({
   routes: {
-    exec: execCommand,
+    exec: commandExec,
+    compile: commandCompile,
   },
   defaultCommand: "exec",
   docs: {

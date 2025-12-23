@@ -33,6 +33,7 @@
     "@types/node": "^24.0.6",
     "buffer": "^6.0.3",
     "mitata": "^1.0.34",
+    "os-browserify": "^0.3.0",
     "parcel": "2.16.0",
     "process": "^0.11.10",
     "tsx": "^4.20.3",

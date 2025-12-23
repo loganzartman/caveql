@@ -4,9 +4,12 @@ import {
   compareFieldNumber,
   compareFieldString,
 } from "../command/compileSortCommand";
+import { joinAsyncGenerators, splitAsyncGenerator } from "./generators";
 import { StreamingMode } from "./StreamingMode";
 import { StreamingPerc } from "./StreamingPerc";
 import { StreamingVar } from "./StreamingVar";
+import { mapRecordsNode } from "./threading/mapRecordsNode";
+import { mapRecordsWeb } from "./threading/mapRecordsWeb";
 
 // runtime dependencies required by the compiled function, which should be
 // injected as a parameter rather than compiled into the function itself.
@@ -31,6 +34,9 @@ export function getRuntimeDeps() {
     min,
     max,
     isnull,
+    splitAsyncGenerator,
+    joinAsyncGenerators,
+    mapRecords: typeof Worker === "undefined" ? mapRecordsNode : mapRecordsWeb,
   } as const;
 }
 

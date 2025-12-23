@@ -11,18 +11,16 @@
   "targets": {
     "main": {
       "isLibrary": true,
-      "source": "src/index.ts",
-      "outputFormat": "esmodule"
+      "source": "src/index.ts"
     },
     "types": {
       "isLibrary": true,
-      "source": "src/index.ts",
-      "outputFormat": "esmodule"
+      "source": "src/index.ts"
     },
     "bin": {
-      "isLibrary": true,
+      "isLibrary": false,
       "source": "src/cli/cli.ts",
-      "outputFormat": "esmodule"
+      "context": "node"
     }
   },
   "files": [
