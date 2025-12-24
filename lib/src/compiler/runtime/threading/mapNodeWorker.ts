@@ -1,6 +1,6 @@
 import { parentPort } from "node:worker_threads";
 import { impossible } from "../../../impossible";
-import { AsyncGeneratorFunction } from "../../AsyncGeneratorFunction";
+import { bindCompiledQuery } from "../../compileQuery";
 import {
   type MapRecordsHostMessage,
   mapRecordsWorkerMessage,
@@ -24,9 +24,7 @@ parentPort.on("message", (event: MapRecordsHostMessage) => {
   switch (event.type) {
     case "set-fn": {
       const yieldCallExpression = `yield* (${event.functionExpression})(records);`;
-      fn = new AsyncGeneratorFunction("records", yieldCallExpression) as (
-        records: Record<string, unknown>[],
-      ) => AsyncGenerator<Record<string, unknown>>;
+      fn = bindCompiledQuery(yieldCallExpression);
       break;
     }
     case "map-records": {

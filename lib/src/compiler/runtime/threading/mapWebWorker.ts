@@ -1,5 +1,5 @@
 import { impossible } from "../../../impossible";
-import { AsyncGeneratorFunction } from "../../AsyncGeneratorFunction";
+import { bindCompiledQuery } from "../../compileQuery";
 import {
   type MapRecordsHostMessage,
   mapRecordsWorkerMessage,
@@ -15,9 +15,7 @@ globalThis.onmessage = (event: MessageEvent<MapRecordsHostMessage>) => {
   switch (event.data.type) {
     case "set-fn": {
       const yieldCallExpression = `yield* (${event.data.functionExpression})(records);`;
-      fn = new AsyncGeneratorFunction("records", yieldCallExpression) as (
-        records: Record<string, unknown>[],
-      ) => AsyncGenerator<Record<string, unknown>>;
+      fn = bindCompiledQuery(yieldCallExpression);
       break;
     }
     case "map-records": {

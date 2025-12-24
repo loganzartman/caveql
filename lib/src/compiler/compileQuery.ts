@@ -29,12 +29,20 @@ export function compileQuery(query: QueryAST): QueryFunction {
  *
  * You probably want compileQuery, which does this in one step.
  */
-export function bindCompiledQuery(source: QuerySource): QueryFunction {
+export function bindCompiledQuery(source: string): QueryFunction {
+  const sourceWithDeps = `
+    const {
+      ${Object.keys(getRuntimeDeps()).join(", ")}
+    } = deps;
+    
+    ${source}
+  `;
+
   const compiledFn = new AsyncGeneratorFunction(
     "deps",
     "records",
     "context",
-    source,
+    sourceWithDeps,
   ) as unknown as (
     deps: InjectedDeps,
     records: InputIterable,
@@ -44,7 +52,7 @@ export function bindCompiledQuery(source: QuerySource): QueryFunction {
   const deps = getRuntimeDeps();
   const injectedFn = (records: InputIterable, context?: ExecutionContext) =>
     compiledFn(deps, records, context ?? createExecutionContext());
-  injectedFn.source = source;
+  injectedFn.source = sourceWithDeps;
 
   return injectedFn;
 }
@@ -57,10 +65,6 @@ export function bindCompiledQuery(source: QuerySource): QueryFunction {
  */
 export function compileQueryRaw(query: QueryAST): QuerySource {
   return `
-    const {
-      ${Object.keys(getRuntimeDeps()).join(", ")}
-    } = deps;
-
     let result = (${compileInstrumentInput()})(records, context);
 
     ${query.pipeline.map((command) => `result = (${compileCommand(command)})(result, context);`).join("\n\n")}
