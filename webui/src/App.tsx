@@ -11,6 +11,7 @@ import { PlayIcon } from "@heroicons/react/24/outline";
 import type { Progress, QueryAST } from "caveql";
 import {
   type AsyncQueryHandle,
+  bindCompiledQuery,
   createExecutionContext,
   createQueryWorker,
   type ExecutionContext,
@@ -110,7 +111,7 @@ export function App() {
 
       const worker = createQueryWorker(ast);
 
-      formatQuerySource(worker.source)
+      formatQuerySource(bindCompiledQuery(worker.source).source)
         .then((formatted) => {
           setCompiled(formatted);
         })
