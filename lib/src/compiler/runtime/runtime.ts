@@ -5,6 +5,7 @@ import {
   compareFieldString,
 } from "../command/compileSortCommand";
 import { joinAsyncGenerators, splitAsyncGenerator } from "./generators";
+import { getHardwareConcurrency } from "./getHardwareConcurrency";
 import { StreamingMode } from "./StreamingMode";
 import { StreamingPerc } from "./StreamingPerc";
 import { StreamingVar } from "./StreamingVar";
@@ -34,6 +35,7 @@ export function getRuntimeDeps() {
     min,
     max,
     isnull,
+    getHardwareConcurrency,
     splitAsyncGenerator,
     joinAsyncGenerators,
     mapRecords: typeof Worker === "undefined" ? mapRecordsNode : mapRecordsWeb,

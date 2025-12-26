@@ -34,6 +34,7 @@ export function bindCompiledQuery(source: string): QueryFunction {
     const {
       ${Object.keys(getRuntimeDeps()).join(", ")}
     } = deps;
+    const HW_CONCURRENCY = getHardwareConcurrency();
     
     ${source}
   `;
@@ -69,7 +70,7 @@ export function compileQueryRaw(query: QueryAST): QuerySource {
 
     ${query.pipeline.map((command) => `result = (${compileCommand(command)})(result, context);`).join("\n\n")}
 
-    yield* await result;
+    yield* result;
   ` as QuerySource;
 }
 
