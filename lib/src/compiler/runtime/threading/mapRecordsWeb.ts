@@ -9,7 +9,7 @@ export async function mapRecordsWeb({
   records,
   functionExpression,
 }: MapRecordsParams): Promise<AsyncGenerator<Record<string, unknown>>> {
-  const worker = new Worker(new URL("./mapWebWorker.ts", import.meta.url), {
+  const worker = new Worker(new URL("./workerMapWeb.ts", import.meta.url), {
     type: "module",
   });
 

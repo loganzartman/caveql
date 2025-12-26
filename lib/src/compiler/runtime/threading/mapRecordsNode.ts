@@ -10,7 +10,7 @@ export async function mapRecordsNode({
   records,
   functionExpression,
 }: MapRecordsParams): Promise<AsyncGenerator<Record<string, unknown>>> {
-  const worker = new NodeWorker(new URL("./mapNodeWorker.ts", import.meta.url));
+  const worker = new NodeWorker(new URL("./workerMapNode.ts", import.meta.url));
 
   const resultQueue = new AsyncQueue<Record<string, unknown>>();
   worker.on("message", (event: MapRecordsWorkerMessage) => {
