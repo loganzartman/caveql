@@ -12,12 +12,10 @@ export function compileDistribute({
   const functionExpressionWithReadableSource = `${JSON.stringify(functionExpression)} ?? (${functionExpression})`;
   return `
     async function* distribute(records, context) {
-      const slices = splitAsyncGenerator(records, HW_CONCURRENCY);
       const functionExpression = ${functionExpressionWithReadableSource};
       const threads = await Promise.all(
-        Array.from(
-          { length: HW_CONCURRENCY },
-          (_, i) => mapRecords({records: slices[i], functionExpression})
+        splitAsyncGenerator(records, HW_CONCURRENCY).map((slice) =>
+          mapRecords({ records: slice, functionExpression }),
         ),
       );
       yield* joinAsyncGenerators(threads);
