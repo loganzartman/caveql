@@ -13,9 +13,8 @@ let fn:
 
 globalThis.onmessage = (event: MessageEvent<MapRecordsHostMessage>) => {
   switch (event.data.type) {
-    case "set-fn": {
-      const yieldCallExpression = `yield* (${event.data.functionExpression})(records);`;
-      fn = bindCompiledQuery(yieldCallExpression);
+    case "set-expression": {
+      fn = bindCompiledQuery(event.data.expression);
       break;
     }
     case "map-records": {

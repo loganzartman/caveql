@@ -7,9 +7,9 @@ import {
 
 export async function mapRecordsWeb({
   records,
-  functionExpression,
+  expression,
 }: MapRecordsParams): Promise<AsyncGenerator<Record<string, unknown>>> {
-  const worker = new Worker(new URL("./workerMapWeb.ts", import.meta.url), {
+  const worker = new Worker(new URL("./workerWeb.ts", import.meta.url), {
     type: "module",
   });
 
@@ -19,7 +19,7 @@ export async function mapRecordsWeb({
   };
 
   worker.postMessage(
-    mapRecordsHostMessage({ type: "set-fn", functionExpression }),
+    mapRecordsHostMessage({ type: "set-expression", expression }),
   );
 
   return (async function* () {

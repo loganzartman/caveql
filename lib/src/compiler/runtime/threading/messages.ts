@@ -4,8 +4,8 @@ export type MapRecordsHostMessage =
       records: Record<string, unknown>[];
     }
   | {
-      type: "set-fn";
-      functionExpression: string;
+      type: "set-expression";
+      expression: string;
     };
 
 export type MapRecordsWorkerMessage = {

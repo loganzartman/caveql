@@ -22,9 +22,8 @@ parentPort.on("message", (event: MapRecordsHostMessage) => {
   }
 
   switch (event.type) {
-    case "set-fn": {
-      const yieldCallExpression = `yield* (${event.functionExpression})(records);`;
-      fn = bindCompiledQuery(yieldCallExpression);
+    case "set-expression": {
+      fn = bindCompiledQuery(event.expression);
       break;
     }
     case "map-records": {
